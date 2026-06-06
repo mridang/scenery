@@ -1,0 +1,47 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "scenery",
+  "main": "src/worker.ts",
+  "account_id": "779037e608ab1102679ef8b1bd499d49",
+  "compatibility_date": "2026-05-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Cloudflare auto-routes the Worker to the colo closest to D1
+  // (avoids the worst-case ~70 ms hop). Free on all plans.
+  "placement": { "mode": "smart" },
+  // Structured Workers Logs (free for Workers Paid; trivial overhead on Free).
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "scenery-db",
+      "database_id": "f9cdf278-d8df-4222-a2d6-9d5b45809d4d",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "triggers": {
+    "crons": ["0 6 * * *"]
+  },
+  "workflows": [
+    {
+      "name": "scenery-scrape",
+      "binding": "SCRAPE_WORKFLOW",
+      "class_name": "ScrapeWorkflow"
+    },
+    {
+      "name": "scenery-enrich",
+      "binding": "ENRICH_WORKFLOW",
+      "class_name": "EnrichWorkflow"
+    },
+    {
+      "name": "scenery-torrents",
+      "binding": "TORRENT_WORKFLOW",
+      "class_name": "TorrentWorkflow"
+    }
+  ]
+  // SCRAPINGANT_API_KEY, TMDB_API_KEY, CRON_SECRET are Worker secrets
+  // (set via `wrangler secret put`), not plaintext vars.
+}
