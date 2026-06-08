@@ -1,4 +1,4 @@
-import type { FetchResult } from "./types";
+import type { FetchResult } from './types';
 
 /**
  * Minimal HTTP fetcher abstraction. Every source receives an instance via
@@ -45,7 +45,7 @@ export interface ScrapingAntOptions {
  * @public
  */
 export class ScrapingAntFetcher implements PageFetcher {
-  public readonly label = "scrapingant-browser";
+  public readonly label = 'scrapingant-browser';
   private readonly apiKey: string;
   private readonly endpoint: string;
   private readonly timeoutMs: number;
@@ -54,18 +54,18 @@ export class ScrapingAntFetcher implements PageFetcher {
   /** @throws When no API key is provided. */
   public constructor(opts: ScrapingAntOptions) {
     if (!opts.apiKey) {
-      throw new Error("ScrapingAntFetcher requires apiKey");
+      throw new Error('ScrapingAntFetcher requires apiKey');
     }
     this.apiKey = opts.apiKey;
-    this.endpoint = opts.endpoint ?? "https://api.scrapingant.com/v2/general";
+    this.endpoint = opts.endpoint ?? 'https://api.scrapingant.com/v2/general';
     this.timeoutMs = opts.timeoutMs ?? 60_000;
     this.extraParams = opts.extraParams ?? {};
   }
 
   public async fetch(url: string): Promise<FetchResult> {
     const params = new URL(this.endpoint);
-    params.searchParams.set("url", url);
-    params.searchParams.set("browser", "true");
+    params.searchParams.set('url', url);
+    params.searchParams.set('browser', 'true');
     for (const [k, v] of Object.entries(this.extraParams)) {
       params.searchParams.set(k, v);
     }
@@ -74,8 +74,8 @@ export class ScrapingAntFetcher implements PageFetcher {
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
       const resp = await globalThis.fetch(params, {
-        method: "GET",
-        headers: { "x-api-key": this.apiKey },
+        method: 'GET',
+        headers: { 'x-api-key': this.apiKey },
         signal: controller.signal,
       });
       const html = await resp.text();

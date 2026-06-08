@@ -1,12 +1,12 @@
-import { TmdbClient } from "./client";
-import { TmdbEnricher } from "./enricher";
-import { TmdbRepository } from "./repository";
+import { TmdbClient } from './client';
+import { TmdbEnricher } from './enricher';
+import { TmdbRepository } from './repository';
 
-export type { TmdbClientOptions, TmdbResult } from "./client";
-export { TmdbClient } from "./client";
-export { TmdbEnricher } from "./enricher";
-export { TmdbRepository } from "./repository";
-export type * from "./types";
+export type { TmdbClientOptions, TmdbResult } from './client';
+export { TmdbClient } from './client';
+export { TmdbEnricher } from './enricher';
+export { TmdbRepository } from './repository';
+export type * from './types';
 
 /**
  * Convenience constructor that wires {@link TmdbClient},

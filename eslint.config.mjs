@@ -1,4 +1,4 @@
-import mridang from '@mridang/eslint-defaults'
+import mridang from '@mridang/eslint-defaults';
 
 export default [
   {
@@ -50,4 +50,4 @@ export default [
       'import/no-unresolved': ['error', { ignore: ['^cloudflare:'] }],
     },
   },
-]
+];

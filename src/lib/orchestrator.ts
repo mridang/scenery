@@ -1,8 +1,8 @@
-import { ScrapeOrchestrator, ScrapingRepository } from "./scraping";
-import type { PageRunResult } from "./scraping";
-import { buildSources } from "./sources";
+import { ScrapeOrchestrator, ScrapingRepository } from './scraping';
+import type { PageRunResult } from './scraping';
+import { buildSources } from './sources';
 
-export type { PageRunResult } from "./scraping";
+export type { PageRunResult } from './scraping';
 
 /**
  * Back-compat helper for callers that still use the functional API.

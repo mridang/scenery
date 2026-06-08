@@ -1,8 +1,8 @@
-import { Fragment } from "react";
-import Link from "next/link";
-import { getDB } from "@/lib/db";
-import { BUDGET_BYTES, CatalogRepository, ViewBuilder } from "@/lib/catalog";
-import type { Tier } from "@/lib/catalog";
+import { Fragment } from 'react';
+import Link from 'next/link';
+import { getDB } from '@/lib/db';
+import { BUDGET_BYTES, CatalogRepository, ViewBuilder } from '@/lib/catalog';
+import type { Tier } from '@/lib/catalog';
 
 /**
  * Staleness threshold for the top-of-page banner. Beyond this, the
@@ -12,11 +12,11 @@ import type { Tier } from "@/lib/catalog";
 const STALE_THRESHOLD_MS = 48 * 60 * 60 * 1000;
 
 /** Known {@link ViewOptions['sort']} values, used to validate `?sort=`. */
-const KNOWN_SORTS = new Set(["score", "date"]);
+const KNOWN_SORTS = new Set(['score', 'date']);
 /** Known {@link ViewOptions['view']} values, used to validate `?view=`. */
-const KNOWN_VIEWS = new Set(["catalog", "plan"]);
+const KNOWN_VIEWS = new Set(['catalog', 'plan']);
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 function genreNames(raw: string | null, lookup: Map<number, string>): string[] {
   if (!raw) return [];
@@ -32,7 +32,7 @@ function castNames(raw: string | null): string[] {
   if (!raw) return [];
   try {
     const items = JSON.parse(raw) as { name?: string }[];
-    return items.map((c) => c.name ?? "").filter(Boolean);
+    return items.map((c) => c.name ?? '').filter(Boolean);
   } catch {
     return [];
   }
@@ -53,9 +53,9 @@ function isFresh(at: string | null, nowMs: number): boolean {
 }
 
 function timeAgo(at: string | null, nowMs: number): string {
-  if (!at) return "never";
+  if (!at) return 'never';
   const t = Date.parse(at);
-  if (!Number.isFinite(t)) return "never";
+  if (!Number.isFinite(t)) return 'never';
   const s = Math.max(0, Math.floor((nowMs - t) / 1000));
   if (s < 60) return `${s}s ago`;
   const m = Math.floor(s / 60);
@@ -67,40 +67,40 @@ function timeAgo(at: string | null, nowMs: number): string {
 }
 
 const TIER_STYLE: Record<Tier, string> = {
-  A: "border-emerald-500 bg-emerald-50/60",
-  B: "",
-  C: "border-gray-300 bg-gray-50/60 opacity-70",
-  "?": "border-sky-400 bg-sky-50/40",
+  A: 'border-emerald-500 bg-emerald-50/60',
+  B: '',
+  C: 'border-gray-300 bg-gray-50/60 opacity-70',
+  '?': 'border-sky-400 bg-sky-50/40',
 };
 const TIER_BADGE: Record<Tier, string> = {
-  A: "bg-emerald-500 text-white",
-  B: "bg-gray-300 text-gray-700",
-  C: "bg-gray-400 text-white",
-  "?": "bg-sky-400 text-white",
+  A: 'bg-emerald-500 text-white',
+  B: 'bg-gray-300 text-gray-700',
+  C: 'bg-gray-400 text-white',
+  '?': 'bg-sky-400 text-white',
 };
 
 // Visual class per prestige studio label (logic lives in catalog.ts).
 const PRESTIGE_CLS: Record<string, string> = {
-  Netflix: "bg-red-600 text-white",
-  "Apple TV+": "bg-black text-white",
-  Marvel: "bg-red-700 text-white",
-  HBO: "bg-fuchsia-700 text-white",
-  A24: "bg-neutral-900 text-white",
-  "Amazon MGM": "bg-sky-700 text-white",
-  Searchlight: "bg-amber-700 text-white",
-  Annapurna: "bg-violet-700 text-white",
-  Focus: "bg-slate-700 text-white",
-  NEON: "bg-lime-500 text-black",
-  "Plan B": "bg-orange-600 text-white",
-  Disney: "bg-blue-800 text-white",
-  "Warner Bros": "bg-blue-900 text-white",
-  Universal: "bg-zinc-800 text-white",
-  Paramount: "bg-blue-700 text-white",
-  "Metro-Goldwyn-Mayer": "bg-amber-600 text-white",
-  Lionsgate: "bg-yellow-600 text-white",
+  Netflix: 'bg-red-600 text-white',
+  'Apple TV+': 'bg-black text-white',
+  Marvel: 'bg-red-700 text-white',
+  HBO: 'bg-fuchsia-700 text-white',
+  A24: 'bg-neutral-900 text-white',
+  'Amazon MGM': 'bg-sky-700 text-white',
+  Searchlight: 'bg-amber-700 text-white',
+  Annapurna: 'bg-violet-700 text-white',
+  Focus: 'bg-slate-700 text-white',
+  NEON: 'bg-lime-500 text-black',
+  'Plan B': 'bg-orange-600 text-white',
+  Disney: 'bg-blue-800 text-white',
+  'Warner Bros': 'bg-blue-900 text-white',
+  Universal: 'bg-zinc-800 text-white',
+  Paramount: 'bg-blue-700 text-white',
+  'Metro-Goldwyn-Mayer': 'bg-amber-600 text-white',
+  Lionsgate: 'bg-yellow-600 text-white',
 };
 function prestigeCls(label: string): string {
-  return PRESTIGE_CLS[label] ?? "bg-gray-700 text-white";
+  return PRESTIGE_CLS[label] ?? 'bg-gray-700 text-white';
 }
 
 function fmtMoney(n: number | null): string | null {
@@ -119,25 +119,25 @@ function fmtSize(bytes: number | null): string | null {
 }
 
 const PUBLIC_TRACKERS = [
-  "udp://tracker.opentrackr.org:1337/announce",
-  "udp://open.demonii.com:1337/announce",
-  "udp://tracker.openbittorrent.com:6969/announce",
-  "udp://exodus.desync.com:6969/announce",
+  'udp://tracker.opentrackr.org:1337/announce',
+  'udp://open.demonii.com:1337/announce',
+  'udp://tracker.openbittorrent.com:6969/announce',
+  'udp://exodus.desync.com:6969/announce',
 ]
   .map((t) => `&tr=${encodeURIComponent(t)}`)
-  .join("");
+  .join('');
 
 function magnetFor(hash: string, name: string | null): string {
-  const dn = name ? `&dn=${encodeURIComponent(name)}` : "";
+  const dn = name ? `&dn=${encodeURIComponent(name)}` : '';
   return `magnet:?xt=urn:btih:${hash}${dn}${PUBLIC_TRACKERS}`;
 }
 
 type TorrentBadge =
-  | { kind: "ok"; cls: string; label: string }
-  | { kind: "waiting"; cls: string; label: string }
-  | { kind: "empty"; cls: string; label: string }
-  | { kind: "error"; cls: string; label: string }
-  | { kind: "pending"; cls: string; label: string };
+  | { kind: 'ok'; cls: string; label: string }
+  | { kind: 'waiting'; cls: string; label: string }
+  | { kind: 'empty'; cls: string; label: string }
+  | { kind: 'error'; cls: string; label: string }
+  | { kind: 'pending'; cls: string; label: string };
 
 function torrentBadge(
   status: string | null,
@@ -147,21 +147,21 @@ function torrentBadge(
   nowMs: number,
   count: number | null,
 ): TorrentBadge {
-  if (status === "success" && (count ?? 0) > 0) {
-    return { kind: "ok", cls: "bg-emerald-600 text-white", label: "✓ torrent" };
+  if (status === 'success' && (count ?? 0) > 0) {
+    return { kind: 'ok', cls: 'bg-emerald-600 text-white', label: '✓ torrent' };
   }
-  if (status === "empty") {
+  if (status === 'empty') {
     return {
-      kind: "empty",
-      cls: "bg-gray-300 text-gray-700",
-      label: "no torrents",
+      kind: 'empty',
+      cls: 'bg-gray-300 text-gray-700',
+      label: 'no torrents',
     };
   }
-  if (status === "error") {
+  if (status === 'error') {
     return {
-      kind: "error",
-      cls: "bg-red-600 text-white",
-      label: "✗ lookup err",
+      kind: 'error',
+      cls: 'bg-red-600 text-white',
+      label: '✗ lookup err',
     };
   }
   // No lookup row yet — too fresh, or simply not searched.
@@ -170,43 +170,43 @@ function torrentBadge(
   if (age < 24 * 60 * 60 * 1000) {
     const hoursLeft = Math.ceil((24 * 60 * 60 * 1000 - age) / (60 * 60 * 1000));
     return {
-      kind: "waiting",
-      cls: "bg-amber-300 text-amber-900",
+      kind: 'waiting',
+      cls: 'bg-amber-300 text-amber-900',
       label: `⏳ wait ${hoursLeft}h`,
     };
   }
   return {
-    kind: "pending",
-    cls: "bg-sky-200 text-sky-900",
-    label: "⏳ pending",
+    kind: 'pending',
+    cls: 'bg-sky-200 text-sky-900',
+    label: '⏳ pending',
   };
 }
 
 const LANG_NAME: Record<string, string> = {
-  en: "English",
-  hi: "Hindi",
-  es: "Spanish",
-  fr: "French",
-  de: "German",
-  ja: "Japanese",
-  ko: "Korean",
-  zh: "Chinese",
-  it: "Italian",
-  pt: "Portuguese",
-  ru: "Russian",
-  ta: "Tamil",
-  te: "Telugu",
-  ml: "Malayalam",
-  th: "Thai",
-  tr: "Turkish",
-  pl: "Polish",
-  sv: "Swedish",
-  da: "Danish",
-  nl: "Dutch",
-  no: "Norwegian",
-  fi: "Finnish",
-  ar: "Arabic",
-  "?": "Unknown",
+  en: 'English',
+  hi: 'Hindi',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+  ja: 'Japanese',
+  ko: 'Korean',
+  zh: 'Chinese',
+  it: 'Italian',
+  pt: 'Portuguese',
+  ru: 'Russian',
+  ta: 'Tamil',
+  te: 'Telugu',
+  ml: 'Malayalam',
+  th: 'Thai',
+  tr: 'Turkish',
+  pl: 'Polish',
+  sv: 'Swedish',
+  da: 'Danish',
+  nl: 'Dutch',
+  no: 'Norwegian',
+  fi: 'Finnish',
+  ar: 'Arabic',
+  '?': 'Unknown',
 };
 function langLabel(code: string): string {
   return LANG_NAME[code] ?? code.toUpperCase();
@@ -218,13 +218,13 @@ export default async function Home({
   searchParams: Promise<{ lang?: string; sort?: string; view?: string }>;
 }) {
   const sp = await searchParams;
-  const lang = (sp.lang ?? "en").toLowerCase();
-  const rawSort = (sp.sort ?? "score").toLowerCase();
-  const rawView = (sp.view ?? "catalog").toLowerCase();
+  const lang = (sp.lang ?? 'en').toLowerCase();
+  const rawSort = (sp.sort ?? 'score').toLowerCase();
+  const rawView = (sp.view ?? 'catalog').toLowerCase();
   // Reject unknown values so a typo / malicious query lands on the
   // default view rather than throwing the SQL path off.
-  const sort = KNOWN_SORTS.has(rawSort) ? rawSort : "score";
-  const view = KNOWN_VIEWS.has(rawView) ? rawView : "catalog";
+  const sort = KNOWN_SORTS.has(rawSort) ? rawSort : 'score';
+  const view = KNOWN_VIEWS.has(rawView) ? rawView : 'catalog';
 
   const db = getDB();
   const repo = new CatalogRepository(db);
@@ -253,14 +253,14 @@ export default async function Home({
       <link
         rel="alternate"
         type="application/rss+xml"
-        title={`scenery — ${view === "plan" ? "1 TB plan" : "Catalog"} (${lang}, ${sort})`}
+        title={`scenery — ${view === 'plan' ? '1 TB plan' : 'Catalog'} (${lang}, ${sort})`}
         href={feedHref}
       />
 
       {isStale ? (
         <div className="mb-4 rounded border border-red-300 bg-red-50 p-3 text-xs text-red-800 sm:text-sm">
-          <span className="font-bold uppercase">⚠ stale</span> — last scrape{" "}
-          <span title={lastUpdate.scrapeAt ?? ""}>
+          <span className="font-bold uppercase">⚠ stale</span> — last scrape{' '}
+          <span title={lastUpdate.scrapeAt ?? ''}>
             {timeAgo(lastUpdate.scrapeAt, nowMs)}
           </span>
           . The workflow may be failing. Trigger a manual scrape, or check the
@@ -272,22 +272,22 @@ export default async function Home({
         <div className="min-w-0">
           <h1 className="text-lg font-bold sm:text-xl">scenery</h1>
           <div className="text-[11px] leading-snug text-gray-500">
-            scrape{" "}
-            <span title={lastUpdate.scrapeAt ?? ""}>
+            scrape{' '}
+            <span title={lastUpdate.scrapeAt ?? ''}>
               {timeAgo(lastUpdate.scrapeAt, nowMs)}
             </span>
-            {lastUpdate.scrapeSource ? ` (${lastUpdate.scrapeSource})` : ""}
-            {" · "}tmdb{" "}
-            <span title={lastUpdate.enrichAt ?? ""}>
+            {lastUpdate.scrapeSource ? ` (${lastUpdate.scrapeSource})` : ''}
+            {' · '}tmdb{' '}
+            <span title={lastUpdate.enrichAt ?? ''}>
               {timeAgo(lastUpdate.enrichAt, nowMs)}
             </span>
-            {" · "}torrents{" "}
-            <span title={lastUpdate.torrentsAt ?? ""}>
+            {' · '}torrents{' '}
+            <span title={lastUpdate.torrentsAt ?? ''}>
               {timeAgo(lastUpdate.torrentsAt, nowMs)}
             </span>
             {lastUpdate.torrentsProvider
               ? ` (${lastUpdate.torrentsProvider})`
-              : ""}
+              : ''}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -359,7 +359,7 @@ export default async function Home({
         />
       </nav>
 
-      {view === "plan" ? (
+      {view === 'plan' ? (
         <PlanSummary
           fits={planTotalFits}
           skipped={planTotalSkipped}
@@ -374,10 +374,10 @@ export default async function Home({
           code="en"
           active={lang}
           sort={sort}
-          count={langs.find((l) => l.code === "en")?.count ?? 0}
+          count={langs.find((l) => l.code === 'en')?.count ?? 0}
         />
         {langs
-          .filter((l) => l.code !== "en" && l.code !== "?")
+          .filter((l) => l.code !== 'en' && l.code !== '?')
           .map((l) => (
             <LangChip
               key={l.code}
@@ -387,12 +387,12 @@ export default async function Home({
               count={l.count}
             />
           ))}
-        {langs.some((l) => l.code === "?") ? (
+        {langs.some((l) => l.code === '?') ? (
           <LangChip
             code="?"
             active={lang}
             sort={sort}
-            count={langs.find((l) => l.code === "?")!.count}
+            count={langs.find((l) => l.code === '?')!.count}
           />
         ) : null}
         <LangChip
@@ -429,7 +429,7 @@ export default async function Home({
         <ul className="divide-y">
           {rows.map(({ row: m, studios, score, tier, cumBytes, fits }, idx) => {
             const prev = idx > 0 ? rows[idx - 1] : null;
-            const cutoffHere = view === "plan" && prev && prev.fits && !fits;
+            const cutoffHere = view === 'plan' && prev && prev.fits && !fits;
             const names = genreNames(m.tmdb_genre_ids, genres);
             const cast = castNames(m.top_cast);
             const runtime = formatRuntime(m.runtime);
@@ -440,21 +440,21 @@ export default async function Home({
             const fresh = isFresh(m.latest_release_at, nowMs);
             const budget = fmtMoney(m.budget);
             const tierClass = TIER_STYLE[tier];
-            const planMode = view === "plan";
+            const planMode = view === 'plan';
             const planCumGb = planMode
               ? (cumBytes / 1_000_000_000).toFixed(1)
               : null;
             const planClass =
               planMode && !fits
-                ? "border-l-4 border-gray-300 bg-gray-50/60 opacity-60"
-                : "";
+                ? 'border-l-4 border-gray-300 bg-gray-50/60 opacity-60'
+                : '';
             const freshClass = planMode
               ? planClass
               : fresh
-                ? "border-l-4 border-amber-400 bg-amber-50/60"
+                ? 'border-l-4 border-amber-400 bg-amber-50/60'
                 : tierClass
                   ? `border-l-4 ${tierClass}`
-                  : "";
+                  : '';
             return (
               <Fragment key={m.imdb_id}>
                 {cutoffHere ? (
@@ -487,7 +487,7 @@ export default async function Home({
                       {planMode ? (
                         <span
                           className={`font-mono text-[11px] ${
-                            fits ? "text-purple-700" : "text-gray-400"
+                            fits ? 'text-purple-700' : 'text-gray-400'
                           }`}
                         >
                           {planCumGb} GB
@@ -531,25 +531,25 @@ export default async function Home({
                           new
                         </span>
                       ) : null}
-                      {m.tmdb_status === "not_found" ? (
+                      {m.tmdb_status === 'not_found' ? (
                         <span className="text-xs text-red-500 uppercase">
                           no tmdb match
                         </span>
                       ) : null}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {names.length ? names.join(", ") : "—"}
-                      {runtime ? ` · ${runtime}` : ""}
+                      {names.length ? names.join(', ') : '—'}
+                      {runtime ? ` · ${runtime}` : ''}
                       {m.vote_average != null
                         ? ` · ★ ${m.vote_average.toFixed(1)}${
-                            m.vote_count != null ? ` (${m.vote_count})` : ""
+                            m.vote_count != null ? ` (${m.vote_count})` : ''
                           }`
-                        : ""}
-                      {budget ? ` · ${budget} budget` : ""}
+                        : ''}
+                      {budget ? ` · ${budget} budget` : ''}
                       {m.talent_score != null && m.talent_score > 0
                         ? ` · talent ${m.talent_score.toFixed(1)}`
-                        : ""}
-                      {" · "}
+                        : ''}
+                      {' · '}
                       <Link
                         href={`https://www.imdb.com/title/${m.imdb_id}/`}
                         target="_blank"
@@ -557,15 +557,15 @@ export default async function Home({
                       >
                         {m.imdb_id}
                       </Link>
-                      {" · "}
+                      {' · '}
                       {m.release_count} release
-                      {m.release_count === 1 ? "" : "s"}
+                      {m.release_count === 1 ? '' : 's'}
                     </div>
                     {m.director || cast.length ? (
                       <div className="text-xs text-gray-700">
                         {m.director ? (
                           <span>
-                            <span className="text-gray-500">Dir:</span>{" "}
+                            <span className="text-gray-500">Dir:</span>{' '}
                             {m.director}
                           </span>
                         ) : null}
@@ -574,8 +574,8 @@ export default async function Home({
                         ) : null}
                         {cast.length ? (
                           <span>
-                            <span className="text-gray-500">With:</span>{" "}
-                            {cast.join(", ")}
+                            <span className="text-gray-500">With:</span>{' '}
+                            {cast.join(', ')}
                           </span>
                         ) : null}
                       </div>
@@ -591,17 +591,17 @@ export default async function Home({
                         >
                           magnet ↗
                         </a>
-                        {m.best_quality ? ` · ${m.best_quality}` : ""}
+                        {m.best_quality ? ` · ${m.best_quality}` : ''}
                         {m.best_size_bytes
                           ? ` · ${fmtSize(m.best_size_bytes)}`
-                          : ""}
+                          : ''}
                         {m.best_seeders != null
                           ? ` · 👤 ${m.best_seeders}`
-                          : ""}
-                        {m.best_source ? ` · ${m.best_source}` : ""}
+                          : ''}
+                        {m.best_source ? ` · ${m.best_source}` : ''}
                         {(m.torrent_count ?? 0) > 1
                           ? ` · +${(m.torrent_count ?? 0) - 1} more`
-                          : ""}
+                          : ''}
                       </div>
                     ) : null}
                     {m.latest_release_title ? (
@@ -620,26 +620,26 @@ export default async function Home({
       <footer className="mt-10 border-t border-gray-200 pt-4 text-[11px] text-gray-500">
         <div className="grid grid-cols-1 gap-1 sm:grid-cols-3">
           <div>
-            <span className="font-semibold uppercase">Scrape</span>{" "}
-            <span title={lastUpdate.scrapeAt ?? ""}>
+            <span className="font-semibold uppercase">Scrape</span>{' '}
+            <span title={lastUpdate.scrapeAt ?? ''}>
               {timeAgo(lastUpdate.scrapeAt, nowMs)}
             </span>
-            {lastUpdate.scrapeSource ? ` (${lastUpdate.scrapeSource})` : ""}
+            {lastUpdate.scrapeSource ? ` (${lastUpdate.scrapeSource})` : ''}
           </div>
           <div>
-            <span className="font-semibold uppercase">TMDB</span>{" "}
-            <span title={lastUpdate.enrichAt ?? ""}>
+            <span className="font-semibold uppercase">TMDB</span>{' '}
+            <span title={lastUpdate.enrichAt ?? ''}>
               {timeAgo(lastUpdate.enrichAt, nowMs)}
             </span>
           </div>
           <div>
-            <span className="font-semibold uppercase">Torrents</span>{" "}
-            <span title={lastUpdate.torrentsAt ?? ""}>
+            <span className="font-semibold uppercase">Torrents</span>{' '}
+            <span title={lastUpdate.torrentsAt ?? ''}>
               {timeAgo(lastUpdate.torrentsAt, nowMs)}
             </span>
             {lastUpdate.torrentsProvider
               ? ` (${lastUpdate.torrentsProvider})`
-              : ""}
+              : ''}
           </div>
         </div>
         <div className="mt-2 text-gray-400">
@@ -657,7 +657,7 @@ function buildQuery(params: Record<string, string>): string {
     if (v) usp.set(k, v);
   }
   const s = usp.toString();
-  return s ? `?${s}` : "";
+  return s ? `?${s}` : '';
 }
 
 function LangChip({
@@ -674,18 +674,18 @@ function LangChip({
   view?: string;
 }) {
   const isActive = code === active;
-  const label = code === "all" ? "All" : langLabel(code);
+  const label = code === 'all' ? 'All' : langLabel(code);
   return (
     <Link
-      href={`/${buildQuery({ lang: code, sort, view: view ?? "" })}`}
+      href={`/${buildQuery({ lang: code, sort, view: view ?? '' })}`}
       className={`rounded border px-2 py-0.5 ${
         isActive
-          ? "border-emerald-500 bg-emerald-500 text-white"
-          : "border-gray-300 text-gray-700 hover:bg-gray-100"
+          ? 'border-emerald-500 bg-emerald-500 text-white'
+          : 'border-gray-300 text-gray-700 hover:bg-gray-100'
       }`}
     >
-      {label}{" "}
-      <span className={isActive ? "opacity-80" : "text-gray-400"}>{count}</span>
+      {label}{' '}
+      <span className={isActive ? 'opacity-80' : 'text-gray-400'}>{count}</span>
     </Link>
   );
 }
@@ -709,8 +709,8 @@ function SortChip({
       href={`/${buildQuery({ lang, sort, view })}`}
       className={`rounded border px-2 py-0.5 ${
         isActive
-          ? "border-indigo-500 bg-indigo-500 text-white"
-          : "border-gray-300 text-gray-700 hover:bg-gray-100"
+          ? 'border-indigo-500 bg-indigo-500 text-white'
+          : 'border-gray-300 text-gray-700 hover:bg-gray-100'
       }`}
     >
       {label}
@@ -737,8 +737,8 @@ function ViewChip({
       href={`/${buildQuery({ lang, sort, view })}`}
       className={`rounded border px-2 py-0.5 ${
         isActive
-          ? "border-purple-500 bg-purple-500 text-white"
-          : "border-gray-300 text-gray-700 hover:bg-gray-100"
+          ? 'border-purple-500 bg-purple-500 text-white'
+          : 'border-gray-300 text-gray-700 hover:bg-gray-100'
       }`}
     >
       {label}
@@ -766,12 +766,12 @@ function PlanSummary({
       <div className="mb-2 flex items-baseline justify-between text-xs">
         <div>
           <span className="font-semibold">{fits.toLocaleString()}</span> movies
-          fit in 1 TB ·{" "}
-          <span className="font-semibold">{usedGb.toFixed(1)} GB</span> used ·{" "}
+          fit in 1 TB ·{' '}
+          <span className="font-semibold">{usedGb.toFixed(1)} GB</span> used ·{' '}
           <span className="text-gray-600">{freeGb.toFixed(1)} GB headroom</span>
         </div>
         <div className="text-gray-500">
-          {skipped.toLocaleString()} won&apos;t fit · budget{" "}
+          {skipped.toLocaleString()} won&apos;t fit · budget{' '}
           {budgetGb.toFixed(0)} GB
         </div>
       </div>
@@ -793,7 +793,7 @@ function Stat({
 }) {
   return (
     <div
-      className={`rounded border px-2 py-1 sm:py-2 ${highlight ? "border-red-500 text-red-600" : ""}`}
+      className={`rounded border px-2 py-1 sm:py-2 ${highlight ? 'border-red-500 text-red-600' : ''}`}
     >
       <div className="text-sm font-semibold sm:text-base">{value}</div>
       <div className="text-[9px] text-gray-500 uppercase sm:text-[10px]">

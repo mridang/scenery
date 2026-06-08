@@ -1,7 +1,7 @@
-import { FetchBudget } from "../util/budget";
-import type { TmdbClient } from "./client";
-import type { TmdbRepository } from "./repository";
-import type { EnrichSummary, TmdbPersonResponse } from "./types";
+import { FetchBudget } from '../util/budget';
+import type { TmdbClient } from './client';
+import type { TmdbRepository } from './repository';
+import type { EnrichSummary, TmdbPersonResponse } from './types';
 
 /** Options for {@link TmdbEnricher.run}. @public */
 export interface EnrichRunOptions {
@@ -53,7 +53,7 @@ export class TmdbEnricher {
     opts: EnrichRunOptions | number = {},
   ): Promise<EnrichRunResult> {
     const { limit = 200, fetchBudget } =
-      typeof opts === "number" ? { limit: opts } : opts;
+      typeof opts === 'number' ? { limit: opts } : opts;
     const budget = new FetchBudget(fetchBudget ?? Number.MAX_SAFE_INTEGER);
 
     await this.ensureGenres();
@@ -115,17 +115,17 @@ export class TmdbEnricher {
    */
   public async enrichMovie(
     imdbId: string,
-  ): Promise<"found" | "not_found" | "error"> {
+  ): Promise<'found' | 'not_found' | 'error'> {
     const now = new Date().toISOString();
     const find = await this.client.findByImdb(imdbId);
     if (!find.ok) {
       await this.repo.recordMovieError(imdbId, find.raw, find.error, now);
-      return "error";
+      return 'error';
     }
     const movie = find.value.movie_results?.[0];
     if (!movie) {
       await this.repo.recordMovieNotFound(imdbId, find.raw, now);
-      return "not_found";
+      return 'not_found';
     }
     await this.repo.upsertFoundMovie(imdbId, movie, find.raw, now);
 
@@ -145,7 +145,7 @@ export class TmdbEnricher {
         new Date().toISOString(),
       );
     }
-    return "found";
+    return 'found';
   }
 
   /** Re-parse cached /movie responses into later-added columns. @public */
@@ -328,7 +328,7 @@ export class TmdbEnricher {
   } {
     const cast = person.movie_credits?.cast ?? [];
     const crew = (person.movie_credits?.crew ?? []).filter(
-      (c) => c.job === "Director",
+      (c) => c.job === 'Director',
     );
     let totalVotes = 0;
     for (const c of cast) totalVotes += c.vote_count ?? 0;

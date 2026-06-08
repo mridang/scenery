@@ -1,4 +1,4 @@
-import type { LookupResult, ResolvedLookup } from "./types";
+import type { LookupResult, ResolvedLookup } from './types';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -26,7 +26,7 @@ export class TorrentRepository {
   async candidates(limit: number, force = false): Promise<string[]> {
     const cutoff = new Date(Date.now() - ONE_DAY_MS).toISOString();
     const gate = force
-      ? ""
+      ? ''
       : `AND (SELECT MAX(COALESCE(r.posted_at, r.first_seen_at))
                FROM releases r WHERE r.imdb_id = m.imdb_id) <= ?`;
     const stmt = this.db.prepare(
@@ -63,7 +63,7 @@ export class TorrentRepository {
   async persist(imdbId: string, resolved: ResolvedLookup): Promise<void> {
     const now = new Date().toISOString();
     const { provider, result } = resolved;
-    if (result.status === "success") {
+    if (result.status === 'success') {
       for (const t of result.torrents) {
         await this.db
           .prepare(

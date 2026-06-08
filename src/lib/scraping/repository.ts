@@ -1,4 +1,4 @@
-import type { ExtractedRelease } from "../sources/types";
+import type { ExtractedRelease } from '../sources/types';
 
 /**
  * Row shape for a registered source in the `sources` table.

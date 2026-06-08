@@ -12,36 +12,36 @@
   "observability": { "enabled": true, "head_sampling_rate": 1 },
   "assets": {
     "binding": "ASSETS",
-    "directory": ".open-next/assets"
+    "directory": ".open-next/assets",
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "scenery-db",
       "database_id": "f9cdf278-d8df-4222-a2d6-9d5b45809d4d",
-      "migrations_dir": "migrations"
-    }
+      "migrations_dir": "migrations",
+    },
   ],
   "triggers": {
-    "crons": ["0 6 * * *"]
+    "crons": ["0 6 * * *"],
   },
   "workflows": [
     {
       "name": "scenery-scrape",
       "binding": "SCRAPE_WORKFLOW",
-      "class_name": "ScrapeWorkflow"
+      "class_name": "ScrapeWorkflow",
     },
     {
       "name": "scenery-enrich",
       "binding": "ENRICH_WORKFLOW",
-      "class_name": "EnrichWorkflow"
+      "class_name": "EnrichWorkflow",
     },
     {
       "name": "scenery-torrents",
       "binding": "TORRENT_WORKFLOW",
-      "class_name": "TorrentWorkflow"
-    }
-  ]
+      "class_name": "TorrentWorkflow",
+    },
+  ],
   // SCRAPINGANT_API_KEY, TMDB_API_KEY, CRON_SECRET are Worker secrets
   // (set via `wrangler secret put`), not plaintext vars.
 }

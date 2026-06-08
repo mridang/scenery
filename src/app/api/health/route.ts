@@ -1,7 +1,7 @@
-import { CatalogRepository } from "@/lib/catalog";
-import { getDB } from "@/lib/db";
+import { CatalogRepository } from '@/lib/catalog';
+import { getDB } from '@/lib/db';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 const STALE_THRESHOLD_MS = 48 * 60 * 60 * 1000;
 
@@ -38,7 +38,7 @@ export async function GET() {
   return Response.json(body, {
     status: stale ? 503 : 200,
     headers: {
-      "Cache-Control": "no-store",
+      'Cache-Control': 'no-store',
     },
   });
 }

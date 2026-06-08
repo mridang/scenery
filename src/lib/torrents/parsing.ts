@@ -3,10 +3,10 @@
 // representation.
 
 export function detectQuality(haystack: string): string | null {
-  if (/(?:^|\W)(?:2160p|4K|UHD)(?:\W|$)/i.test(haystack)) return "2160p";
-  if (/(?:^|\W)1080p(?:\W|$)/i.test(haystack)) return "1080p";
-  if (/(?:^|\W)720p(?:\W|$)/i.test(haystack)) return "720p";
-  if (/(?:^|\W)480p(?:\W|$)/i.test(haystack)) return "480p";
+  if (/(?:^|\W)(?:2160p|4K|UHD)(?:\W|$)/i.test(haystack)) return '2160p';
+  if (/(?:^|\W)1080p(?:\W|$)/i.test(haystack)) return '1080p';
+  if (/(?:^|\W)720p(?:\W|$)/i.test(haystack)) return '720p';
+  if (/(?:^|\W)480p(?:\W|$)/i.test(haystack)) return '480p';
   return null;
 }
 

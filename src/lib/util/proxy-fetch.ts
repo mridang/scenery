@@ -34,7 +34,7 @@ export interface ProxyFetchOptions {
   accept?: string;
 }
 
-const ANT_ENDPOINT = "https://api.scrapingant.com/v2/general";
+const ANT_ENDPOINT = 'https://api.scrapingant.com/v2/general';
 
 /**
  * Fetch `targetUrl`, optionally through ScrapingAnt's rotating proxy.
@@ -47,7 +47,7 @@ export async function proxyFetch(
   opts: ProxyFetchOptions = {},
 ): Promise<ProxyFetchResult> {
   const timeoutMs = opts.timeoutMs ?? 15_000;
-  const accept = opts.accept ?? "application/json";
+  const accept = opts.accept ?? 'application/json';
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -55,10 +55,10 @@ export async function proxyFetch(
     let resp: Response;
     if (opts.scrapingAntKey) {
       const ant = new URL(ANT_ENDPOINT);
-      ant.searchParams.set("url", targetUrl);
-      ant.searchParams.set("browser", "false"); // proxy-only, cheap
+      ant.searchParams.set('url', targetUrl);
+      ant.searchParams.set('browser', 'false'); // proxy-only, cheap
       resp = await fetch(ant, {
-        headers: { "x-api-key": opts.scrapingAntKey, Accept: accept },
+        headers: { 'x-api-key': opts.scrapingAntKey, Accept: accept },
         signal: controller.signal,
       });
     } else {
@@ -72,7 +72,7 @@ export async function proxyFetch(
   } catch (err) {
     return {
       ok: false,
-      text: "",
+      text: '',
       error: err instanceof Error ? err.message : String(err),
     };
   } finally {

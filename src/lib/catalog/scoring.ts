@@ -1,4 +1,4 @@
-import type { MovieRow, Tier } from "./types";
+import type { MovieRow, Tier } from './types';
 
 /**
  * Half-life of the recency boost in days. Movies released this far in
@@ -16,26 +16,26 @@ export const RECENCY_HALF_LIFE_DAYS = 180;
 export const RECENCY_MAX_PTS = 20;
 
 const PRESTIGE_LABELS: Record<number, string> = {
-  178: "Netflix",
-  152952: "Apple TV+",
-  192828: "Apple TV+",
-  420: "Marvel",
-  3268: "HBO",
-  7429: "HBO",
-  41077: "A24",
-  20580: "Amazon MGM",
-  210099: "Amazon MGM",
-  127928: "Searchlight",
-  7637: "Annapurna",
-  10146: "Focus",
-  90733: "NEON",
-  81: "Plan B",
-  2575: "Disney",
-  6194: "Warner Bros",
-  33: "Universal",
-  4: "Paramount",
-  21: "Metro-Goldwyn-Mayer",
-  1632: "Lionsgate",
+  178: 'Netflix',
+  152952: 'Apple TV+',
+  192828: 'Apple TV+',
+  420: 'Marvel',
+  3268: 'HBO',
+  7429: 'HBO',
+  41077: 'A24',
+  20580: 'Amazon MGM',
+  210099: 'Amazon MGM',
+  127928: 'Searchlight',
+  7637: 'Annapurna',
+  10146: 'Focus',
+  90733: 'NEON',
+  81: 'Plan B',
+  2575: 'Disney',
+  6194: 'Warner Bros',
+  33: 'Universal',
+  4: 'Paramount',
+  21: 'Metro-Goldwyn-Mayer',
+  1632: 'Lionsgate',
 };
 
 interface CompanyRef {
@@ -106,7 +106,7 @@ export class ScoringEngine {
    * Always non-negative; returns 0 for any row with `tmdb_status !== 'found'`.
    */
   public score(m: MovieRow, hasPrestige: boolean): number {
-    if (m.tmdb_status !== "found") return 0;
+    if (m.tmdb_status !== 'found') return 0;
     const R = m.vote_average ?? 0;
     const v = m.vote_count ?? 0;
     const bayesian = (v / (v + this.M)) * R + (this.M / (v + this.M)) * this.C;
@@ -142,16 +142,16 @@ export class ScoringEngine {
    * {@link score}.
    */
   public tier(m: MovieRow, hasPrestige: boolean): Tier {
-    if (m.tmdb_status !== "found") return "?";
+    if (m.tmdb_status !== 'found') return '?';
     const weighted = this.weightedRating(m.vote_average, m.vote_count);
     const v = m.vote_count ?? 0;
     const t = m.talent_score ?? 0;
     const b = m.budget ?? 0;
-    if (hasPrestige) return "A";
-    if (b >= 30_000_000) return "A";
-    if (t >= 5.5) return "A";
-    if (weighted !== null && weighted >= 6.5 && v >= 100) return "A";
-    if (v < 5 && t < 1 && b === 0) return "?";
+    if (hasPrestige) return 'A';
+    if (b >= 30_000_000) return 'A';
+    if (t >= 5.5) return 'A';
+    if (weighted !== null && weighted >= 6.5 && v >= 100) return 'A';
+    if (v < 5 && t < 1 && b === 0) return '?';
     if (
       weighted !== null &&
       weighted < 5.0 &&
@@ -159,9 +159,9 @@ export class ScoringEngine {
       t < 2 &&
       b < 5_000_000
     ) {
-      return "C";
+      return 'C';
     }
-    return "B";
+    return 'B';
   }
 
   private weightedRating(R: number | null, v: number | null): number | null {

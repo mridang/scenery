@@ -1,7 +1,7 @@
-import type { PageFetcher } from "./scrapingant";
-import type { ExtractedRelease, FetchResult, Source } from "./types";
+import type { PageFetcher } from './scrapingant';
+import type { ExtractedRelease, FetchResult, Source } from './types';
 
-const BASE_URL = "https://www.ddlvalley.me/category/movies/";
+const BASE_URL = 'https://www.ddlvalley.me/category/movies/';
 
 const POST_RE = /class="post br5 cl"\s+id="post-(\d+)"/g;
 const DL_LINK_RE = /<a\s+href="([^"]+)"[^>]*title="Download\s+([^"]+)"/;
@@ -15,7 +15,7 @@ const PLOT_RE = /<div class="plot">([\s\S]*?)<\/div>/;
 function parseDdlvalleyDate(raw: string | undefined): string | undefined {
   if (raw === undefined) return undefined;
   // Format observed: "Jun 7th, 2026" (no time of day).
-  const cleaned = raw.replace(/(\d+)(st|nd|rd|th)/, "$1").trim();
+  const cleaned = raw.replace(/(\d+)(st|nd|rd|th)/, '$1').trim();
   const d = new Date(cleaned);
   return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
 }
@@ -28,7 +28,7 @@ function parseDdlvalleyDate(raw: string | undefined): string | undefined {
  * @public
  */
 export class DdlvalleySource implements Source {
-  public readonly slug = "ddlvalley";
+  public readonly slug = 'ddlvalley';
   public readonly baseUrl = BASE_URL;
   public readonly fetcherLabel: string;
   private readonly fetcher: PageFetcher;
@@ -80,8 +80,8 @@ export class DdlvalleySource implements Source {
       const plotRaw = chunk.match(PLOT_RE)?.[1];
       const excerpt = plotRaw
         ? plotRaw
-            .replace(/<[^>]+>/g, "")
-            .replace(/\s+/g, " ")
+            .replace(/<[^>]+>/g, '')
+            .replace(/\s+/g, ' ')
             .trim()
         : undefined;
 

@@ -2,9 +2,9 @@ import {
   WorkflowEntrypoint,
   type WorkflowEvent,
   type WorkflowStep,
-} from "cloudflare:workers";
+} from 'cloudflare:workers';
 
-import { listTorrentCandidates, lookupOneTorrent } from "../lib/torrents";
+import { listTorrentCandidates, lookupOneTorrent } from '../lib/torrents';
 
 /**
  * Parameters accepted by {@link TorrentWorkflow}.
@@ -43,9 +43,9 @@ export class TorrentWorkflow extends WorkflowEntrypoint<
     const limit = event.payload.limit ?? 8;
     const force = event.payload.force ?? false;
     const paceSeconds = event.payload.paceSeconds ?? 4;
-    const retry = { retries: { limit: 3, delay: "30 seconds" } } as const;
+    const retry = { retries: { limit: 3, delay: '30 seconds' } } as const;
 
-    const imdbIds = await step.do("list-candidates", async () =>
+    const imdbIds = await step.do('list-candidates', async () =>
       listTorrentCandidates(this.env.DB, limit, force),
     );
 

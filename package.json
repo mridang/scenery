@@ -6,9 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "deploy": "opennextjs-cloudflare build && wrangler deploy",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "npx eslint .",
+    "lint:fix": "npx eslint . --fix",
     "test": "vitest run --config vitest.config.mjs",
-    "test:watch": "vitest --config vitest.config.mjs"
+    "test:watch": "vitest --config vitest.config.mjs",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run --browser chrome"
   },
   "engines": {
     "node": ">=24"
@@ -26,11 +32,14 @@
     "@types/node": "^24.13.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cypress": "^14.5.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
+    "knip": "^5.88.1",
     "prettier": "^3.8.3",
     "tailwindcss": "^4",
     "typescript": "^6.0.3",
+    "vitest": "^4.1.8",
     "wrangler": "^4.86.0"
   }
 }

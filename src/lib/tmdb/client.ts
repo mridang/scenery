@@ -1,10 +1,10 @@
-import { isRetryableStatus, retry } from "../util/retry";
+import { isRetryableStatus, retry } from '../util/retry';
 import type {
   TmdbFindResponse,
   TmdbGenre,
   TmdbMovieResponse,
   TmdbPersonResponse,
-} from "./types";
+} from './types';
 
 /**
  * Options for {@link TmdbClient}.
@@ -43,9 +43,9 @@ export class TmdbClient {
 
   /** @throws When no API key is provided. */
   public constructor(opts: TmdbClientOptions) {
-    if (!opts.apiKey) throw new Error("TmdbClient requires apiKey");
+    if (!opts.apiKey) throw new Error('TmdbClient requires apiKey');
     this.apiKey = opts.apiKey;
-    this.baseUrl = opts.baseUrl ?? "https://api.themoviedb.org/3";
+    this.baseUrl = opts.baseUrl ?? 'https://api.themoviedb.org/3';
     this.timeoutMs = opts.timeoutMs ?? 10_000;
   }
 
@@ -61,7 +61,7 @@ export class TmdbClient {
   public findByImdb(imdbId: string): Promise<TmdbResult<TmdbFindResponse>> {
     return this.callJson<TmdbFindResponse>(
       `${this.baseUrl}/find/${encodeURIComponent(imdbId)}`,
-      { external_source: "imdb_id" },
+      { external_source: 'imdb_id' },
     );
   }
 
@@ -70,7 +70,7 @@ export class TmdbClient {
     tmdbId: number,
   ): Promise<TmdbResult<TmdbMovieResponse>> {
     return this.callJson<TmdbMovieResponse>(`${this.baseUrl}/movie/${tmdbId}`, {
-      append_to_response: "credits",
+      append_to_response: 'credits',
     });
   }
 
@@ -80,7 +80,7 @@ export class TmdbClient {
   ): Promise<TmdbResult<TmdbPersonResponse>> {
     return this.callJson<TmdbPersonResponse>(
       `${this.baseUrl}/person/${personId}`,
-      { append_to_response: "movie_credits" },
+      { append_to_response: 'movie_credits' },
     );
   }
 
@@ -89,7 +89,7 @@ export class TmdbClient {
     query: Record<string, string>,
   ): Promise<TmdbResult<T>> {
     const u = new URL(url);
-    u.searchParams.set("api_key", this.apiKey);
+    u.searchParams.set('api_key', this.apiKey);
     for (const [k, v] of Object.entries(query)) {
       u.searchParams.set(k, v);
     }
@@ -100,7 +100,7 @@ export class TmdbClient {
       const timer = setTimeout(() => controller.abort(), this.timeoutMs);
       try {
         const resp = await globalThis.fetch(u, {
-          headers: { Accept: "application/json" },
+          headers: { Accept: 'application/json' },
           signal: controller.signal,
         });
         const raw = await resp.text();
@@ -145,7 +145,7 @@ export class TmdbClient {
       }
     });
     if (!result.ok) {
-      return { ok: false, error: result.error, raw: "" };
+      return { ok: false, error: result.error, raw: '' };
     }
     return result.value;
   }

@@ -2,10 +2,10 @@ import {
   WorkflowEntrypoint,
   type WorkflowEvent,
   type WorkflowStep,
-} from "cloudflare:workers";
+} from 'cloudflare:workers';
 
-import { ScrapeOrchestrator, ScrapingRepository } from "../lib/scraping";
-import { buildSources } from "../lib/sources";
+import { ScrapeOrchestrator, ScrapingRepository } from '../lib/scraping';
+import { buildSources } from '../lib/sources';
 
 /**
  * Parameters accepted by {@link ScrapeWorkflow}.
@@ -39,7 +39,7 @@ export class ScrapeWorkflow extends WorkflowEntrypoint<
     const slugs = event.payload.sourceSlug
       ? [event.payload.sourceSlug]
       : Object.keys(sources);
-    const retry = { retries: { limit: 3, delay: "30 seconds" } } as const;
+    const retry = { retries: { limit: 3, delay: '30 seconds' } } as const;
 
     const results: Record<string, unknown> = {};
     for (const slug of slugs) {

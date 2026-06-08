@@ -52,12 +52,12 @@ with a 1 TB "plan" view that shows what fits. An RSS feed mirrors every view.
 
 ## Routes
 
-| Route | What |
-| --- | --- |
-| `/` | Catalog, score-ranked. `?lang=`, `?sort=score\|date`, `?view=catalog\|plan` |
-| `/feed.xml` | RSS of the same, honours the same params + `?budgetGb=N` |
-| `/api/health` | JSON status + staleness (200 ok / 503 stale) |
-| `/api/cron` | Manual pipeline trigger (gated by `CRON_SECRET`) |
+| Route         | What                                                                        |
+| ------------- | --------------------------------------------------------------------------- |
+| `/`           | Catalog, score-ranked. `?lang=`, `?sort=score\|date`, `?view=catalog\|plan` |
+| `/feed.xml`   | RSS of the same, honours the same params + `?budgetGb=N`                    |
+| `/api/health` | JSON status + staleness (200 ok / 503 stale)                                |
+| `/api/cron`   | Manual pipeline trigger (gated by `CRON_SECRET`)                            |
 
 ## Local development
 

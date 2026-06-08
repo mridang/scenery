@@ -1,7 +1,7 @@
-import type { CatalogRepository } from "./repository";
-import { ScoringEngine } from "./scoring";
-import type { ScoredMovie, ViewOptions, ViewResult } from "./types";
-import { BUDGET_BYTES } from "./types";
+import type { CatalogRepository } from './repository';
+import { ScoringEngine } from './scoring';
+import type { ScoredMovie, ViewOptions, ViewResult } from './types';
+import { BUDGET_BYTES } from './types';
 
 /**
  * Composes the catalog repository and the scoring engine into the
@@ -33,11 +33,11 @@ export class ViewBuilder {
     });
 
     const sorted =
-      opts.sort === "date"
+      opts.sort === 'date'
         ? scored
         : [...scored].sort((a, b) => b.score - a.score);
 
-    if (opts.view !== "plan") {
+    if (opts.view !== 'plan') {
       return { movies: sorted, C: engine.C, M: engine.M };
     }
 

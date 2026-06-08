@@ -1,37 +1,37 @@
-import type { NextRequest } from "next/server";
-import { getDB, getEnv } from "@/lib/db";
-import { logError, logInfo } from "@/lib/logging";
-import { runSourcePages } from "@/lib/orchestrator";
-import { buildSources } from "@/lib/sources";
-import { enrichMovies } from "@/lib/tmdb";
+import type { NextRequest } from 'next/server';
+import { getDB, getEnv } from '@/lib/db';
+import { logError, logInfo } from '@/lib/logging';
+import { runSourcePages } from '@/lib/orchestrator';
+import { buildSources } from '@/lib/sources';
+import { enrichMovies } from '@/lib/tmdb';
 import {
   ApibayProvider,
   TorrentioProvider,
   runTorrentLookups,
-} from "@/lib/torrents";
-import type { TorrentProvider } from "@/lib/torrents";
+} from '@/lib/torrents';
+import type { TorrentProvider } from '@/lib/torrents';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 const HARDENED_KEYS = new Set([
-  "backfill",
-  "source",
-  "enrichOnly",
-  "skipEnrich",
-  "skipTorrents",
-  "torrentsOnly",
-  "torrentProviders",
-  "viaWorkflow",
+  'backfill',
+  'source',
+  'enrichOnly',
+  'skipEnrich',
+  'skipTorrents',
+  'torrentsOnly',
+  'torrentProviders',
+  'viaWorkflow',
 ]);
 
 function resolveProviders(spec: string): TorrentProvider[] {
   const out: TorrentProvider[] = [];
   for (const name of spec
-    .split(",")
+    .split(',')
     .map((s) => s.trim())
     .filter(Boolean)) {
-    if (name === "torrentio") out.push(new TorrentioProvider());
-    else if (name === "apibay") out.push(new ApibayProvider());
+    if (name === 'torrentio') out.push(new TorrentioProvider());
+    else if (name === 'apibay') out.push(new ApibayProvider());
   }
   return out;
 }
@@ -39,7 +39,7 @@ function resolveProviders(spec: string): TorrentProvider[] {
 function authorized(request: NextRequest, env: CloudflareEnv): boolean {
   const secret = env.CRON_SECRET;
   if (!secret) return true;
-  const header = request.headers.get("authorization");
+  const header = request.headers.get('authorization');
   return header === `Bearer ${secret}`;
 }
 
@@ -47,10 +47,10 @@ async function handle(request: NextRequest) {
   const env = getEnv();
   if (!authorized(request, env)) {
     logError({
-      event: "cron.unauthorized",
+      event: 'cron.unauthorized',
       url: request.nextUrl.pathname + request.nextUrl.search,
     });
-    return new Response("Unauthorized", { status: 401 });
+    return new Response('Unauthorized', { status: 401 });
   }
   // Reject any unknown query params — surfaces typos and stops trivial
   // probing. Anything we genuinely use is in HARDENED_KEYS.
@@ -65,12 +65,12 @@ async function handle(request: NextRequest) {
 
   const db = getDB();
   const url = request.nextUrl;
-  const backfill = Number(url.searchParams.get("backfill") ?? "0");
-  const sourceParam = url.searchParams.get("source");
-  const enrichOnly = url.searchParams.get("enrichOnly") === "1";
-  const skipEnrich = url.searchParams.get("skipEnrich") === "1";
-  const skipTorrents = url.searchParams.get("skipTorrents") === "1";
-  const torrentsOnly = url.searchParams.get("torrentsOnly") === "1";
+  const backfill = Number(url.searchParams.get('backfill') ?? '0');
+  const sourceParam = url.searchParams.get('source');
+  const enrichOnly = url.searchParams.get('enrichOnly') === '1';
+  const skipEnrich = url.searchParams.get('skipEnrich') === '1';
+  const skipTorrents = url.searchParams.get('skipTorrents') === '1';
+  const torrentsOnly = url.searchParams.get('torrentsOnly') === '1';
 
   // ?source=foo runs just that source; otherwise iterate every registered
   // source so a failure on one (e.g. scnsrc CF block) doesn't lose the run.
@@ -82,14 +82,14 @@ async function handle(request: NextRequest) {
   // instance instead of running synchronously. Returns the instance id
   // and status so we can see whether local wrangler actually simulates
   // workflows.
-  const viaWorkflow = url.searchParams.get("viaWorkflow");
+  const viaWorkflow = url.searchParams.get('viaWorkflow');
   if (viaWorkflow) {
     const wf =
-      viaWorkflow === "enrich"
+      viaWorkflow === 'enrich'
         ? env.ENRICH_WORKFLOW
-        : viaWorkflow === "scrape"
+        : viaWorkflow === 'scrape'
           ? env.SCRAPE_WORKFLOW
-          : viaWorkflow === "torrents"
+          : viaWorkflow === 'torrents'
             ? env.TORRENT_WORKFLOW
             : undefined;
     if (!wf) {
@@ -139,7 +139,7 @@ async function handle(request: NextRequest) {
 
   const enrich =
     skipEnrich || torrentsOnly ? null : await enrichMovies(db, env);
-  const providerParam = url.searchParams.get("torrentProviders");
+  const providerParam = url.searchParams.get('torrentProviders');
   const torrents = skipTorrents
     ? null
     : await runTorrentLookups(db, {
@@ -147,7 +147,7 @@ async function handle(request: NextRequest) {
       });
   const finishedAt = new Date().toISOString();
   logInfo({
-    event: "cron.completed",
+    event: 'cron.completed',
     sources: slugs,
     enrichOnly,
     torrentsOnly,
@@ -157,13 +157,13 @@ async function handle(request: NextRequest) {
   // Browser form submits get redirected back so the user sees updated
   // results instead of raw JSON. Programmatic callers (curl, cron,
   // fetch) get JSON as before.
-  const accept = request.headers.get("accept") ?? "";
-  if (accept.includes("text/html")) {
-    const referer = request.headers.get("referer");
+  const accept = request.headers.get('accept') ?? '';
+  if (accept.includes('text/html')) {
+    const referer = request.headers.get('referer');
     const back =
       referer && new URL(referer).origin === request.nextUrl.origin
         ? referer
-        : "/";
+        : '/';
     return Response.redirect(back, 303);
   }
 

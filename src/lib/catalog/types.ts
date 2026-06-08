@@ -71,7 +71,7 @@ export interface LastUpdate {
 }
 
 /** Tier badge a movie is assigned. @public */
-export type Tier = "A" | "B" | "C" | "?";
+export type Tier = 'A' | 'B' | 'C' | '?';
 
 /**
  * Movie + everything the view layer needs to render it.

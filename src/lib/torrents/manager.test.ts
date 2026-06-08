@@ -1,20 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 
-import { TorrentLookupManager } from "./manager";
-import type { LookupResult, TorrentProvider } from "./types";
+import { TorrentLookupManager } from './manager';
+import type { LookupResult, TorrentProvider } from './types';
 
 function fakeProvider(name: string, result: LookupResult): TorrentProvider {
   return { name, search: () => Promise.resolve(result) };
 }
 
 const SUCCESS: LookupResult = {
-  status: "success",
+  status: 'success',
   torrents: [
     {
-      infoHash: "deadbeef",
-      title: "x",
-      rawTitle: "x",
-      source: "x",
+      infoHash: 'deadbeef',
+      title: 'x',
+      rawTitle: 'x',
+      source: 'x',
       seeders: 1,
       sizeBytes: 1,
       quality: null,
@@ -22,86 +22,86 @@ const SUCCESS: LookupResult = {
       isRemux: false,
     },
   ],
-  rawResponse: "{}",
+  rawResponse: '{}',
 };
 const EMPTY: LookupResult = {
-  status: "empty",
+  status: 'empty',
   torrents: [],
-  rawResponse: "{}",
+  rawResponse: '{}',
 };
 const ERROR: LookupResult = {
-  status: "error",
+  status: 'error',
   torrents: [],
-  rawResponse: "",
-  error: "boom",
+  rawResponse: '',
+  error: 'boom',
 };
 
-describe("TorrentLookupManager", () => {
+describe('TorrentLookupManager', () => {
   it("first provider's success wins", async () => {
     const m = new TorrentLookupManager([
-      fakeProvider("a", SUCCESS),
-      fakeProvider("b", EMPTY),
+      fakeProvider('a', SUCCESS),
+      fakeProvider('b', EMPTY),
     ]);
-    const r = await m.lookup("tt0001");
-    expect(r.provider).toBe("a");
-    expect(r.result.status).toBe("success");
+    const r = await m.lookup('tt0001');
+    expect(r.provider).toBe('a');
+    expect(r.result.status).toBe('success');
   });
 
-  it("falls through to a later provider on empty", async () => {
+  it('falls through to a later provider on empty', async () => {
     const m = new TorrentLookupManager([
-      fakeProvider("a", EMPTY),
-      fakeProvider("b", SUCCESS),
+      fakeProvider('a', EMPTY),
+      fakeProvider('b', SUCCESS),
     ]);
-    const r = await m.lookup("tt0001");
-    expect(r.provider).toBe("b");
-    expect(r.result.status).toBe("success");
+    const r = await m.lookup('tt0001');
+    expect(r.provider).toBe('b');
+    expect(r.result.status).toBe('success');
   });
 
-  it("falls through to a later provider on error", async () => {
+  it('falls through to a later provider on error', async () => {
     const m = new TorrentLookupManager([
-      fakeProvider("a", ERROR),
-      fakeProvider("b", SUCCESS),
+      fakeProvider('a', ERROR),
+      fakeProvider('b', SUCCESS),
     ]);
-    const r = await m.lookup("tt0001");
-    expect(r.provider).toBe("b");
-    expect(r.result.status).toBe("success");
+    const r = await m.lookup('tt0001');
+    expect(r.provider).toBe('b');
+    expect(r.result.status).toBe('success');
   });
 
   it("returns first 'empty' when nobody succeeds but somebody is empty", async () => {
     const m = new TorrentLookupManager([
-      fakeProvider("a", ERROR),
-      fakeProvider("b", EMPTY),
+      fakeProvider('a', ERROR),
+      fakeProvider('b', EMPTY),
     ]);
-    const r = await m.lookup("tt0001");
-    expect(r.provider).toBe("b");
-    expect(r.result.status).toBe("empty");
+    const r = await m.lookup('tt0001');
+    expect(r.provider).toBe('b');
+    expect(r.result.status).toBe('empty');
   });
 
-  it("records every attempt in the attempt log", async () => {
+  it('records every attempt in the attempt log', async () => {
     const m = new TorrentLookupManager([
-      fakeProvider("a", ERROR),
-      fakeProvider("b", EMPTY),
-      fakeProvider("c", SUCCESS),
+      fakeProvider('a', ERROR),
+      fakeProvider('b', EMPTY),
+      fakeProvider('c', SUCCESS),
     ]);
-    const r = await m.lookup("tt0001");
-    expect(r.attempted.map((a) => a.provider)).toEqual(["a", "b", "c"]);
+    const r = await m.lookup('tt0001');
+    expect(r.attempted.map((a) => a.provider)).toEqual(['a', 'b', 'c']);
   });
 
-  it("treats thrown errors as a failure attempt and continues", async () => {
+  it('treats thrown errors as a failure attempt and continues', async () => {
     const provider: TorrentProvider = {
-      name: "bad",
-      search: () => Promise.reject(new Error("network")),
+      name: 'bad',
+      search: () => Promise.reject(new Error('network')),
     };
-    const m = new TorrentLookupManager([provider, fakeProvider("ok", SUCCESS)]);
-    const r = await m.lookup("tt0001");
-    expect(r.provider).toBe("ok");
+    const m = new TorrentLookupManager([provider, fakeProvider('ok', SUCCESS)]);
+    const r = await m.lookup('tt0001');
+    expect(r.provider).toBe('ok');
     expect(r.attempted[0]).toMatchObject({
-      provider: "bad",
-      status: "error",
+      provider: 'bad',
+      status: 'error',
     });
   });
 
-  it("throws on construction when no providers are supplied", () => {
+  it('throws on construction when no providers are supplied', () => {
     expect(() => new TorrentLookupManager([])).toThrow(/at least one/);
   });
 });

@@ -1,7 +1,7 @@
-import { buildEnricher } from "./tmdb/index";
-import type { EnrichSummary } from "./tmdb/types";
+import { buildEnricher } from './tmdb/index';
+import type { EnrichSummary } from './tmdb/types';
 
-export type { EnrichSummary } from "./tmdb/types";
+export type { EnrichSummary } from './tmdb/types';
 
 /**
  * Back-compat helper that constructs a default {@link TmdbEnricher} and

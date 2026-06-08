@@ -1,4 +1,4 @@
-import type { CatalogStats, LangCount, LastUpdate, MovieRow } from "./types";
+import type { CatalogStats, LangCount, LastUpdate, MovieRow } from './types';
 
 /**
  * Read-only access to the catalog tables. Every SQL query the UI
@@ -15,10 +15,10 @@ export class CatalogRepository {
    * (`'all'` skips the filter), capped at 500 rows.
    */
   public async loadMovies(lang: string): Promise<MovieRow[]> {
-    const langClause = lang === "all" ? "" : `WHERE t.original_language = ?`;
-    const stmt = this.db.prepare(MOVIE_QUERY.replace("__LANG__", langClause));
+    const langClause = lang === 'all' ? '' : `WHERE t.original_language = ?`;
+    const stmt = this.db.prepare(MOVIE_QUERY.replace('__LANG__', langClause));
     const res =
-      lang === "all"
+      lang === 'all'
         ? await stmt.all<MovieRow>()
         : await stmt.bind(lang).all<MovieRow>();
     return res.results ?? [];

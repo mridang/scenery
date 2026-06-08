@@ -9,7 +9,7 @@ export interface PageRunResult {
   /** Monotonic attempt counter per (source, page). First attempt = 1. */
   attemptNumber: number;
   /** Overall outcome. */
-  status: "success" | "failed";
+  status: 'success' | 'failed';
   /** Upstream HTTP status code when available. */
   httpStatus?: number;
   /** Human-readable error message on failure. */

@@ -11,7 +11,7 @@ export interface ParsedTorrent {
   readonly isRemux: boolean;
 }
 
-export type LookupStatus = "success" | "empty" | "error";
+export type LookupStatus = 'success' | 'empty' | 'error';
 
 export interface LookupResult {
   readonly status: LookupStatus;

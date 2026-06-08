@@ -1,5 +1,5 @@
-import { CatalogRepository } from "./repository";
-import { ScoringEngine } from "./scoring";
+import { CatalogRepository } from './repository';
+import { ScoringEngine } from './scoring';
 import type {
   CatalogStats,
   LangCount,
@@ -9,15 +9,15 @@ import type {
   Tier,
   ViewOptions,
   ViewResult,
-} from "./types";
-import { BUDGET_BYTES } from "./types";
-import { ViewBuilder } from "./view";
+} from './types';
+import { BUDGET_BYTES } from './types';
+import { ViewBuilder } from './view';
 
-export { CatalogRepository } from "./repository";
-export { ScoringEngine } from "./scoring";
-export type * from "./types";
-export { BUDGET_BYTES } from "./types";
-export { ViewBuilder } from "./view";
+export { CatalogRepository } from './repository';
+export { ScoringEngine } from './scoring';
+export type * from './types';
+export { BUDGET_BYTES } from './types';
+export { ViewBuilder } from './view';
 
 // ----- Back-compat shims for the previous functional API. New callers
 // should construct CatalogRepository / ViewBuilder explicitly. -----

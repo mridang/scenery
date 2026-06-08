@@ -5,7 +5,7 @@ import type {
   TmdbGenre,
   TmdbMovieResponse,
   TmdbPersonResponse,
-} from "./types";
+} from './types';
 
 /**
  * Database access for TMDB enrichment. The enricher orchestrates calls
@@ -181,15 +181,15 @@ export class TmdbRepository {
     const crew = movie.credits?.crew ?? [];
     const cast = (movie.credits?.cast ?? []).slice(0, 5);
     const directorRows: TmdbCrewEntry[] = crew.filter(
-      (c) => c.job === "Director",
+      (c) => c.job === 'Director',
     );
     const directors = directorRows.map((c) => c.name).filter(Boolean);
     const directorIds = directorRows
       .map((c) => c.id)
-      .filter((x): x is number => typeof x === "number");
+      .filter((x): x is number => typeof x === 'number');
     const castIds = cast
       .map((c: TmdbCastEntry) => c.id)
-      .filter((x): x is number => typeof x === "number");
+      .filter((x): x is number => typeof x === 'number');
     const companies = (movie.production_companies ?? [])
       .filter((c) => c.id !== undefined)
       .map((c) => ({ id: c.id, name: c.name }));
@@ -215,7 +215,7 @@ export class TmdbRepository {
         movie.budget ?? null,
         movie.revenue ?? null,
         movie.original_language ?? null,
-        directors.length > 0 ? directors.join(", ") : null,
+        directors.length > 0 ? directors.join(', ') : null,
         cast.length > 0
           ? JSON.stringify(
               cast.map((c: TmdbCastEntry) => ({
@@ -276,12 +276,12 @@ export class TmdbRepository {
         const crew = json.credits?.crew ?? [];
         const cast = (json.credits?.cast ?? []).slice(0, 5);
         const dirIds = crew
-          .filter((c) => c.job === "Director")
+          .filter((c) => c.job === 'Director')
           .map((c) => c.id)
-          .filter((x): x is number => typeof x === "number");
+          .filter((x): x is number => typeof x === 'number');
         const castIds = cast
           .map((c: TmdbCastEntry) => c.id)
-          .filter((x): x is number => typeof x === "number");
+          .filter((x): x is number => typeof x === 'number');
         const companies = (json.production_companies ?? [])
           .filter((c) => c.id !== undefined)
           .map((c) => ({ id: c.id, name: c.name }));

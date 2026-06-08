@@ -2,9 +2,9 @@ import {
   WorkflowEntrypoint,
   type WorkflowEvent,
   type WorkflowStep,
-} from "cloudflare:workers";
+} from 'cloudflare:workers';
 
-import { buildEnricher } from "../lib/tmdb/index";
+import { buildEnricher } from '../lib/tmdb/index';
 
 /**
  * Parameters accepted by {@link EnrichWorkflow}.
@@ -43,20 +43,20 @@ export class EnrichWorkflow extends WorkflowEntrypoint<
     const movieLimit = event.payload.movieLimit ?? 80;
     const peopleLimit = event.payload.peopleLimit ?? 250;
     const enricher = () => buildEnricher(this.env.DB, this.env);
-    const retry = { retries: { limit: 3, delay: "10 seconds" } } as const;
+    const retry = { retries: { limit: 3, delay: '10 seconds' } } as const;
     // Yield to a fresh Worker invocation every PACE items so the shared
     // per-invocation subrequest budget resets and TMDB isn't throttled.
     // Movie steps cost 2 subrequests, people cost 1 — so different paces.
     const MOVIE_PACE = 12;
     const PEOPLE_PACE = 25;
 
-    await step.do("ensure-genres", retry, async () => {
+    await step.do('ensure-genres', retry, async () => {
       await enricher().ensureGenres();
       return { ok: true };
     });
 
     // --- Movies: one step each ---
-    const movieIds = await step.do("list-movies", async () =>
+    const movieIds = await step.do('list-movies', async () =>
       enricher().listPendingMovieIds(movieLimit),
     );
     let found = 0;
@@ -65,30 +65,30 @@ export class EnrichWorkflow extends WorkflowEntrypoint<
     for (let i = 0; i < movieIds.length; i++) {
       const imdbId = movieIds[i]!;
       if (i > 0 && i % MOVIE_PACE === 0) {
-        await step.sleep(`movie-pace-${i}`, "3 seconds");
+        await step.sleep(`movie-pace-${i}`, '3 seconds');
       }
       const verdict = await step.do(`movie:${imdbId}`, retry, async () =>
         enricher().enrichMovie(imdbId),
       );
-      if (verdict === "found") found++;
-      else if (verdict === "not_found") notFound++;
+      if (verdict === 'found') found++;
+      else if (verdict === 'not_found') notFound++;
       else movieErrors++;
     }
 
     // Cheap pass to fill columns derived from cached responses.
-    await step.do("backfill-credits", async () =>
+    await step.do('backfill-credits', async () =>
       enricher().backfillFromRawCredits(),
     );
 
     // --- People: one step each ---
-    const peopleIds = await step.do("list-people", async () =>
+    const peopleIds = await step.do('list-people', async () =>
       enricher().listPendingPeopleIds(peopleLimit),
     );
     let peopleFetched = 0;
     for (let i = 0; i < peopleIds.length; i++) {
       const personId = peopleIds[i]!;
       if (i > 0 && i % PEOPLE_PACE === 0) {
-        await step.sleep(`people-pace-${i}`, "3 seconds");
+        await step.sleep(`people-pace-${i}`, '3 seconds');
       }
       const ok = await step.do(`person:${personId}`, retry, async () =>
         enricher().enrichPerson(personId),
@@ -97,7 +97,7 @@ export class EnrichWorkflow extends WorkflowEntrypoint<
     }
 
     // --- Final scoring (pure DB) ---
-    const talentScored = await step.do("talent-scores", async () =>
+    const talentScored = await step.do('talent-scores', async () =>
       enricher().recomputeTalentScoresPublic(),
     );
 

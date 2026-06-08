@@ -1,6 +1,6 @@
-import type { Source } from "../sources/types";
-import { ScrapingRepository } from "./repository";
-import type { PageRunResult } from "./types";
+import type { Source } from '../sources/types';
+import { ScrapingRepository } from './repository';
+import type { PageRunResult } from './types';
 
 /**
  * Options for {@link ScrapeOrchestrator#run}.
@@ -75,13 +75,13 @@ export class ScrapeOrchestrator {
       return {
         pageNumber,
         attemptNumber,
-        status: "failed",
+        status: 'failed',
         httpStatus: result.httpStatus,
         error: result.error,
       };
     }
 
-    const html = result.html ?? "";
+    const html = result.html ?? '';
     const snapshotId = await this.repo.insertSnapshot({
       sourceId,
       pageNumber,
@@ -113,7 +113,7 @@ export class ScrapeOrchestrator {
     return {
       pageNumber,
       attemptNumber,
-      status: "success",
+      status: 'success',
       httpStatus: result.httpStatus,
       releasesUpserted: releases.length,
       snapshotId,

@@ -1,14 +1,14 @@
-import { DdlvalleySource } from "./ddlvalley";
-import { ScnsrcSource } from "./scnsrc";
-import { ScrapingAntFetcher } from "./scrapingant";
-import type { PageFetcher } from "./scrapingant";
-import type { Source } from "./types";
+import { DdlvalleySource } from './ddlvalley';
+import { ScnsrcSource } from './scnsrc';
+import { ScrapingAntFetcher } from './scrapingant';
+import type { PageFetcher } from './scrapingant';
+import type { Source } from './types';
 
-export type { PageFetcher } from "./scrapingant";
-export { ScrapingAntFetcher } from "./scrapingant";
-export { DdlvalleySource } from "./ddlvalley";
-export { ScnsrcSource } from "./scnsrc";
-export type { ExtractedRelease, FetchResult, Source } from "./types";
+export type { PageFetcher } from './scrapingant';
+export { ScrapingAntFetcher } from './scrapingant';
+export { DdlvalleySource } from './ddlvalley';
+export { ScnsrcSource } from './scnsrc';
+export type { ExtractedRelease, FetchResult, Source } from './types';
 
 /**
  * Build a {@link PageFetcher} from environment variables. Single place

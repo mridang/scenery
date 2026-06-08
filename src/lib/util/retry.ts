@@ -30,14 +30,14 @@ export type RetryResult<T> =
 
 /** Sleep for the given ms, abort-aware. */
 async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  if (signal?.aborted) throw new Error("aborted");
+  if (signal?.aborted) throw new Error('aborted');
   return new Promise((resolve, reject) => {
     const t = setTimeout(resolve, ms);
     signal?.addEventListener(
-      "abort",
+      'abort',
       () => {
         clearTimeout(t);
-        reject(new Error("aborted"));
+        reject(new Error('aborted'));
       },
       { once: true },
     );
@@ -61,7 +61,7 @@ export async function retry<T>(
   const baseDelayMs = opts.baseDelayMs ?? 200;
   const jitterMs = opts.jitterMs ?? 100;
 
-  let lastError = "no attempts run";
+  let lastError = 'no attempts run';
   for (let i = 0; i < attempts; i++) {
     const r = await op();
     if (r.ok) return { ok: true, value: r.value, attempts: i + 1 };

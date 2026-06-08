@@ -18,13 +18,13 @@
  *      fetch handler with our scheduled handler and Workflow classes.
  */
 
-import openNextHandler from "../.open-next/worker.js";
+import openNextHandler from '../.open-next/worker.js';
 
 export {
   EnrichWorkflow,
   ScrapeWorkflow,
   TorrentWorkflow,
-} from "./workflows/index";
+} from './workflows/index';
 
 const handler: ExportedHandler<CloudflareEnv> = {
   /** Forwarded straight to OpenNext's Next.js handler. */
@@ -50,7 +50,7 @@ const handler: ExportedHandler<CloudflareEnv> = {
       try {
         const instance = await workflow.create({ params });
         const payload = {
-          event: "workflow.created",
+          event: 'workflow.created',
           workflow: label,
           instanceId: instance.id,
           ts: new Date().toISOString(),
@@ -61,7 +61,7 @@ const handler: ExportedHandler<CloudflareEnv> = {
         // simulator gaps). Log and move on so one bad fan-out doesn't
         // sink the entire scheduled tick.
         const payload = {
-          event: "workflow.create.failed",
+          event: 'workflow.create.failed',
           workflow: label,
           error: err instanceof Error ? err.message : String(err),
           ts: new Date().toISOString(),
@@ -71,9 +71,9 @@ const handler: ExportedHandler<CloudflareEnv> = {
     };
     ctx.waitUntil(
       Promise.all([
-        safeCreate("scrape", env.SCRAPE_WORKFLOW, { pageNumbers: [1] }),
-        safeCreate("enrich", env.ENRICH_WORKFLOW, { limit: 50 }),
-        safeCreate("torrents", env.TORRENT_WORKFLOW, { limit: 50 }),
+        safeCreate('scrape', env.SCRAPE_WORKFLOW, { pageNumbers: [1] }),
+        safeCreate('enrich', env.ENRICH_WORKFLOW, { limit: 50 }),
+        safeCreate('torrents', env.TORRENT_WORKFLOW, { limit: 50 }),
       ]),
     );
   },

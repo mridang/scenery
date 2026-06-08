@@ -1,21 +1,21 @@
-import { TorrentLookupManager } from "./manager";
-import { ApibayProvider } from "./providers/apibay";
-import { TorrentioProvider } from "./providers/torrentio";
-import { TorrentRepository } from "./repository";
-import type { TorrentRunSummary } from "./repository";
-import type { TorrentProvider } from "./types";
+import { TorrentLookupManager } from './manager';
+import { ApibayProvider } from './providers/apibay';
+import { TorrentioProvider } from './providers/torrentio';
+import { TorrentRepository } from './repository';
+import type { TorrentRunSummary } from './repository';
+import type { TorrentProvider } from './types';
 
-export type { TorrentRunSummary } from "./repository";
+export type { TorrentRunSummary } from './repository';
 export type {
   LookupResult,
   ParsedTorrent,
   ResolvedLookup,
   TorrentProvider,
-} from "./types";
-export { TorrentLookupManager } from "./manager";
-export { TorrentRepository } from "./repository";
-export { ApibayProvider } from "./providers/apibay";
-export { TorrentioProvider } from "./providers/torrentio";
+} from './types';
+export { TorrentLookupManager } from './manager';
+export { TorrentRepository } from './repository';
+export { ApibayProvider } from './providers/apibay';
+export { TorrentioProvider } from './providers/torrentio';
 
 /** Options shared by the torrent entry points. @public */
 export interface TorrentLookupOptions {
@@ -108,8 +108,8 @@ export async function runTorrentLookups(
 
     summary.byProvider[resolved.provider] =
       (summary.byProvider[resolved.provider] ?? 0) + 1;
-    if (resolved.result.status === "success") summary.success++;
-    else if (resolved.result.status === "empty") summary.empty++;
+    if (resolved.result.status === 'success') summary.success++;
+    else if (resolved.result.status === 'empty') summary.empty++;
     else summary.errors++;
   }
 

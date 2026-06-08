@@ -1,4 +1,4 @@
-import type { Workflow } from "cloudflare:workers";
+import type { Workflow } from 'cloudflare:workers';
 
 declare global {
   interface CloudflareEnv {

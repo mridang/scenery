@@ -1,7 +1,7 @@
-import type { PageFetcher } from "./scrapingant";
-import type { ExtractedRelease, FetchResult, Source } from "./types";
+import type { PageFetcher } from './scrapingant';
+import type { ExtractedRelease, FetchResult, Source } from './types';
 
-const BASE_URL = "https://www.scnsrc.me/category/films/hd/";
+const BASE_URL = 'https://www.scnsrc.me/category/films/hd/';
 
 const POST_RE = /class="post"\s+id="post-(\d+)"/g;
 const TITLE_RE =
@@ -16,7 +16,7 @@ const EXCERPT_RE = /<p[^>]*>([\s\S]*?)<\/p>/;
 function parseScnsrcDate(raw: string | undefined): string | undefined {
   if (raw === undefined) return undefined;
   // Format observed: "Jun 5th, 2026, at 5:25 am"
-  const cleaned = raw.replace(/(\d+)(st|nd|rd|th)/, "$1").replace(" at ", " ");
+  const cleaned = raw.replace(/(\d+)(st|nd|rd|th)/, '$1').replace(' at ', ' ');
   const d = new Date(cleaned);
   return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
 }
@@ -29,7 +29,7 @@ function parseScnsrcDate(raw: string | undefined): string | undefined {
  * @public
  */
 export class ScnsrcSource implements Source {
-  public readonly slug = "scnsrc";
+  public readonly slug = 'scnsrc';
   public readonly baseUrl = BASE_URL;
   public readonly fetcherLabel: string;
   private readonly fetcher: PageFetcher;
@@ -81,8 +81,8 @@ export class ScnsrcSource implements Source {
       const excerptRaw = chunk.match(EXCERPT_RE)?.[1];
       const excerpt = excerptRaw
         ? excerptRaw
-            .replace(/<[^>]+>/g, "")
-            .replace(/\s+/g, " ")
+            .replace(/<[^>]+>/g, '')
+            .replace(/\s+/g, ' ')
             .trim()
         : undefined;
 

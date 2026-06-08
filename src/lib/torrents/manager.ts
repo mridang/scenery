@@ -1,4 +1,4 @@
-import type { LookupResult, ResolvedLookup, TorrentProvider } from "./types";
+import type { LookupResult, ResolvedLookup, TorrentProvider } from './types';
 
 // Walks providers in priority order. First success wins. If everyone
 // returns empty, persist that. If everyone errors, propagate the last
@@ -6,7 +6,7 @@ import type { LookupResult, ResolvedLookup, TorrentProvider } from "./types";
 export class TorrentLookupManager {
   constructor(private readonly providers: TorrentProvider[]) {
     if (providers.length === 0) {
-      throw new Error("TorrentLookupManager needs at least one provider");
+      throw new Error('TorrentLookupManager needs at least one provider');
     }
   }
 
@@ -15,7 +15,7 @@ export class TorrentLookupManager {
     // the ResolvedLookup interface, but we build it up here.
     const attempted: {
       provider: string;
-      status: LookupResult["status"];
+      status: LookupResult['status'];
       error?: string;
     }[] = [];
     let lastEmpty: { provider: string; result: LookupResult } | null = null;
@@ -27,9 +27,9 @@ export class TorrentLookupManager {
         result = await provider.search(imdbId);
       } catch (err) {
         result = {
-          status: "error",
+          status: 'error',
           torrents: [],
-          rawResponse: "",
+          rawResponse: '',
           error: err instanceof Error ? err.message : String(err),
         };
       }
@@ -39,13 +39,13 @@ export class TorrentLookupManager {
         error: result.error,
       });
 
-      if (result.status === "success") {
+      if (result.status === 'success') {
         return { provider: provider.name, result, attempted };
       }
-      if (result.status === "empty" && !lastEmpty) {
+      if (result.status === 'empty' && !lastEmpty) {
         lastEmpty = { provider: provider.name, result };
       }
-      if (result.status === "error") {
+      if (result.status === 'error') {
         lastError = { provider: provider.name, result };
       }
     }
@@ -66,12 +66,12 @@ export class TorrentLookupManager {
     }
     // Should be unreachable, but TypeScript wants exhaustiveness.
     return {
-      provider: "none",
+      provider: 'none',
       result: {
-        status: "error",
+        status: 'error',
         torrents: [],
-        rawResponse: "",
-        error: "no provider returned",
+        rawResponse: '',
+        error: 'no provider returned',
       },
       attempted,
     };
