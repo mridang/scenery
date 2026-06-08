@@ -11,6 +11,7 @@ export default [
       'dist/**',
       'node_modules/**',
       'next-env.d.ts',
+      'worker-configuration.d.ts',
       'migrations/**',
       'public/**',
       // src/worker.ts is the wrangler entry. It imports from
