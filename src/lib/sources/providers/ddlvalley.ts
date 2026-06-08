@@ -1,5 +1,5 @@
-import type { PageFetcher } from './scrapingant';
-import type { ExtractedRelease, FetchResult, Source } from './types';
+import type { PageFetcher } from '../scrapingant';
+import type { ExtractedRelease, FetchResult, Source } from '../types';
 
 const BASE_URL = 'https://www.ddlvalley.me/category/movies/';
 
