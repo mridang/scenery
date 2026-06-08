@@ -1,7 +1,12 @@
 import { Fragment } from 'react';
 import Link from 'next/link';
 import { getDB } from '@/lib/util';
-import { BUDGET_BYTES, CatalogService } from '@/lib/catalog';
+import {
+  BUDGET_BYTES,
+  CatalogService,
+  languageLabel,
+  parseViewOptions,
+} from '@/lib/catalog';
 import type { Tier } from '@/lib/catalog';
 
 /**
@@ -11,36 +16,7 @@ import type { Tier } from '@/lib/catalog';
  */
 const STALE_THRESHOLD_MS = 48 * 60 * 60 * 1000;
 
-/** Known {@link ViewOptions['sort']} values, used to validate `?sort=`. */
-const KNOWN_SORTS = new Set(['score', 'date']);
-/** Known {@link ViewOptions['view']} values, used to validate `?view=`. */
-const KNOWN_VIEWS = new Set(['catalog', 'plan']);
-
 export const dynamic = 'force-dynamic';
-
-function genreNames(raw: string | null, lookup: Map<number, string>): string[] {
-  if (!raw) {
-    return [];
-  }
-  try {
-    const ids = JSON.parse(raw) as number[];
-    return ids.map((id) => lookup.get(id) ?? `#${id}`);
-  } catch {
-    return [];
-  }
-}
-
-function castNames(raw: string | null): string[] {
-  if (!raw) {
-    return [];
-  }
-  try {
-    const items = JSON.parse(raw) as { name?: string }[];
-    return items.map((c) => c.name ?? '').filter(Boolean);
-  } catch {
-    return [];
-  }
-}
 
 function formatRuntime(min: number | null): string | null {
   if (!min) {
@@ -97,7 +73,8 @@ const TIER_BADGE: Record<Tier, string> = {
   '?': 'bg-sky-400 text-white',
 };
 
-// Visual class per prestige studio label (logic lives in catalog/scoring.ts).
+// Visual class per prestige studio label (the labels come from
+// catalog/prestige.ts; this maps each to its brand colour).
 const PRESTIGE_CLS: Record<string, string> = {
   Netflix: 'bg-red-600 text-white',
   'Apple TV+': 'bg-black text-white',
@@ -212,56 +189,19 @@ function torrentBadge(
   };
 }
 
-const LANG_NAME: Record<string, string> = {
-  en: 'English',
-  hi: 'Hindi',
-  es: 'Spanish',
-  fr: 'French',
-  de: 'German',
-  ja: 'Japanese',
-  ko: 'Korean',
-  zh: 'Chinese',
-  it: 'Italian',
-  pt: 'Portuguese',
-  ru: 'Russian',
-  ta: 'Tamil',
-  te: 'Telugu',
-  ml: 'Malayalam',
-  th: 'Thai',
-  tr: 'Turkish',
-  pl: 'Polish',
-  sv: 'Swedish',
-  da: 'Danish',
-  nl: 'Dutch',
-  no: 'Norwegian',
-  fi: 'Finnish',
-  ar: 'Arabic',
-  '?': 'Unknown',
-};
-function langLabel(code: string): string {
-  return LANG_NAME[code] ?? code.toUpperCase();
-}
-
 export default async function Home({
   searchParams,
 }: {
   searchParams: Promise<{ lang?: string; sort?: string; view?: string }>;
 }) {
   const sp = await searchParams;
-  const lang = (sp.lang ?? 'en').toLowerCase();
-  const rawSort = (sp.sort ?? 'date').toLowerCase();
-  const rawView = (sp.view ?? 'catalog').toLowerCase();
-  // Reject unknown values so a typo / malicious query lands on the
-  // default view rather than throwing the SQL path off.
-  const sort = KNOWN_SORTS.has(rawSort) ? rawSort : 'date';
-  const view = KNOWN_VIEWS.has(rawView) ? rawView : 'catalog';
+  const { lang, sort, view } = parseViewOptions(sp);
 
   const db = getDB();
   const catalog = CatalogService.fromD1(db);
-  const [stats, viewResult, genres, langs, lastUpdate] = await Promise.all([
+  const [stats, viewResult, langs, lastUpdate] = await Promise.all([
     catalog.stats(),
     catalog.view({ lang, sort, view }),
-    catalog.genres(),
     catalog.languageCounts(),
     catalog.lastUpdate(),
   ]);
@@ -460,193 +400,205 @@ export default async function Home({
         </p>
       ) : (
         <ul className="divide-y">
-          {rows.map(({ row: m, studios, score, tier, cumBytes, fits }, idx) => {
-            const prev = idx > 0 ? rows[idx - 1] : null;
-            const cutoffHere = view === 'plan' && prev && prev.fits && !fits;
-            const names = genreNames(m.tmdb_genre_ids, genres);
-            const cast = castNames(m.top_cast);
-            const runtime = formatRuntime(m.runtime);
-            const poster = m.poster_path
-              ? `https://image.tmdb.org/t/p/w92${m.poster_path}`
-              : null;
-            const title = m.tmdb_title ?? m.latest_release_title ?? m.imdb_id;
-            const fresh = isFresh(m.first_posted_at, nowMs);
-            const budget = fmtMoney(m.budget);
-            const tierClass = TIER_STYLE[tier];
-            const planMode = view === 'plan';
-            const planCumGb = planMode
-              ? (cumBytes / 1_000_000_000).toFixed(1)
-              : null;
-            const planClass =
-              planMode && !fits
-                ? 'border-l-4 border-gray-300 bg-gray-50/60 opacity-60'
-                : '';
-            const freshClass = planMode
-              ? planClass
-              : fresh
-                ? 'border-l-4 border-amber-400 bg-amber-50/60'
-                : tierClass
-                  ? `border-l-4 ${tierClass}`
+          {rows.map(
+            (
+              {
+                row: m,
+                studios,
+                genres: names,
+                cast,
+                score,
+                tier,
+                cumBytes,
+                fits,
+              },
+              idx,
+            ) => {
+              const prev = idx > 0 ? rows[idx - 1] : null;
+              const cutoffHere = view === 'plan' && prev && prev.fits && !fits;
+              const runtime = formatRuntime(m.runtime);
+              const poster = m.poster_path
+                ? `https://image.tmdb.org/t/p/w92${m.poster_path}`
+                : null;
+              const title = m.tmdb_title ?? m.latest_release_title ?? m.imdb_id;
+              const fresh = isFresh(m.first_posted_at, nowMs);
+              const budget = fmtMoney(m.budget);
+              const tierClass = TIER_STYLE[tier];
+              const planMode = view === 'plan';
+              const planCumGb = planMode
+                ? (cumBytes / 1_000_000_000).toFixed(1)
+                : null;
+              const planClass =
+                planMode && !fits
+                  ? 'border-l-4 border-gray-300 bg-gray-50/60 opacity-60'
                   : '';
-            return (
-              <Fragment key={m.imdb_id}>
-                {cutoffHere ? (
-                  <li className="my-2 flex items-center gap-2 border-y border-dashed border-purple-500 bg-purple-50 px-2 py-2 text-xs font-semibold text-purple-700 uppercase">
-                    ── 1 TB cutoff ── everything below won&apos;t fit
-                  </li>
-                ) : null}
-                <li
-                  className={`flex items-start gap-2 px-2 py-3 sm:gap-3 ${freshClass}`}
-                >
-                  {poster ? (
-                    <img
-                      src={poster}
-                      alt=""
-                      className="h-16 w-11 flex-none bg-gray-100 object-cover sm:h-20 sm:w-14"
-                    />
-                  ) : (
-                    <div className="h-20 w-14 flex-none bg-gray-100" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <span
-                        className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${TIER_BADGE[tier]}`}
-                      >
-                        {tier}
-                      </span>
-                      <span className="font-mono text-[11px] text-gray-500">
-                        {score.toFixed(1)}
-                      </span>
-                      {planMode ? (
+              const freshClass = planMode
+                ? planClass
+                : fresh
+                  ? 'border-l-4 border-amber-400 bg-amber-50/60'
+                  : tierClass
+                    ? `border-l-4 ${tierClass}`
+                    : '';
+              return (
+                <Fragment key={m.imdb_id}>
+                  {cutoffHere ? (
+                    <li className="my-2 flex items-center gap-2 border-y border-dashed border-purple-500 bg-purple-50 px-2 py-2 text-xs font-semibold text-purple-700 uppercase">
+                      ── 1 TB cutoff ── everything below won&apos;t fit
+                    </li>
+                  ) : null}
+                  <li
+                    className={`flex items-start gap-2 px-2 py-3 sm:gap-3 ${freshClass}`}
+                  >
+                    {poster ? (
+                      <img
+                        src={poster}
+                        alt=""
+                        className="h-16 w-11 flex-none bg-gray-100 object-cover sm:h-20 sm:w-14"
+                      />
+                    ) : (
+                      <div className="h-20 w-14 flex-none bg-gray-100" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-baseline gap-2">
                         <span
-                          className={`font-mono text-[11px] ${
-                            fits ? 'text-purple-700' : 'text-gray-400'
-                          }`}
+                          className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${TIER_BADGE[tier]}`}
                         >
-                          {planCumGb} GB
+                          {tier}
                         </span>
-                      ) : null}
-                      <Link
-                        href={`https://www.imdb.com/title/${m.imdb_id}/`}
-                        target="_blank"
-                        className="truncate font-semibold hover:underline"
-                      >
-                        {title}
-                      </Link>
-                      {m.tmdb_year ? (
-                        <span className="text-gray-500">({m.tmdb_year})</span>
-                      ) : null}
-                      {studios.map((label) => (
-                        <span
-                          key={label}
-                          className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${prestigeCls(label)}`}
-                        >
-                          {label}
+                        <span className="font-mono text-[11px] text-gray-500">
+                          {score.toFixed(1)}
                         </span>
-                      ))}
-                      {(() => {
-                        const b = torrentBadge(
-                          m.torrent_status,
-                          m.latest_release_at,
-                          nowMs,
-                          m.torrent_count,
-                        );
-                        return (
+                        {planMode ? (
                           <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${b.cls}`}
+                            className={`font-mono text-[11px] ${
+                              fits ? 'text-purple-700' : 'text-gray-400'
+                            }`}
                           >
-                            {b.label}
-                          </span>
-                        );
-                      })()}
-                      {fresh ? (
-                        <span className="rounded bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-white uppercase">
-                          new
-                        </span>
-                      ) : null}
-                      {m.tmdb_status === 'not_found' ? (
-                        <span className="text-xs text-red-500 uppercase">
-                          no tmdb match
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {names.length ? names.join(', ') : '—'}
-                      {runtime ? ` · ${runtime}` : ''}
-                      {m.vote_average != null
-                        ? ` · ★ ${m.vote_average.toFixed(1)}${
-                            m.vote_count != null ? ` (${m.vote_count})` : ''
-                          }`
-                        : ''}
-                      {budget ? ` · ${budget} budget` : ''}
-                      {m.talent_score != null && m.talent_score > 0
-                        ? ` · talent ${m.talent_score.toFixed(1)}`
-                        : ''}
-                      {' · '}
-                      <Link
-                        href={`https://www.imdb.com/title/${m.imdb_id}/`}
-                        target="_blank"
-                        className="hover:underline"
-                      >
-                        {m.imdb_id}
-                      </Link>
-                      {' · '}
-                      {m.release_count} release
-                      {m.release_count === 1 ? '' : 's'}
-                    </div>
-                    {m.director || cast.length ? (
-                      <div className="text-xs text-gray-700">
-                        {m.director ? (
-                          <span>
-                            <span className="text-gray-500">Dir:</span>{' '}
-                            {m.director}
+                            {planCumGb} GB
                           </span>
                         ) : null}
-                        {m.director && cast.length ? (
-                          <span className="text-gray-400"> · </span>
-                        ) : null}
-                        {cast.length ? (
-                          <span>
-                            <span className="text-gray-500">With:</span>{' '}
-                            {cast.join(', ')}
-                          </span>
-                        ) : null}
-                      </div>
-                    ) : null}
-                    {m.best_info_hash ? (
-                      <div className="text-xs text-emerald-700">
-                        <a
-                          href={magnetFor(
-                            m.best_info_hash,
-                            m.best_torrent_title,
-                          )}
-                          className="font-medium hover:underline"
+                        <Link
+                          href={`https://www.imdb.com/title/${m.imdb_id}/`}
+                          target="_blank"
+                          className="truncate font-semibold hover:underline"
                         >
-                          magnet ↗
-                        </a>
-                        {m.best_quality ? ` · ${m.best_quality}` : ''}
-                        {m.best_size_bytes
-                          ? ` · ${fmtSize(m.best_size_bytes)}`
-                          : ''}
-                        {m.best_seeders != null
-                          ? ` · 👤 ${m.best_seeders}`
-                          : ''}
-                        {m.best_source ? ` · ${m.best_source}` : ''}
-                        {(m.torrent_count ?? 0) > 1
-                          ? ` · +${(m.torrent_count ?? 0) - 1} more`
-                          : ''}
+                          {title}
+                        </Link>
+                        {m.tmdb_year ? (
+                          <span className="text-gray-500">({m.tmdb_year})</span>
+                        ) : null}
+                        {studios.map((label) => (
+                          <span
+                            key={label}
+                            className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${prestigeCls(label)}`}
+                          >
+                            {label}
+                          </span>
+                        ))}
+                        {(() => {
+                          const b = torrentBadge(
+                            m.torrent_status,
+                            m.latest_release_at,
+                            nowMs,
+                            m.torrent_count,
+                          );
+                          return (
+                            <span
+                              className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${b.cls}`}
+                            >
+                              {b.label}
+                            </span>
+                          );
+                        })()}
+                        {fresh ? (
+                          <span className="rounded bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-white uppercase">
+                            new
+                          </span>
+                        ) : null}
+                        {m.tmdb_status === 'not_found' ? (
+                          <span className="text-xs text-red-500 uppercase">
+                            no tmdb match
+                          </span>
+                        ) : null}
                       </div>
-                    ) : null}
-                    {m.latest_release_title ? (
-                      <div className="truncate text-xs text-gray-400">
-                        {m.latest_release_title}
+                      <div className="text-xs text-gray-500">
+                        {names.length ? names.join(', ') : '—'}
+                        {runtime ? ` · ${runtime}` : ''}
+                        {m.vote_average != null
+                          ? ` · ★ ${m.vote_average.toFixed(1)}${
+                              m.vote_count != null ? ` (${m.vote_count})` : ''
+                            }`
+                          : ''}
+                        {budget ? ` · ${budget} budget` : ''}
+                        {m.talent_score != null && m.talent_score > 0
+                          ? ` · talent ${m.talent_score.toFixed(1)}`
+                          : ''}
+                        {' · '}
+                        <Link
+                          href={`https://www.imdb.com/title/${m.imdb_id}/`}
+                          target="_blank"
+                          className="hover:underline"
+                        >
+                          {m.imdb_id}
+                        </Link>
+                        {' · '}
+                        {m.release_count} release
+                        {m.release_count === 1 ? '' : 's'}
                       </div>
-                    ) : null}
-                  </div>
-                </li>
-              </Fragment>
-            );
-          })}
+                      {m.director || cast.length ? (
+                        <div className="text-xs text-gray-700">
+                          {m.director ? (
+                            <span>
+                              <span className="text-gray-500">Dir:</span>{' '}
+                              {m.director}
+                            </span>
+                          ) : null}
+                          {m.director && cast.length ? (
+                            <span className="text-gray-400"> · </span>
+                          ) : null}
+                          {cast.length ? (
+                            <span>
+                              <span className="text-gray-500">With:</span>{' '}
+                              {cast.join(', ')}
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {m.best_info_hash ? (
+                        <div className="text-xs text-emerald-700">
+                          <a
+                            href={magnetFor(
+                              m.best_info_hash,
+                              m.best_torrent_title,
+                            )}
+                            className="font-medium hover:underline"
+                          >
+                            magnet ↗
+                          </a>
+                          {m.best_quality ? ` · ${m.best_quality}` : ''}
+                          {m.best_size_bytes
+                            ? ` · ${fmtSize(m.best_size_bytes)}`
+                            : ''}
+                          {m.best_seeders != null
+                            ? ` · 👤 ${m.best_seeders}`
+                            : ''}
+                          {m.best_source ? ` · ${m.best_source}` : ''}
+                          {(m.torrent_count ?? 0) > 1
+                            ? ` · +${(m.torrent_count ?? 0) - 1} more`
+                            : ''}
+                        </div>
+                      ) : null}
+                      {m.latest_release_title ? (
+                        <div className="truncate text-xs text-gray-400">
+                          {m.latest_release_title}
+                        </div>
+                      ) : null}
+                    </div>
+                  </li>
+                </Fragment>
+              );
+            },
+          )}
         </ul>
       )}
 
@@ -706,7 +658,7 @@ function LangChip({
   view?: string;
 }) {
   const isActive = code === active;
-  const label = code === 'all' ? 'All' : langLabel(code);
+  const label = languageLabel(code);
   return (
     <Link
       href={`/${buildQuery({ lang: code, sort, view: view ?? '' })}`}

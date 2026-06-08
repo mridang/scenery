@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { getDB } from '@/lib/util';
-import { CatalogService } from '@/lib/catalog';
-import type { MovieRow, ScoredMovie } from '@/lib/catalog';
+import { CatalogService, parseViewOptions } from '@/lib/catalog';
+import type { ScoredMovie } from '@/lib/catalog';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,33 +28,6 @@ function escapeXml(s: string): string {
     .replace(/'/g, '&apos;');
 }
 
-function genreNames(
-  raw: string | null,
-  lookup: ReadonlyMap<number, string>,
-): string[] {
-  if (!raw) {
-    return [];
-  }
-  try {
-    const ids = JSON.parse(raw) as number[];
-    return ids.map((id) => lookup.get(id) ?? `#${id}`);
-  } catch {
-    return [];
-  }
-}
-
-function castNames(raw: string | null): string[] {
-  if (!raw) {
-    return [];
-  }
-  try {
-    const items = JSON.parse(raw) as { name?: string }[];
-    return items.map((c) => c.name ?? '').filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-
 function fmtSize(bytes: number | null): string {
   if (bytes == null || bytes <= 0) {
     return '';
@@ -73,14 +46,8 @@ function pubDate(at: string | null): string {
   return new Date(t).toUTCString();
 }
 
-function descriptionFor(
-  m: MovieRow,
-  studios: readonly string[],
-  score: number,
-  genres: ReadonlyMap<number, string>,
-): string {
-  const g = genreNames(m.tmdb_genre_ids, genres);
-  const cast = castNames(m.top_cast);
+function descriptionFor(s: ScoredMovie): string {
+  const { row: m, studios, genres: g, cast, score } = s;
   const runtime =
     m.runtime != null && m.runtime
       ? (() => {
@@ -134,18 +101,13 @@ function feedTitle(view: string, lang: string, sort: string): string {
   return `scenery — ${v} (${langPart}, ${sortPart})`;
 }
 
-function renderItem(
-  origin: string,
-  m: MovieRow,
-  studios: readonly string[],
-  score: number,
-  genres: ReadonlyMap<number, string>,
-): string {
+function renderItem(origin: string, s: ScoredMovie): string {
+  const { row: m, score } = s;
   const title = m.tmdb_title ?? m.latest_release_title ?? m.imdb_id;
   const year = m.tmdb_year ? ` (${m.tmdb_year})` : '';
   const fullTitle = `${title}${year} — ${score.toFixed(1)}`;
   const imdbLink = `https://www.imdb.com/title/${m.imdb_id}/`;
-  const description = descriptionFor(m, studios, score, genres);
+  const description = descriptionFor(s);
   const guid = m.best_info_hash
     ? `${m.imdb_id}:${m.best_info_hash}`
     : m.imdb_id;
@@ -170,9 +132,11 @@ function renderItem(
 
 export async function GET(request: NextRequest) {
   const url = request.nextUrl;
-  const lang = (url.searchParams.get('lang') ?? 'en').toLowerCase();
-  const sort = (url.searchParams.get('sort') ?? 'date').toLowerCase();
-  const view = (url.searchParams.get('view') ?? 'catalog').toLowerCase();
+  const { lang, sort, view } = parseViewOptions({
+    lang: url.searchParams.get('lang'),
+    sort: url.searchParams.get('sort'),
+    view: url.searchParams.get('view'),
+  });
   const limit = Math.min(
     Math.max(1, Number(url.searchParams.get('limit') ?? '100')),
     500,
@@ -188,10 +152,7 @@ export async function GET(request: NextRequest) {
 
   const db = getDB();
   const catalog = CatalogService.fromD1(db);
-  const [{ movies }, genres] = await Promise.all([
-    catalog.view({ lang, sort, view }),
-    catalog.genres(),
-  ]);
+  const { movies } = await catalog.view({ lang, sort, view });
 
   // In plan view, only emit movies that actually fit.
   const eligible: readonly ScoredMovie[] =
@@ -224,7 +185,7 @@ export async function GET(request: NextRequest) {
 <language>en-us</language>
 <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
 <atom:link href="${escapeXml(selfHref)}" rel="self" type="application/rss+xml"/>
-${items.map((s) => renderItem(origin, s.row, s.studios, s.score, genres)).join('\n')}
+${items.map((s) => renderItem(origin, s)).join('\n')}
 </channel>
 </rss>
 `;

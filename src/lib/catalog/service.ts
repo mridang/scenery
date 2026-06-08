@@ -11,6 +11,32 @@ import type {
   ViewResult,
 } from './types';
 
+/** Resolve a `tmdb_genre_ids` JSON array to genre display names. */
+function genreNames(raw: string | null, lookup: Map<number, string>): string[] {
+  if (raw === null) {
+    return [];
+  }
+  try {
+    const ids = JSON.parse(raw) as number[];
+    return ids.map((id) => lookup.get(id) ?? `#${id}`);
+  } catch {
+    return [];
+  }
+}
+
+/** Parse a `top_cast` JSON array to the list of billed names. */
+function castNames(raw: string | null): string[] {
+  if (raw === null) {
+    return [];
+  }
+  try {
+    const items = JSON.parse(raw) as { name?: string }[];
+    return items.map((c) => c.name ?? '').filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 /**
  * The single entry point for every catalog read the UI performs. It
  * wraps the data layer ({@link CatalogReader}) so consumers — the home
@@ -62,12 +88,17 @@ export class CatalogService {
    * the rows for rendering.
    */
   public async view(opts: ViewOptions): Promise<ViewResult> {
-    const rows = await this.reader.loadMovies(opts.lang, opts.sort, opts.view);
+    const [rows, genreLookup] = await Promise.all([
+      this.reader.loadMovies(opts.lang, opts.sort, opts.view),
+      this.reader.loadGenres(),
+    ]);
     const isPlan = opts.view === 'plan';
 
     const movies: readonly ScoredMovie[] = rows.map((r) => ({
       row: r,
       studios: labelsForPrestigeIds(r.prestige_ids),
+      genres: genreNames(r.tmdb_genre_ids, genreLookup),
+      cast: castNames(r.top_cast),
       score: r.score,
       tier: r.tier,
       // The SQL running total (in the requested sort order) — used by the

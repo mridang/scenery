@@ -161,6 +161,40 @@ describe('CatalogService.view — prestige labels', () => {
   });
 });
 
+describe('CatalogService.view — genre and cast resolution', () => {
+  it('resolves genre ids to names and parses the cast list', async () => {
+    const reader = new FakeReader([
+      scoredRow({
+        // 28 is in the stub lookup (Action); 99 is unknown → "#99".
+        tmdb_genre_ids: '[28, 99]',
+        top_cast: '[{"name":"Ada"},{"name":"Bo"},{"noname":true}]',
+      }),
+    ]);
+    const svc = new CatalogService(reader);
+    const { movies } = await svc.view({
+      lang: 'all',
+      sort: 'date',
+      view: 'catalog',
+    });
+    expect(movies[0]!.genres).toEqual(['Action', '#99']);
+    expect(movies[0]!.cast).toEqual(['Ada', 'Bo']);
+  });
+
+  it('yields empty arrays for null / malformed JSON', async () => {
+    const reader = new FakeReader([
+      scoredRow({ tmdb_genre_ids: null, top_cast: 'not json' }),
+    ]);
+    const svc = new CatalogService(reader);
+    const { movies } = await svc.view({
+      lang: 'all',
+      sort: 'date',
+      view: 'catalog',
+    });
+    expect(movies[0]!.genres).toEqual([]);
+    expect(movies[0]!.cast).toEqual([]);
+  });
+});
+
 describe('CatalogService.view — catalog view', () => {
   it('carries the SQL running total but always fits with no plan summary', async () => {
     const reader = new FakeReader([

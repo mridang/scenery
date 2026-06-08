@@ -85,7 +85,12 @@ export type Tier = 'A' | 'B' | 'C' | '?';
  */
 export interface ScoredMovie {
   readonly row: MovieRow;
+  /** Prestige-studio display labels (resolved from the matched ids). */
   readonly studios: readonly string[];
+  /** Genre display names (resolved from `tmdb_genre_ids`). */
+  readonly genres: readonly string[];
+  /** Top-billed cast names (parsed from `top_cast`). */
+  readonly cast: readonly string[];
   readonly score: number;
   readonly tier: Tier;
   readonly cumBytes: number;
