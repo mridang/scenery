@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { getDB } from '@/lib/util';
-import { CatalogRepository, ViewBuilder } from '@/lib/catalog';
+import { CatalogService } from '@/lib/catalog';
 import type { MovieRow, ScoredMovie } from '@/lib/catalog';
 
 export const dynamic = 'force-dynamic';
@@ -187,10 +187,10 @@ export async function GET(request: NextRequest) {
       : Math.max(0, Number(budgetGbRaw)) * 1_000_000_000;
 
   const db = getDB();
-  const repo = new CatalogRepository(db);
+  const catalog = CatalogService.fromD1(db);
   const [{ movies }, genres] = await Promise.all([
-    new ViewBuilder(repo).build({ lang, sort, view }),
-    repo.loadGenres(),
+    catalog.view({ lang, sort, view }),
+    catalog.genres(),
   ]);
 
   // In plan view, only emit movies that actually fit.

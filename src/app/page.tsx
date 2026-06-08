@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import Link from 'next/link';
 import { getDB } from '@/lib/util';
-import { BUDGET_BYTES, CatalogRepository, ViewBuilder } from '@/lib/catalog';
+import { BUDGET_BYTES, CatalogService } from '@/lib/catalog';
 import type { Tier } from '@/lib/catalog';
 
 /**
@@ -257,14 +257,13 @@ export default async function Home({
   const view = KNOWN_VIEWS.has(rawView) ? rawView : 'catalog';
 
   const db = getDB();
-  const repo = new CatalogRepository(db);
-  const viewer = new ViewBuilder(repo);
+  const catalog = CatalogService.fromD1(db);
   const [stats, viewResult, genres, langs, lastUpdate] = await Promise.all([
-    repo.loadStats(),
-    viewer.build({ lang, sort, view }),
-    repo.loadGenres(),
-    repo.loadLanguageCounts(),
-    repo.loadLastUpdate(),
+    catalog.stats(),
+    catalog.view({ lang, sort, view }),
+    catalog.genres(),
+    catalog.languageCounts(),
+    catalog.lastUpdate(),
   ]);
   const { movies: rows, plan } = viewResult;
   const planTotalFits = plan?.fits ?? 0;

@@ -1,5 +1,5 @@
 /**
- * Storage budget for {@link ViewBuilder} plan mode, in bytes (1 TB).
+ * Storage budget for {@link CatalogService} plan view, in bytes (1 TB).
  *
  * @public
  */
@@ -78,7 +78,7 @@ export type Tier = 'A' | 'B' | 'C' | '?';
 /**
  * Movie + everything the view layer needs to render it.
  *
- * `cumBytes` and `fits` are populated by {@link ViewBuilder} in plan
+ * `cumBytes` and `fits` are populated by {@link CatalogService} in plan
  * view (zero / `true` otherwise).
  *
  * @public
@@ -99,7 +99,7 @@ export interface PlanSummary {
   readonly bytesFits: number;
 }
 
-/** End-to-end output of {@link ViewBuilder}. @public */
+/** End-to-end output of {@link CatalogService#view}. @public */
 export interface ViewResult {
   readonly movies: readonly ScoredMovie[];
   /** Bayesian centroid used in scoring. */
@@ -110,7 +110,7 @@ export interface ViewResult {
   readonly plan?: PlanSummary;
 }
 
-/** Options accepted by {@link ViewBuilder#build}. @public */
+/** Options accepted by {@link CatalogService#view}. @public */
 export interface ViewOptions {
   /** ISO 639-1 code or 'all'. */
   readonly lang: string;
@@ -118,4 +118,21 @@ export interface ViewOptions {
   readonly sort: string;
   /** 'catalog' (default) or 'plan'. */
   readonly view: string;
+}
+
+/**
+ * The read surface the catalog UI depends on. {@link CatalogRepository}
+ * is the production implementation (backed by D1); unit tests supply a
+ * lightweight stub so {@link CatalogService} can be exercised without a
+ * database. Depending on this interface — rather than the concrete
+ * repository — is what keeps the service loosely coupled and testable.
+ *
+ * @public
+ */
+export interface CatalogReader {
+  loadMovies(lang: string): Promise<MovieRow[]>;
+  loadGenres(): Promise<Map<number, string>>;
+  loadStats(): Promise<CatalogStats>;
+  loadLanguageCounts(): Promise<LangCount[]>;
+  loadLastUpdate(): Promise<LastUpdate>;
 }

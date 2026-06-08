@@ -1,4 +1,4 @@
-import { CatalogRepository } from '@/lib/catalog';
+import { CatalogService } from '@/lib/catalog';
 import { getDB } from '@/lib/util';
 
 export const dynamic = 'force-dynamic';
@@ -12,10 +12,10 @@ const STALE_THRESHOLD_MS = 48 * 60 * 60 * 1000;
  */
 export async function GET() {
   const db = getDB();
-  const repo = new CatalogRepository(db);
+  const catalog = CatalogService.fromD1(db);
   const [stats, last] = await Promise.all([
-    repo.loadStats(),
-    repo.loadLastUpdate(),
+    catalog.stats(),
+    catalog.lastUpdate(),
   ]);
   const nowMs = Date.now();
   const scrapeAgeMs =
