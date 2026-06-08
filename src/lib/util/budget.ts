@@ -35,7 +35,9 @@ export class FetchBudget {
       return false;
     }
     this.remaining -= 1;
-    if (this.remaining === 0) this.exhausted = true;
+    if (this.remaining === 0) {
+      this.exhausted = true;
+    }
     return true;
   }
 

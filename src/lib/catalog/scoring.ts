@@ -71,7 +71,9 @@ export class ScoringEngine {
     const rated = rows.filter(
       (r) => r.vote_average !== null && (r.vote_count ?? 0) >= 5,
     );
-    if (rated.length === 0) return 6.0;
+    if (rated.length === 0) {
+      return 6.0;
+    }
     const total = rated.reduce((s, r) => s + (r.vote_average ?? 0), 0);
     return total / rated.length;
   }
@@ -81,24 +83,21 @@ export class ScoringEngine {
    * production_companies JSON. Empty when none match.
    */
   public prestigeStudios(raw: string | null): string[] {
-    if (raw === null) return [];
-    let arr: CompanyRef[];
-    try {
-      arr = JSON.parse(raw) as CompanyRef[];
-    } catch {
+    if (raw === null) {
       return [];
     }
-    const seen = new Set<string>();
-    const out: string[] = [];
-    for (const c of arr) {
-      if (c.id === undefined) continue;
-      const label = PRESTIGE_LABELS[c.id];
-      if (label && !seen.has(label)) {
-        seen.add(label);
-        out.push(label);
+    const parsed = ((): readonly CompanyRef[] => {
+      try {
+        return JSON.parse(raw) as CompanyRef[];
+      } catch {
+        return [];
       }
-    }
-    return out;
+    })();
+    const labels = parsed.flatMap((c) => {
+      const label = c.id === undefined ? undefined : PRESTIGE_LABELS[c.id];
+      return label === undefined ? [] : [label];
+    });
+    return [...new Set(labels)];
   }
 
   /**
@@ -106,7 +105,9 @@ export class ScoringEngine {
    * Always non-negative; returns 0 for any row with `tmdb_status !== 'found'`.
    */
   public score(m: MovieRow, hasPrestige: boolean): number {
-    if (m.tmdb_status !== 'found') return 0;
+    if (m.tmdb_status !== 'found') {
+      return 0;
+    }
     const R = m.vote_average ?? 0;
     const v = m.vote_count ?? 0;
     const bayesian = (v / (v + this.M)) * R + (this.M / (v + this.M)) * this.C;
@@ -126,11 +127,17 @@ export class ScoringEngine {
    * the maximum. Missing dates contribute zero.
    */
   public recencyBoost(releaseDate: string | null): number {
-    if (releaseDate === null) return 0;
+    if (releaseDate === null) {
+      return 0;
+    }
     const t = Date.parse(releaseDate);
-    if (!Number.isFinite(t)) return 0;
+    if (!Number.isFinite(t)) {
+      return 0;
+    }
     const ageMs = this.nowMs - t;
-    if (ageMs <= 0) return RECENCY_MAX_PTS;
+    if (ageMs <= 0) {
+      return RECENCY_MAX_PTS;
+    }
     const ageDays = ageMs / 86_400_000;
     const decay = Math.exp(-(Math.LN2 * ageDays) / RECENCY_HALF_LIFE_DAYS);
     return RECENCY_MAX_PTS * decay;
@@ -142,16 +149,28 @@ export class ScoringEngine {
    * {@link score}.
    */
   public tier(m: MovieRow, hasPrestige: boolean): Tier {
-    if (m.tmdb_status !== 'found') return '?';
+    if (m.tmdb_status !== 'found') {
+      return '?';
+    }
     const weighted = this.weightedRating(m.vote_average, m.vote_count);
     const v = m.vote_count ?? 0;
     const t = m.talent_score ?? 0;
     const b = m.budget ?? 0;
-    if (hasPrestige) return 'A';
-    if (b >= 30_000_000) return 'A';
-    if (t >= 5.5) return 'A';
-    if (weighted !== null && weighted >= 6.5 && v >= 100) return 'A';
-    if (v < 5 && t < 1 && b === 0) return '?';
+    if (hasPrestige) {
+      return 'A';
+    }
+    if (b >= 30_000_000) {
+      return 'A';
+    }
+    if (t >= 5.5) {
+      return 'A';
+    }
+    if (weighted !== null && weighted >= 6.5 && v >= 100) {
+      return 'A';
+    }
+    if (v < 5 && t < 1 && b === 0) {
+      return '?';
+    }
     if (
       weighted !== null &&
       weighted < 5.0 &&
@@ -165,7 +184,9 @@ export class ScoringEngine {
   }
 
   private weightedRating(R: number | null, v: number | null): number | null {
-    if (R === null || v === null) return null;
+    if (R === null || v === null) {
+      return null;
+    }
     return (v / (v + this.M)) * R + (this.M / (v + this.M)) * this.C;
   }
 }

@@ -41,26 +41,33 @@ export class ScrapeWorkflow extends WorkflowEntrypoint<
       : Object.keys(sources);
     const retry = { retries: { limit: 3, delay: '30 seconds' } } as const;
 
-    const results: Record<string, unknown> = {};
-    for (const slug of slugs) {
-      for (const page of pageNumbers) {
-        results[`${slug}:${page}`] = await step.do(
-          `scrape:${slug}:${page}`,
-          retry,
-          async () => {
-            const orchestrator = new ScrapeOrchestrator(
-              new ScrapingRepository(this.env.DB),
-              sources,
-            );
-            const [result] = await orchestrator.run({
-              sourceSlug: slug,
-              pageNumbers: [page],
-            });
-            return result;
-          },
-        );
-      }
-    }
-    return results;
+    // Every (source, page) is its own checkpointed `step.do`, run
+    // sequentially. Collect the outcomes into entries and fold them into
+    // the result map immutably.
+    const pairs = slugs.flatMap((slug) =>
+      pageNumbers.map((page) => ({ slug, page })),
+    );
+    const entries = await pairs.reduce<
+      Promise<readonly (readonly [string, unknown])[]>
+    >(async (accP, { slug, page }) => {
+      const acc = await accP;
+      const result = await step.do(
+        `scrape:${slug}:${page}`,
+        retry,
+        async () => {
+          const orchestrator = new ScrapeOrchestrator(
+            new ScrapingRepository(this.env.DB),
+            sources,
+          );
+          const [pageResult] = await orchestrator.run({
+            sourceSlug: slug,
+            pageNumbers: [page],
+          });
+          return pageResult;
+        },
+      );
+      return [...acc, [`${slug}:${page}`, result] as const];
+    }, Promise.resolve([]));
+    return Object.fromEntries(entries);
   }
 }

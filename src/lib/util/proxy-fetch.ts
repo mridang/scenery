@@ -15,26 +15,41 @@
 /** Normalised response from {@link proxyFetch}. */
 export interface ProxyFetchResult {
   /** True when the underlying request returned a 2xx status. */
-  ok: boolean;
+  readonly ok: boolean;
   /** HTTP status, or undefined on a transport-level failure. */
-  status?: number;
+  readonly status?: number;
   /** Response body as text (the upstream's body when proxied). */
-  text: string;
+  readonly text: string;
   /** Transport/proxy error message, when {@link ok} is false. */
-  error?: string;
+  readonly error?: string;
 }
 
 /** Options for {@link proxyFetch}. */
 export interface ProxyFetchOptions {
   /** When set, route via ScrapingAnt proxy instead of a direct fetch. */
-  scrapingAntKey?: string;
+  readonly scrapingAntKey?: string;
   /** Request timeout in ms. Defaults to 15 000. */
-  timeoutMs?: number;
+  readonly timeoutMs?: number;
   /** Value for the Accept header. Defaults to application/json. */
-  accept?: string;
+  readonly accept?: string;
 }
 
 const ANT_ENDPOINT = 'https://api.scrapingant.com/v2/general';
+
+/** Build the ScrapingAnt proxy URL + headers for `targetUrl`. */
+function buildAntRequest(
+  targetUrl: string,
+  scrapingAntKey: string,
+  accept: string,
+): { readonly url: URL; readonly headers: Record<string, string> } {
+  const url = new URL(ANT_ENDPOINT);
+  url.searchParams.set('url', targetUrl);
+  url.searchParams.set('browser', 'false'); // proxy-only, cheap
+  return {
+    url,
+    headers: { 'x-api-key': scrapingAntKey, Accept: accept },
+  };
+}
 
 /**
  * Fetch `targetUrl`, optionally through ScrapingAnt's rotating proxy.
@@ -52,21 +67,16 @@ export async function proxyFetch(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    let resp: Response;
-    if (opts.scrapingAntKey) {
-      const ant = new URL(ANT_ENDPOINT);
-      ant.searchParams.set('url', targetUrl);
-      ant.searchParams.set('browser', 'false'); // proxy-only, cheap
-      resp = await fetch(ant, {
-        headers: { 'x-api-key': opts.scrapingAntKey, Accept: accept },
-        signal: controller.signal,
-      });
-    } else {
-      resp = await fetch(targetUrl, {
-        headers: { Accept: accept },
-        signal: controller.signal,
-      });
-    }
+    const request = opts.scrapingAntKey
+      ? buildAntRequest(targetUrl, opts.scrapingAntKey, accept)
+      : ({
+          url: targetUrl,
+          headers: { Accept: accept },
+        } as const);
+    const resp = await fetch(request.url, {
+      headers: request.headers,
+      signal: controller.signal,
+    });
     const text = await resp.text();
     return { ok: resp.ok, status: resp.status, text };
   } catch (err) {

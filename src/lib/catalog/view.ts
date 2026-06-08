@@ -19,7 +19,7 @@ export class ViewBuilder {
     const C = ScoringEngine.computeCentroid(rows);
     const engine = new ScoringEngine(C);
 
-    const scored: ScoredMovie[] = rows.map((row) => {
+    const scored: readonly ScoredMovie[] = rows.map((row) => {
       const studios = engine.prestigeStudios(row.production_companies);
       const hasPrestige = studios.length > 0;
       return {
@@ -35,27 +35,25 @@ export class ViewBuilder {
     const sorted =
       opts.sort === 'date'
         ? scored
-        : [...scored].sort((a, b) => b.score - a.score);
+        : scored.toSorted((a, b) => b.score - a.score);
 
     if (opts.view !== 'plan') {
       return { movies: sorted, C: engine.C, M: engine.M };
     }
 
     const withSize = sorted.filter((r) => (r.row.best_size_bytes ?? 0) > 0);
-    let cum = 0;
-    const plan = { fits: 0, skipped: 0, bytesFits: 0 };
-    for (const r of withSize) {
+    const planned = withSize.reduce<readonly ScoredMovie[]>((acc, r) => {
+      const cum = acc.at(-1)?.cumBytes ?? 0;
       const next = cum + (r.row.best_size_bytes ?? 0);
-      r.cumBytes = next;
-      r.fits = next <= BUDGET_BYTES;
-      if (r.fits) {
-        plan.fits++;
-        plan.bytesFits = next;
-      } else {
-        plan.skipped++;
-      }
-      cum = next;
-    }
-    return { movies: withSize, C: engine.C, M: engine.M, plan };
+      return [...acc, { ...r, cumBytes: next, fits: next <= BUDGET_BYTES }];
+    }, []);
+    const plan = planned.reduce(
+      (p, r) =>
+        r.fits
+          ? { ...p, fits: p.fits + 1, bytesFits: r.cumBytes }
+          : { ...p, skipped: p.skipped + 1 },
+      { fits: 0, skipped: 0, bytesFits: 0 },
+    );
+    return { movies: planned, C: engine.C, M: engine.M, plan };
   }
 }

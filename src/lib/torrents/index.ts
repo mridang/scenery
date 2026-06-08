@@ -1,21 +1,29 @@
 import { TorrentLookupManager } from './manager';
-import { ApibayProvider } from './providers/apibay';
-import { TorrentioProvider } from './providers/torrentio';
+import { defaultProviders } from './providers';
 import { TorrentRepository } from './repository';
 import type { TorrentRunSummary } from './repository';
-import type { TorrentProvider } from './types';
+import type { LookupStatus, ResolvedLookup, TorrentProvider } from './types';
 
+export {
+  ApibayProvider,
+  TorrentioProvider,
+  defaultProviders,
+} from './providers';
+export type {
+  ApibayOptions,
+  ProviderChainOptions,
+  ProviderOptions,
+} from './providers';
+export { TorrentLookupManager } from './manager';
+export { TorrentRepository } from './repository';
 export type { TorrentRunSummary } from './repository';
 export type {
   LookupResult,
+  LookupStatus,
   ParsedTorrent,
   ResolvedLookup,
   TorrentProvider,
 } from './types';
-export { TorrentLookupManager } from './manager';
-export { TorrentRepository } from './repository';
-export { ApibayProvider } from './providers/apibay';
-export { TorrentioProvider } from './providers/torrentio';
 
 /** Options shared by the torrent entry points. @public */
 export interface TorrentLookupOptions {
@@ -24,25 +32,13 @@ export interface TorrentLookupOptions {
    * rotating proxy so the Worker's egress IP can't get banned by a
    * rate-limited upstream (Torrentio).
    */
-  scrapingAntKey?: string;
-}
-
-// Default provider chain — Torrentio first (deepest catalog), then
-// apibay (TPB) as a free fallback with no Cloudflare wall. When a
-// ScrapingAnt key is supplied, both go through its rotating proxy.
-export function defaultProviders(
-  opts: TorrentLookupOptions = {},
-): TorrentProvider[] {
-  return [
-    new TorrentioProvider({ scrapingAntKey: opts.scrapingAntKey }),
-    new ApibayProvider({ scrapingAntKey: opts.scrapingAntKey }),
-  ];
+  readonly scrapingAntKey?: string;
 }
 
 /** {@link TorrentRunSummary} plus whether more candidates remain. @public */
 export type TorrentRunResult = TorrentRunSummary & {
   /** True if the per-run candidate cap was hit — more may remain. */
-  exhausted: boolean;
+  readonly exhausted: boolean;
 };
 
 /**
@@ -71,20 +67,29 @@ export async function lookupOneTorrent(
   imdbId: string,
   opts: TorrentLookupOptions = {},
 ): Promise<{ provider: string; status: string }> {
-  const manager = new TorrentLookupManager(defaultProviders(opts));
+  const manager = new TorrentLookupManager(
+    defaultProviders({ scrapingAntKey: opts.scrapingAntKey }),
+  );
   const repo = new TorrentRepository(db);
   const resolved = await manager.lookup(imdbId);
   await repo.persist(imdbId, resolved);
   return { provider: resolved.provider, status: resolved.result.status };
 }
 
-// Top-level entry point. Walks up to `limit` candidates (each lookup is
-// one or more provider subrequests), runs them through the manager,
-// persists results, summarises. `limit` doubles as the per-invocation
-// subrequest guard: keep it under the platform cap (50 on Free).
+/**
+ * Top-level entry point. Walks up to `limit` candidates (each lookup is
+ * one or more provider subrequests), runs them through the manager,
+ * persists results, summarises. `limit` doubles as the per-invocation
+ * subrequest guard: keep it under the platform cap (50 on Free).
+ *
+ * @public
+ */
 export async function runTorrentLookups(
   db: D1Database,
-  opts: { limit?: number; providers?: TorrentProvider[] } = {},
+  opts: {
+    readonly limit?: number;
+    readonly providers?: readonly TorrentProvider[];
+  } = {},
 ): Promise<TorrentRunResult> {
   const providers = opts.providers ?? defaultProviders();
   const manager = new TorrentLookupManager(providers);
@@ -92,28 +97,36 @@ export async function runTorrentLookups(
   const limit = opts.limit ?? 200;
 
   const candidates = await repo.candidates(limit);
-  const summary: TorrentRunSummary = {
-    scanned: candidates.length,
-    success: 0,
-    empty: 0,
-    errors: 0,
-    totalStored: 0,
-    skippedTooFresh: await repo.tooFreshCount(),
-    byProvider: {},
-  };
+  const skippedTooFresh = await repo.tooFreshCount();
 
-  for (const imdbId of candidates) {
+  // Sequential awaited IO: each lookup + persist runs in order (subrequest
+  // budget), accumulating the resolved outcomes immutably.
+  const resolvedList = await candidates.reduce<
+    Promise<readonly ResolvedLookup[]>
+  >(async (accP, imdbId) => {
+    const acc = await accP;
     const resolved = await manager.lookup(imdbId);
     await repo.persist(imdbId, resolved);
+    return [...acc, resolved];
+  }, Promise.resolve([]));
 
-    summary.byProvider[resolved.provider] =
-      (summary.byProvider[resolved.provider] ?? 0) + 1;
-    if (resolved.result.status === 'success') summary.success++;
-    else if (resolved.result.status === 'empty') summary.empty++;
-    else summary.errors++;
-  }
+  const countOf = (status: LookupStatus): number =>
+    resolvedList.filter((r) => r.result.status === status).length;
+  const byProvider = Object.fromEntries(
+    Object.entries(Object.groupBy(resolvedList, (r) => r.provider)).map(
+      ([provider, group]) => [provider, group?.length ?? 0],
+    ),
+  );
 
-  summary.totalStored = await repo.totalStored();
-  // If we filled the candidate page, assume more remain for the next step.
-  return { ...summary, exhausted: candidates.length >= limit };
+  return {
+    scanned: candidates.length,
+    success: countOf('success'),
+    empty: countOf('empty'),
+    errors: countOf('error'),
+    totalStored: await repo.totalStored(),
+    skippedTooFresh,
+    byProvider,
+    // If we filled the candidate page, assume more remain for the next step.
+    exhausted: candidates.length >= limit,
+  };
 }

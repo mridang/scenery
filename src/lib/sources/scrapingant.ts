@@ -2,7 +2,7 @@ import type { FetchResult } from './types';
 
 /**
  * Minimal HTTP fetcher abstraction. Every source receives an instance via
- * its constructor — Pi this is what makes the orchestrator testable
+ * its constructor — this is what makes the orchestrator testable
  * (swap a real ScrapingAnt for a stub returning a recorded HTML page).
  *
  * @public
@@ -79,10 +79,9 @@ export class ScrapingAntFetcher implements PageFetcher {
         signal: controller.signal,
       });
       const html = await resp.text();
-      const responseHeaders: Record<string, string> = {};
-      resp.headers.forEach((value, key) => {
-        responseHeaders[key] = value;
-      });
+      const responseHeaders: Record<string, string> = Object.fromEntries(
+        resp.headers.entries(),
+      );
       if (!resp.ok) {
         return {
           ok: false,

@@ -14,7 +14,9 @@ const IMG_RE = /<img[^>]+src="([^"]+)"/;
 const EXCERPT_RE = /<p[^>]*>([\s\S]*?)<\/p>/;
 
 function parseScnsrcDate(raw: string | undefined): string | undefined {
-  if (raw === undefined) return undefined;
+  if (raw === undefined) {
+    return undefined;
+  }
   // Format observed: "Jun 5th, 2026, at 5:25 am"
   const cleaned = raw.replace(/(\d+)(st|nd|rd|th)/, '$1').replace(' at ', ' ');
   const d = new Date(cleaned);
@@ -48,15 +50,11 @@ export class ScnsrcSource implements Source {
   }
 
   public extract(html: string): ExtractedRelease[] {
-    const offsets: { id: string; idx: number }[] = [];
-    for (const m of html.matchAll(POST_RE)) {
-      const id = m[1];
-      if (id === undefined) continue;
-      offsets.push({ id, idx: m.index ?? 0 });
-    }
-    const out: ExtractedRelease[] = [];
-    for (let i = 0; i < offsets.length; i++) {
-      const offset = offsets[i]!;
+    const offsets = Array.from(html.matchAll(POST_RE))
+      .map((m) => ({ id: m[1], idx: m.index ?? 0 }))
+      .filter((o): o is { id: string; idx: number } => o.id !== undefined);
+
+    return offsets.flatMap((offset, i) => {
       const start = offset.idx;
       const next = offsets[i + 1];
       const end = next ? next.idx : html.length;
@@ -64,12 +62,14 @@ export class ScnsrcSource implements Source {
 
       const titleMatch = chunk.match(TITLE_RE);
       const imdbMatch = chunk.match(IMDB_RE);
-      if (!titleMatch || !imdbMatch) continue;
+      if (!titleMatch || !imdbMatch) {
+        return [];
+      }
       const url = titleMatch[1];
       const title = titleMatch[3];
       const imdbId = imdbMatch[1];
       if (url === undefined || title === undefined || imdbId === undefined) {
-        continue;
+        return [];
       }
 
       const author = chunk.match(AUTHOR_RE)?.[1]?.trim();
@@ -86,20 +86,21 @@ export class ScnsrcSource implements Source {
             .trim()
         : undefined;
 
-      out.push({
-        externalId: offset.id,
-        imdbId,
-        title: title.trim(),
-        url,
-        postedAtRaw: dateRaw,
-        postedAt: parseScnsrcDate(dateRaw),
-        categories: categories.length > 0 ? categories : undefined,
-        author,
-        imageUrl,
-        excerpt,
-        postHtml: chunk,
-      });
-    }
-    return out;
+      return [
+        {
+          externalId: offset.id,
+          imdbId,
+          title: title.trim(),
+          url,
+          postedAtRaw: dateRaw,
+          postedAt: parseScnsrcDate(dateRaw),
+          categories: categories.length > 0 ? categories : undefined,
+          author,
+          imageUrl,
+          excerpt,
+          postHtml: chunk,
+        },
+      ];
+    });
   }
 }

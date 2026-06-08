@@ -59,21 +59,24 @@ export class EnrichWorkflow extends WorkflowEntrypoint<
     const movieIds = await step.do('list-movies', async () =>
       enricher().listPendingMovieIds(movieLimit),
     );
-    let found = 0;
-    let notFound = 0;
-    let movieErrors = 0;
-    for (let i = 0; i < movieIds.length; i++) {
-      const imdbId = movieIds[i]!;
+    // Keep the per-movie steps sequential (each is a checkpointed
+    // `step.do`), but accumulate verdicts into an immutable array and
+    // derive the counts from it afterwards.
+    const movieVerdicts = await movieIds.reduce<
+      Promise<readonly ('found' | 'not_found' | 'error')[]>
+    >(async (accP, imdbId, i) => {
+      const acc = await accP;
       if (i > 0 && i % MOVIE_PACE === 0) {
         await step.sleep(`movie-pace-${i}`, '3 seconds');
       }
       const verdict = await step.do(`movie:${imdbId}`, retry, async () =>
         enricher().enrichMovie(imdbId),
       );
-      if (verdict === 'found') found++;
-      else if (verdict === 'not_found') notFound++;
-      else movieErrors++;
-    }
+      return [...acc, verdict];
+    }, Promise.resolve([]));
+    const found = movieVerdicts.filter((v) => v === 'found').length;
+    const notFound = movieVerdicts.filter((v) => v === 'not_found').length;
+    const movieErrors = movieVerdicts.length - found - notFound;
 
     // Cheap pass to fill columns derived from cached responses.
     await step.do('backfill-credits', async () =>
@@ -84,17 +87,22 @@ export class EnrichWorkflow extends WorkflowEntrypoint<
     const peopleIds = await step.do('list-people', async () =>
       enricher().listPendingPeopleIds(peopleLimit),
     );
-    let peopleFetched = 0;
-    for (let i = 0; i < peopleIds.length; i++) {
-      const personId = peopleIds[i]!;
-      if (i > 0 && i % PEOPLE_PACE === 0) {
-        await step.sleep(`people-pace-${i}`, '3 seconds');
-      }
-      const ok = await step.do(`person:${personId}`, retry, async () =>
-        enricher().enrichPerson(personId),
-      );
-      if (ok) peopleFetched++;
-    }
+    // Sequential per-person steps; collect the boolean outcomes and count
+    // the successes immutably.
+    const peopleOutcomes = await peopleIds.reduce<Promise<readonly boolean[]>>(
+      async (accP, personId, i) => {
+        const acc = await accP;
+        if (i > 0 && i % PEOPLE_PACE === 0) {
+          await step.sleep(`people-pace-${i}`, '3 seconds');
+        }
+        const ok = await step.do(`person:${personId}`, retry, async () =>
+          enricher().enrichPerson(personId),
+        );
+        return [...acc, ok];
+      },
+      Promise.resolve([]),
+    );
+    const peopleFetched = peopleOutcomes.filter(Boolean).length;
 
     // --- Final scoring (pure DB) ---
     const talentScored = await step.do('talent-scores', async () =>

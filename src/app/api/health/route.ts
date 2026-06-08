@@ -1,5 +1,5 @@
 import { CatalogRepository } from '@/lib/catalog';
-import { getDB } from '@/lib/db';
+import { getDB } from '@/lib/util';
 
 export const dynamic = 'force-dynamic';
 

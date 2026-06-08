@@ -49,23 +49,32 @@ export class TorrentWorkflow extends WorkflowEntrypoint<
       listTorrentCandidates(this.env.DB, limit, force),
     );
 
-    const byProvider: Record<string, number> = {};
-    for (let i = 0; i < imdbIds.length; i++) {
-      const imdbId = imdbIds[i]!;
-      // Sleep BEFORE every lookup. Each sleep checkpoints the workflow
-      // and resumes it in a fresh Worker invocation — so every lookup
-      // runs with a clean per-invocation subrequest budget (can't trip
-      // the cap), and the spacing keeps the upstream from rate-limiting.
-      if (i > 0) {
-        await step.sleep(`pace-${i}`, `${paceSeconds} seconds`);
-      }
-      const r = await step.do(`torrent:${imdbId}`, retry, async () =>
-        lookupOneTorrent(this.env.DB, imdbId, {
-          scrapingAntKey: this.env.SCRAPINGANT_API_KEY,
-        }),
-      );
-      byProvider[r.provider] = (byProvider[r.provider] ?? 0) + 1;
-    }
+    // Sequential per-movie steps (each preceded by a checkpointing sleep
+    // to reset the subrequest budget). Collect the provider used by each
+    // lookup, then tally them immutably into the per-provider counts.
+    const providers = await imdbIds.reduce<Promise<readonly string[]>>(
+      async (accP, imdbId, i) => {
+        const acc = await accP;
+        // Sleep BEFORE every lookup. Each sleep checkpoints the workflow
+        // and resumes it in a fresh Worker invocation — so every lookup
+        // runs with a clean per-invocation subrequest budget (can't trip
+        // the cap), and the spacing keeps the upstream from rate-limiting.
+        if (i > 0) {
+          await step.sleep(`pace-${i}`, `${paceSeconds} seconds`);
+        }
+        const r = await step.do(`torrent:${imdbId}`, retry, async () =>
+          lookupOneTorrent(this.env.DB, imdbId, {
+            scrapingAntKey: this.env.SCRAPINGANT_API_KEY,
+          }),
+        );
+        return [...acc, r.provider];
+      },
+      Promise.resolve([]),
+    );
+    const byProvider = providers.reduce<Record<string, number>>(
+      (acc, provider) => ({ ...acc, [provider]: (acc[provider] ?? 0) + 1 }),
+      {},
+    );
     return { candidates: imdbIds.length, byProvider };
   }
 }

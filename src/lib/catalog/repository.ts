@@ -41,9 +41,7 @@ export class CatalogRepository {
     const res = await this.db
       .prepare(`SELECT id, name FROM tmdb_genres`)
       .all<{ id: number; name: string }>();
-    const map = new Map<number, string>();
-    for (const g of res.results ?? []) map.set(g.id, g.name);
-    return map;
+    return new Map((res.results ?? []).map((g) => [g.id, g.name]));
   }
 
   public async loadStats(): Promise<CatalogStats> {

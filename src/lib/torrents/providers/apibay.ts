@@ -1,6 +1,7 @@
-import { proxyFetch } from '../../util/proxy-fetch';
+import { proxyFetch, safeJsonParse } from '../../util';
 import { detectHdr, detectQuality, detectRemux } from '../parsing';
 import type { LookupResult, ParsedTorrent, TorrentProvider } from '../types';
+import type { ApibayOptions } from './types';
 
 // The Pirate Bay's official JSON API. Lookups by IMDb id are supported
 // natively — q=tt12345678&cat=200.
@@ -8,30 +9,21 @@ import type { LookupResult, ParsedTorrent, TorrentProvider } from '../types';
 // Empty results return a single sentinel row with an all-zero info_hash.
 
 interface ApibayStream {
-  id: string;
-  name: string;
-  info_hash: string;
-  leechers: string;
-  seeders: string;
-  num_files: string;
-  size: string; // bytes, as a string
-  username: string;
-  added: string; // unix epoch as string
-  status: string;
-  category: string;
-  imdb: string;
+  readonly id: string;
+  readonly name: string;
+  readonly info_hash: string;
+  readonly leechers: string;
+  readonly seeders: string;
+  readonly num_files: string;
+  readonly size: string; // bytes, as a string
+  readonly username: string;
+  readonly added: string; // unix epoch as string
+  readonly status: string;
+  readonly category: string;
+  readonly imdb: string;
 }
 
 const EMPTY_HASH = '0000000000000000000000000000000000000000';
-
-/** Options for {@link ApibayProvider}. @public */
-export interface ApibayOptions {
-  baseUrl?: string;
-  category?: string;
-  timeoutMs?: number;
-  /** When set, route via ScrapingAnt's rotating proxy. */
-  scrapingAntKey?: string;
-}
 
 export class ApibayProvider implements TorrentProvider {
   readonly name = 'apibay';
@@ -63,23 +55,22 @@ export class ApibayProvider implements TorrentProvider {
       };
     }
 
-    let parsed: ApibayStream[];
-    try {
-      parsed = JSON.parse(res.text) as ApibayStream[];
-    } catch (err) {
+    const parsed = safeJsonParse<ApibayStream[]>(res.text);
+    if (!parsed.ok) {
       return {
         status: 'error',
         torrents: [],
         rawResponse: res.text.slice(0, 4000),
         httpStatus: res.status,
-        error: err instanceof Error ? err.message : String(err),
+        error: parsed.error,
       };
     }
 
+    const streams = parsed.value;
     if (
-      Array.isArray(parsed) &&
-      parsed.length === 1 &&
-      parsed[0]?.info_hash === EMPTY_HASH
+      Array.isArray(streams) &&
+      streams.length === 1 &&
+      streams[0]?.info_hash === EMPTY_HASH
     ) {
       return {
         status: 'empty',
@@ -89,7 +80,7 @@ export class ApibayProvider implements TorrentProvider {
       };
     }
 
-    const torrents = parsed
+    const torrents = streams
       .map((s) => this.parseStream(s))
       .filter((t): t is ParsedTorrent => t !== null);
     return {
@@ -101,7 +92,9 @@ export class ApibayProvider implements TorrentProvider {
   }
 
   private parseStream(s: ApibayStream): ParsedTorrent | null {
-    if (!s.info_hash || s.info_hash === EMPTY_HASH) return null;
+    if (!s.info_hash || s.info_hash === EMPTY_HASH) {
+      return null;
+    }
     const sizeNum = Number(s.size);
     const seeders = Number(s.seeders);
     return {

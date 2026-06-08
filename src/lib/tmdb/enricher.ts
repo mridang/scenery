@@ -20,6 +20,28 @@ export type EnrichRunResult = EnrichSummary & {
   exhausted: boolean;
 };
 
+/** Partial counts contributed by the new-movie resolution phase. */
+interface ResolveSummary {
+  readonly scanned: number;
+  readonly found: number;
+  readonly notFound: number;
+  readonly errors: number;
+  readonly creditsFetched: number;
+  readonly creditsErrors: number;
+}
+
+/** Partial counts contributed by the missing-credits phase. */
+interface CreditsSummary {
+  readonly creditsFetched: number;
+  readonly creditsErrors: number;
+}
+
+/** Partial counts contributed by the missing-people phase. */
+interface PeopleSummary {
+  readonly peopleFetched: number;
+  readonly peopleErrors: number;
+}
+
 /**
  * Orchestrates one TMDB enrichment pass:
  *   1. ensure genre dictionary is populated,
@@ -57,38 +79,45 @@ export class TmdbEnricher {
     const budget = new FetchBudget(fetchBudget ?? Number.MAX_SAFE_INTEGER);
 
     await this.ensureGenres();
-    const summary: EnrichSummary = {
-      found: 0,
-      notFound: 0,
-      errors: 0,
-      scanned: 0,
-      creditsFetched: 0,
-      creditsErrors: 0,
-      peopleFetched: 0,
-      peopleErrors: 0,
-      talentScored: 0,
-    };
-    await this.resolveNewMovies(limit, summary, budget);
-    await this.fetchMissingCredits(limit, summary, budget);
+    const resolved = await this.resolveNewMovies(limit, budget);
+    const credits = await this.fetchMissingCredits(limit, budget);
     await this.repo.backfillFromRawCredits();
-    await this.fetchMissingPeople(summary, budget);
+    const people = await this.fetchMissingPeople(budget);
     // Talent scoring is pure DB work (no subrequests); always run it so
     // any people fetched this pass are reflected immediately.
-    summary.talentScored = await this.recomputeTalentScores();
-    return { ...summary, exhausted: budget.exhausted };
+    const talentScored = await this.recomputeTalentScores();
+
+    return {
+      scanned: resolved.scanned,
+      found: resolved.found,
+      notFound: resolved.notFound,
+      errors: resolved.errors,
+      creditsFetched: resolved.creditsFetched + credits.creditsFetched,
+      creditsErrors: resolved.creditsErrors + credits.creditsErrors,
+      peopleFetched: people.peopleFetched,
+      peopleErrors: people.peopleErrors,
+      talentScored,
+      exhausted: budget.exhausted,
+    };
   }
 
   /** Public hook so callers can refresh the genre table directly. */
   public async refreshGenres(): Promise<number> {
     const r = await this.client.getMovieGenres();
-    if (!r.ok) throw new Error(`tmdb genres: ${r.error}`);
-    for (const g of r.value) await this.repo.upsertGenre(g);
+    if (!r.ok) {
+      throw new Error(`tmdb genres: ${r.error}`);
+    }
+    for (const g of r.value) {
+      await this.repo.upsertGenre(g);
+    }
     return r.value.length;
   }
 
   /** Populate the genre dictionary if empty. Idempotent. @public */
   public async ensureGenres(): Promise<void> {
-    if ((await this.repo.countGenres()) === 0) await this.refreshGenres();
+    if ((await this.repo.countGenres()) === 0) {
+      await this.refreshGenres();
+    }
   }
 
   // ---------------------------------------------------------------------
@@ -161,7 +190,9 @@ export class TmdbEnricher {
    */
   public async listPendingPeopleIds(limit: number): Promise<number[]> {
     const wanted = await this.repo.collectReferencedPeople();
-    if (wanted.size === 0) return [];
+    if (wanted.size === 0) {
+      return [];
+    }
     const have = await this.repo.knownPeopleIds();
     const stale = await this.repo.stalePeopleIds();
     const todo = new Set<number>([
@@ -180,7 +211,9 @@ export class TmdbEnricher {
    */
   public async enrichPerson(personId: number): Promise<boolean> {
     const r = await this.client.getPersonWithCredits(personId);
-    if (!r.ok) return false;
+    if (!r.ok) {
+      return false;
+    }
     const { prestige, totalCredits } = this.computePrestige(r.value);
     await this.repo.upsertPerson(
       r.value,
@@ -200,33 +233,39 @@ export class TmdbEnricher {
 
   private async resolveNewMovies(
     limit: number,
-    summary: EnrichSummary,
     budget: FetchBudget,
-  ): Promise<void> {
+  ): Promise<ResolveSummary> {
     const pending = await this.repo.pendingMovieIds(limit);
-    summary.scanned = pending.length;
-    for (const imdbId of pending) {
+    const seed: ResolveSummary = {
+      scanned: pending.length,
+      found: 0,
+      notFound: 0,
+      errors: 0,
+      creditsFetched: 0,
+      creditsErrors: 0,
+    };
+
+    return pending.reduce<Promise<ResolveSummary>>(async (accP, imdbId) => {
+      const acc = await accP;
       // /find + /movie credits are two subrequests; need both available.
       if (budget.left < 2) {
         budget.exhausted = true;
-        break;
+        return acc;
       }
       const now = new Date().toISOString();
       budget.take();
       const find = await this.client.findByImdb(imdbId);
       if (!find.ok) {
         await this.repo.recordMovieError(imdbId, find.raw, find.error, now);
-        summary.errors++;
-        continue;
+        return { ...acc, errors: acc.errors + 1 };
       }
       const movie = find.value.movie_results?.[0];
       if (!movie) {
         await this.repo.recordMovieNotFound(imdbId, find.raw, now);
-        summary.notFound++;
-        continue;
+        return { ...acc, notFound: acc.notFound + 1 };
       }
       await this.repo.upsertFoundMovie(imdbId, movie, find.raw, now);
-      summary.found++;
+      const found = { ...acc, found: acc.found + 1 };
 
       try {
         budget.take();
@@ -238,30 +277,33 @@ export class TmdbEnricher {
             credits.raw,
             new Date().toISOString(),
           );
-          summary.creditsFetched++;
-        } else {
-          await this.repo.recordCreditsError(
-            imdbId,
-            credits.raw,
-            credits.error,
-            new Date().toISOString(),
-          );
-          summary.creditsErrors++;
+          return { ...found, creditsFetched: found.creditsFetched + 1 };
         }
+        await this.repo.recordCreditsError(
+          imdbId,
+          credits.raw,
+          credits.error,
+          new Date().toISOString(),
+        );
+        return { ...found, creditsErrors: found.creditsErrors + 1 };
       } catch {
-        summary.creditsErrors++;
+        return { ...found, creditsErrors: found.creditsErrors + 1 };
       }
-    }
+    }, Promise.resolve(seed));
   }
 
   private async fetchMissingCredits(
     limit: number,
-    summary: EnrichSummary,
     budget: FetchBudget,
-  ): Promise<void> {
+  ): Promise<CreditsSummary> {
     const pending = await this.repo.pendingCreditIds(limit);
-    for (const row of pending) {
-      if (!budget.take()) break;
+    const seed: CreditsSummary = { creditsFetched: 0, creditsErrors: 0 };
+
+    return pending.reduce<Promise<CreditsSummary>>(async (accP, row) => {
+      const acc = await accP;
+      if (!budget.take()) {
+        return acc;
+      }
       try {
         const credits = await this.client.getMovieWithCredits(row.tmdb_id);
         if (credits.ok) {
@@ -271,40 +313,43 @@ export class TmdbEnricher {
             credits.raw,
             new Date().toISOString(),
           );
-          summary.creditsFetched++;
-        } else {
-          await this.repo.recordCreditsError(
-            row.imdb_id,
-            credits.raw,
-            credits.error,
-            new Date().toISOString(),
-          );
-          summary.creditsErrors++;
+          return { ...acc, creditsFetched: acc.creditsFetched + 1 };
         }
+        await this.repo.recordCreditsError(
+          row.imdb_id,
+          credits.raw,
+          credits.error,
+          new Date().toISOString(),
+        );
+        return { ...acc, creditsErrors: acc.creditsErrors + 1 };
       } catch {
-        summary.creditsErrors++;
+        return { ...acc, creditsErrors: acc.creditsErrors + 1 };
       }
-    }
+    }, Promise.resolve(seed));
   }
 
   private async fetchMissingPeople(
-    summary: EnrichSummary,
     budget: FetchBudget,
-  ): Promise<void> {
+  ): Promise<PeopleSummary> {
+    const seed: PeopleSummary = { peopleFetched: 0, peopleErrors: 0 };
     const wanted = await this.repo.collectReferencedPeople();
-    if (wanted.size === 0) return;
+    if (wanted.size === 0) {
+      return seed;
+    }
     const have = await this.repo.knownPeopleIds();
     const stale = await this.repo.stalePeopleIds();
     const newIds = [...wanted].filter((id) => !have.has(id));
     const todo = new Set<number>([...newIds, ...stale]);
 
-    for (const personId of todo) {
-      if (!budget.take()) break;
+    return [...todo].reduce<Promise<PeopleSummary>>(async (accP, personId) => {
+      const acc = await accP;
+      if (!budget.take()) {
+        return acc;
+      }
       try {
         const r = await this.client.getPersonWithCredits(personId);
         if (!r.ok) {
-          summary.peopleErrors++;
-          continue;
+          return { ...acc, peopleErrors: acc.peopleErrors + 1 };
         }
         const { prestige, totalCredits } = this.computePrestige(r.value);
         await this.repo.upsertPerson(
@@ -315,11 +360,11 @@ export class TmdbEnricher {
           r.raw,
           new Date().toISOString(),
         );
-        summary.peopleFetched++;
+        return { ...acc, peopleFetched: acc.peopleFetched + 1 };
       } catch {
-        summary.peopleErrors++;
+        return { ...acc, peopleErrors: acc.peopleErrors + 1 };
       }
-    }
+    }, Promise.resolve(seed));
   }
 
   private computePrestige(person: TmdbPersonResponse): {
@@ -330,9 +375,10 @@ export class TmdbEnricher {
     const crew = (person.movie_credits?.crew ?? []).filter(
       (c) => c.job === 'Director',
     );
-    let totalVotes = 0;
-    for (const c of cast) totalVotes += c.vote_count ?? 0;
-    for (const c of crew) totalVotes += c.vote_count ?? 0;
+    const totalVotes = [...cast, ...crew].reduce(
+      (sum, c) => sum + (c.vote_count ?? 0),
+      0,
+    );
     return {
       prestige: Math.log10(totalVotes + 1),
       totalCredits: cast.length + crew.length,
@@ -342,25 +388,23 @@ export class TmdbEnricher {
   private async recomputeTalentScores(): Promise<number> {
     const inputs = await this.repo.movieTalentInputs();
     const prestige = await this.repo.peoplePrestigeMap();
-    let updated = 0;
+
     for (const row of inputs) {
-      const ids: number[] = [];
-      for (const raw of [row.cast_ids, row.director_ids]) {
-        if (raw === null) continue;
-        try {
-          ids.push(...(JSON.parse(raw) as number[]));
-        } catch {
-          /* skip */
-        }
-      }
-      let max = 0;
-      for (const id of ids) {
+      const ids = [row.cast_ids, row.director_ids]
+        .filter((raw): raw is string => raw !== null)
+        .flatMap((raw) => {
+          try {
+            return JSON.parse(raw) as number[];
+          } catch {
+            return [];
+          }
+        });
+      const max = ids.reduce((acc, id) => {
         const p = prestige.get(id);
-        if (p !== undefined && p > max) max = p;
-      }
+        return p !== undefined && p > acc ? p : acc;
+      }, 0);
       await this.repo.updateTalentScore(row.imdb_id, max);
-      updated++;
     }
-    return updated;
+    return inputs.length;
   }
 }

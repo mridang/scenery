@@ -4,8 +4,8 @@
  * @public
  */
 export interface TmdbGenre {
-  id: number;
-  name: string;
+  readonly id: number;
+  readonly name: string;
 }
 
 /**
@@ -14,17 +14,17 @@ export interface TmdbGenre {
  * @public
  */
 export interface TmdbFindMovie {
-  id: number;
-  title?: string;
-  original_title?: string;
-  release_date?: string;
-  overview?: string;
-  poster_path?: string | null;
-  backdrop_path?: string | null;
-  genre_ids?: number[];
-  popularity?: number;
-  vote_average?: number;
-  vote_count?: number;
+  readonly id: number;
+  readonly title?: string;
+  readonly original_title?: string;
+  readonly release_date?: string;
+  readonly overview?: string;
+  readonly poster_path?: string | null;
+  readonly backdrop_path?: string | null;
+  readonly genre_ids?: readonly number[];
+  readonly popularity?: number;
+  readonly vote_average?: number;
+  readonly vote_count?: number;
 }
 
 /**
@@ -33,27 +33,27 @@ export interface TmdbFindMovie {
  * @public
  */
 export interface TmdbFindResponse {
-  movie_results?: TmdbFindMovie[];
+  readonly movie_results?: readonly TmdbFindMovie[];
 }
 
 /** Cast entry from `/movie/{id}?append_to_response=credits`. @public */
 export interface TmdbCastEntry {
-  id?: number;
-  name?: string;
-  character?: string;
+  readonly id?: number;
+  readonly name?: string;
+  readonly character?: string;
 }
 
 /** Crew entry from `/movie/{id}?append_to_response=credits`. @public */
 export interface TmdbCrewEntry {
-  id?: number;
-  job?: string;
-  name?: string;
+  readonly id?: number;
+  readonly job?: string;
+  readonly name?: string;
 }
 
 /** Production company entry on movie responses. @public */
 export interface TmdbCompany {
-  id?: number;
-  name?: string;
+  readonly id?: number;
+  readonly name?: string;
 }
 
 /**
@@ -62,23 +62,33 @@ export interface TmdbCompany {
  * @public
  */
 export interface TmdbMovieResponse {
-  runtime?: number | null;
-  budget?: number | null;
-  revenue?: number | null;
-  original_language?: string | null;
-  production_companies?: TmdbCompany[];
-  credits?: { cast?: TmdbCastEntry[]; crew?: TmdbCrewEntry[] };
+  readonly runtime?: number | null;
+  readonly budget?: number | null;
+  readonly revenue?: number | null;
+  readonly original_language?: string | null;
+  readonly production_companies?: readonly TmdbCompany[];
+  readonly credits?: {
+    readonly cast?: readonly TmdbCastEntry[];
+    readonly crew?: readonly TmdbCrewEntry[];
+  };
 }
 
 /** Subset of `/person/{id}?append_to_response=movie_credits`. @public */
 export interface TmdbPersonResponse {
-  id?: number;
-  name?: string;
-  popularity?: number;
-  known_for_department?: string;
-  movie_credits?: {
-    cast?: { id?: number; vote_count?: number }[];
-    crew?: { id?: number; job?: string; vote_count?: number }[];
+  readonly id?: number;
+  readonly name?: string;
+  readonly popularity?: number;
+  readonly known_for_department?: string;
+  readonly movie_credits?: {
+    readonly cast?: readonly {
+      readonly id?: number;
+      readonly vote_count?: number;
+    }[];
+    readonly crew?: readonly {
+      readonly id?: number;
+      readonly job?: string;
+      readonly vote_count?: number;
+    }[];
   };
 }
 
@@ -88,13 +98,13 @@ export interface TmdbPersonResponse {
  * @public
  */
 export interface EnrichSummary {
-  found: number;
-  notFound: number;
-  errors: number;
-  scanned: number;
-  creditsFetched: number;
-  creditsErrors: number;
-  peopleFetched: number;
-  peopleErrors: number;
-  talentScored: number;
+  readonly found: number;
+  readonly notFound: number;
+  readonly errors: number;
+  readonly scanned: number;
+  readonly creditsFetched: number;
+  readonly creditsErrors: number;
+  readonly peopleFetched: number;
+  readonly peopleErrors: number;
+  readonly talentScored: number;
 }

@@ -4,67 +4,57 @@ import type { LookupResult, ResolvedLookup, TorrentProvider } from './types';
 // returns empty, persist that. If everyone errors, propagate the last
 // error along with the full attempt log so we can debug.
 export class TorrentLookupManager {
-  constructor(private readonly providers: TorrentProvider[]) {
+  constructor(private readonly providers: readonly TorrentProvider[]) {
     if (providers.length === 0) {
       throw new Error('TorrentLookupManager needs at least one provider');
     }
   }
 
   async lookup(imdbId: string): Promise<ResolvedLookup> {
-    // Local mutable buffer; the returned attempted array is readonly via
-    // the ResolvedLookup interface, but we build it up here.
-    const attempted: {
-      provider: string;
-      status: LookupResult['status'];
-      error?: string;
-    }[] = [];
-    let lastEmpty: { provider: string; result: LookupResult } | null = null;
-    let lastError: { provider: string; result: LookupResult } | null = null;
-
-    for (const provider of this.providers) {
-      let result: LookupResult;
-      try {
-        result = await provider.search(imdbId);
-      } catch (err) {
-        result = {
+    // Run every provider in priority order, recording each outcome so the
+    // attempt log preserves attempt order. Resolution is then derived from
+    // the collected outcomes rather than mutated mid-loop.
+    const outcomes = await this.providers.reduce<
+      Promise<
+        readonly { readonly provider: string; readonly result: LookupResult }[]
+      >
+    >(async (accP, provider) => {
+      const acc = await accP;
+      const result = await provider.search(imdbId).catch(
+        (err: unknown): LookupResult => ({
           status: 'error',
           torrents: [],
           rawResponse: '',
           error: err instanceof Error ? err.message : String(err),
-        };
-      }
-      attempted.push({
-        provider: provider.name,
-        status: result.status,
-        error: result.error,
-      });
+        }),
+      );
+      return [...acc, { provider: provider.name, result }];
+    }, Promise.resolve([]));
 
-      if (result.status === 'success') {
-        return { provider: provider.name, result, attempted };
-      }
-      if (result.status === 'empty' && !lastEmpty) {
-        lastEmpty = { provider: provider.name, result };
-      }
-      if (result.status === 'error') {
-        lastError = { provider: provider.name, result };
-      }
-    }
+    const attempted = outcomes.map(({ provider, result }) => ({
+      provider,
+      status: result.status,
+      error: result.error,
+    }));
 
-    if (lastEmpty) {
-      return {
-        provider: lastEmpty.provider,
-        result: lastEmpty.result,
-        attempted,
-      };
+    // First success wins; else the first empty; else the last error; else
+    // an unreachable 'none' fallback (TypeScript wants exhaustiveness).
+    const firstSuccess = outcomes.find(
+      ({ result }) => result.status === 'success',
+    );
+    if (firstSuccess) {
+      return { ...firstSuccess, attempted };
     }
+    const firstEmpty = outcomes.find(({ result }) => result.status === 'empty');
+    if (firstEmpty) {
+      return { ...firstEmpty, attempted };
+    }
+    const lastError = outcomes.findLast(
+      ({ result }) => result.status === 'error',
+    );
     if (lastError) {
-      return {
-        provider: lastError.provider,
-        result: lastError.result,
-        attempted,
-      };
+      return { ...lastError, attempted };
     }
-    // Should be unreachable, but TypeScript wants exhaustiveness.
     return {
       provider: 'none',
       result: {

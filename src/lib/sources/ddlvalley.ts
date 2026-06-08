@@ -13,7 +13,9 @@ const IMG_RE = /<div class="poster[^"]*">\s*<img[^>]+src="([^"]+)"/;
 const PLOT_RE = /<div class="plot">([\s\S]*?)<\/div>/;
 
 function parseDdlvalleyDate(raw: string | undefined): string | undefined {
-  if (raw === undefined) return undefined;
+  if (raw === undefined) {
+    return undefined;
+  }
   // Format observed: "Jun 7th, 2026" (no time of day).
   const cleaned = raw.replace(/(\d+)(st|nd|rd|th)/, '$1').trim();
   const d = new Date(cleaned);
@@ -47,15 +49,11 @@ export class DdlvalleySource implements Source {
   }
 
   public extract(html: string): ExtractedRelease[] {
-    const offsets: { id: string; idx: number }[] = [];
-    for (const m of html.matchAll(POST_RE)) {
-      const id = m[1];
-      if (id === undefined) continue;
-      offsets.push({ id, idx: m.index ?? 0 });
-    }
-    const out: ExtractedRelease[] = [];
-    for (let i = 0; i < offsets.length; i++) {
-      const offset = offsets[i]!;
+    const offsets = Array.from(html.matchAll(POST_RE))
+      .map((m) => ({ id: m[1], idx: m.index ?? 0 }))
+      .filter((o): o is { id: string; idx: number } => o.id !== undefined);
+
+    return offsets.flatMap((offset, i) => {
       const start = offset.idx;
       const next = offsets[i + 1];
       const end = next ? next.idx : html.length;
@@ -63,12 +61,14 @@ export class DdlvalleySource implements Source {
 
       const dl = chunk.match(DL_LINK_RE);
       const imdb = chunk.match(IMDB_RE);
-      if (!dl || !imdb) continue;
+      if (!dl || !imdb) {
+        return [];
+      }
       const url = dl[1];
       const title = dl[2];
       const imdbId = imdb[1];
       if (url === undefined || title === undefined || imdbId === undefined) {
-        continue;
+        return [];
       }
 
       const dateRaw = chunk.match(DATE_RE)?.[1]?.trim();
@@ -85,20 +85,21 @@ export class DdlvalleySource implements Source {
             .trim()
         : undefined;
 
-      out.push({
-        externalId: offset.id,
-        imdbId,
-        title: title.trim(),
-        url,
-        postedAtRaw: dateRaw,
-        postedAt: parseDdlvalleyDate(dateRaw),
-        categories: categories.length > 0 ? categories : undefined,
-        author,
-        imageUrl,
-        excerpt,
-        postHtml: chunk,
-      });
-    }
-    return out;
+      return [
+        {
+          externalId: offset.id,
+          imdbId,
+          title: title.trim(),
+          url,
+          postedAtRaw: dateRaw,
+          postedAt: parseDdlvalleyDate(dateRaw),
+          categories: categories.length > 0 ? categories : undefined,
+          author,
+          imageUrl,
+          excerpt,
+          postHtml: chunk,
+        },
+      ];
+    });
   }
 }

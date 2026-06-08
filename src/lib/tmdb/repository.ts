@@ -180,7 +180,7 @@ export class TmdbRepository {
   ): Promise<void> {
     const crew = movie.credits?.crew ?? [];
     const cast = (movie.credits?.cast ?? []).slice(0, 5);
-    const directorRows: TmdbCrewEntry[] = crew.filter(
+    const directorRows: readonly TmdbCrewEntry[] = crew.filter(
       (c) => c.job === 'Director',
     );
     const directors = directorRows.map((c) => c.name).filter(Boolean);
@@ -269,8 +269,8 @@ export class TmdbRepository {
       )
       .all<{ imdb_id: string; raw_credits: string }>();
 
-    let updated = 0;
-    for (const row of rows.results ?? []) {
+    return (rows.results ?? []).reduce<Promise<number>>(async (accP, row) => {
+      const updated = await accP;
       try {
         const json = JSON.parse(row.raw_credits) as TmdbMovieResponse;
         const crew = json.credits?.crew ?? [];
@@ -306,12 +306,12 @@ export class TmdbRepository {
             row.imdb_id,
           )
           .run();
-        updated++;
+        return updated + 1;
       } catch {
         /* skip malformed rows */
+        return updated;
       }
-    }
-    return updated;
+    }, Promise.resolve(0));
   }
 
   /** Collect cast+director ids referenced by any successful movie. */
@@ -323,18 +323,18 @@ export class TmdbRepository {
             AND (cast_ids IS NOT NULL OR director_ids IS NOT NULL)`,
       )
       .all<{ cast_ids: string | null; director_ids: string | null }>();
-    const ids = new Set<number>();
-    for (const row of res.results ?? []) {
-      for (const raw of [row.cast_ids, row.director_ids]) {
-        if (raw === null) continue;
-        try {
-          for (const id of JSON.parse(raw) as number[]) ids.add(id);
-        } catch {
-          /* skip */
-        }
-      }
-    }
-    return ids;
+    const ids = (res.results ?? []).flatMap((row) =>
+      [row.cast_ids, row.director_ids]
+        .filter((raw): raw is string => raw !== null)
+        .flatMap((raw) => {
+          try {
+            return JSON.parse(raw) as number[];
+          } catch {
+            return [];
+          }
+        }),
+    );
+    return new Set<number>(ids);
   }
 
   /** Ids in tmdb_people. */
@@ -416,11 +416,11 @@ export class TmdbRepository {
         `SELECT id, COALESCE(prestige_score, popularity) AS pop FROM tmdb_people`,
       )
       .all<{ id: number; pop: number | null }>();
-    const map = new Map<number, number>();
-    for (const r of res.results ?? []) {
-      if (r.pop !== null) map.set(r.id, r.pop);
-    }
-    return map;
+    return new Map<number, number>(
+      (res.results ?? [])
+        .filter((r): r is { id: number; pop: number } => r.pop !== null)
+        .map((r) => [r.id, r.pop]),
+    );
   }
 
   /** Write a movie's computed talent_score. */

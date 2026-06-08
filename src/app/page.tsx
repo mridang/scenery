@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
 import Link from 'next/link';
-import { getDB } from '@/lib/db';
+import { getDB } from '@/lib/util';
 import { BUDGET_BYTES, CatalogRepository, ViewBuilder } from '@/lib/catalog';
 import type { Tier } from '@/lib/catalog';
 
@@ -19,7 +19,9 @@ const KNOWN_VIEWS = new Set(['catalog', 'plan']);
 export const dynamic = 'force-dynamic';
 
 function genreNames(raw: string | null, lookup: Map<number, string>): string[] {
-  if (!raw) return [];
+  if (!raw) {
+    return [];
+  }
   try {
     const ids = JSON.parse(raw) as number[];
     return ids.map((id) => lookup.get(id) ?? `#${id}`);
@@ -29,7 +31,9 @@ function genreNames(raw: string | null, lookup: Map<number, string>): string[] {
 }
 
 function castNames(raw: string | null): string[] {
-  if (!raw) return [];
+  if (!raw) {
+    return [];
+  }
   try {
     const items = JSON.parse(raw) as { name?: string }[];
     return items.map((c) => c.name ?? '').filter(Boolean);
@@ -39,7 +43,9 @@ function castNames(raw: string | null): string[] {
 }
 
 function formatRuntime(min: number | null): string | null {
-  if (!min) return null;
+  if (!min) {
+    return null;
+  }
   const h = Math.floor(min / 60);
   const m = min % 60;
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
@@ -47,21 +53,33 @@ function formatRuntime(min: number | null): string | null {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 function isFresh(at: string | null, nowMs: number): boolean {
-  if (!at) return false;
+  if (!at) {
+    return false;
+  }
   const t = Date.parse(at);
   return Number.isFinite(t) && nowMs - t < DAY_MS;
 }
 
 function timeAgo(at: string | null, nowMs: number): string {
-  if (!at) return 'never';
+  if (!at) {
+    return 'never';
+  }
   const t = Date.parse(at);
-  if (!Number.isFinite(t)) return 'never';
+  if (!Number.isFinite(t)) {
+    return 'never';
+  }
   const s = Math.max(0, Math.floor((nowMs - t) / 1000));
-  if (s < 60) return `${s}s ago`;
+  if (s < 60) {
+    return `${s}s ago`;
+  }
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
+  if (m < 60) {
+    return `${m}m ago`;
+  }
   const h = Math.floor(m / 60);
-  if (h < 48) return `${h}h ago`;
+  if (h < 48) {
+    return `${h}h ago`;
+  }
   const d = Math.floor(h / 24);
   return `${d}d ago`;
 }
@@ -79,7 +97,7 @@ const TIER_BADGE: Record<Tier, string> = {
   '?': 'bg-sky-400 text-white',
 };
 
-// Visual class per prestige studio label (logic lives in catalog.ts).
+// Visual class per prestige studio label (logic lives in catalog/scoring.ts).
 const PRESTIGE_CLS: Record<string, string> = {
   Netflix: 'bg-red-600 text-white',
   'Apple TV+': 'bg-black text-white',
@@ -104,14 +122,22 @@ function prestigeCls(label: string): string {
 }
 
 function fmtMoney(n: number | null): string | null {
-  if (n == null || n <= 0) return null;
-  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1)}B`;
-  if (n >= 1_000_000) return `$${Math.round(n / 1_000_000)}M`;
+  if (n == null || n <= 0) {
+    return null;
+  }
+  if (n >= 1_000_000_000) {
+    return `$${(n / 1_000_000_000).toFixed(1)}B`;
+  }
+  if (n >= 1_000_000) {
+    return `$${Math.round(n / 1_000_000)}M`;
+  }
   return `$${Math.round(n / 1000)}K`;
 }
 
 function fmtSize(bytes: number | null): string | null {
-  if (bytes == null || bytes <= 0) return null;
+  if (bytes == null || bytes <= 0) {
+    return null;
+  }
   const gb = bytes / 1_000_000_000;
   return gb >= 1
     ? `${gb.toFixed(1)} GB`
@@ -148,7 +174,11 @@ function torrentBadge(
   count: number | null,
 ): TorrentBadge {
   if (status === 'success' && (count ?? 0) > 0) {
-    return { kind: 'ok', cls: 'bg-emerald-600 text-white', label: '✓ torrent' };
+    return {
+      kind: 'ok',
+      cls: 'bg-emerald-600 text-white',
+      label: '✓ torrent',
+    };
   }
   if (status === 'empty') {
     return {
@@ -656,10 +686,9 @@ export default async function Home({
 }
 
 function buildQuery(params: Record<string, string>): string {
-  const usp = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
-    if (v) usp.set(k, v);
-  }
+  const usp = new URLSearchParams(
+    Object.entries(params).filter(([, v]) => Boolean(v)),
+  );
   const s = usp.toString();
   return s ? `?${s}` : '';
 }

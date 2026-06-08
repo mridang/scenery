@@ -1,27 +1,25 @@
-import { proxyFetch } from '../../util/proxy-fetch';
+import { proxyFetch, safeJsonParse } from '../../util';
 import { detectHdr, detectQuality, detectRemux } from '../parsing';
 import type { LookupResult, ParsedTorrent, TorrentProvider } from '../types';
+import type { ProviderOptions } from './types';
 
 interface TorrentioStream {
-  name?: string;
-  title?: string;
-  infoHash?: string;
+  readonly name?: string;
+  readonly title?: string;
+  readonly infoHash?: string;
 }
 
 interface TorrentioResponse {
-  streams?: TorrentioStream[];
+  readonly streams?: readonly TorrentioStream[];
 }
 
-/** Options for {@link TorrentioProvider}. @public */
-export interface TorrentioOptions {
-  baseUrl?: string;
-  timeoutMs?: number;
-  /**
-   * When set, route requests through ScrapingAnt's rotating proxy so a
-   * single Worker IP can't get banned by Torrentio's rate limiter.
-   */
-  scrapingAntKey?: string;
-}
+// Multipliers for the size units Torrentio emits in its 💾 annotation.
+const SIZE_UNIT_BYTES: Record<string, number> = {
+  TB: 1_000_000_000_000,
+  GB: 1_000_000_000,
+  MB: 1_000_000,
+  KB: 1_000,
+};
 
 export class TorrentioProvider implements TorrentProvider {
   readonly name = 'torrentio';
@@ -29,7 +27,7 @@ export class TorrentioProvider implements TorrentProvider {
   private readonly timeoutMs: number;
   private readonly scrapingAntKey?: string;
 
-  constructor(opts: TorrentioOptions = {}) {
+  constructor(opts: ProviderOptions = {}) {
     this.baseUrl = opts.baseUrl ?? 'https://torrentio.strem.fun/stream/movie';
     this.timeoutMs = opts.timeoutMs ?? 15_000;
     this.scrapingAntKey = opts.scrapingAntKey;
@@ -49,19 +47,17 @@ export class TorrentioProvider implements TorrentProvider {
         error: res.error ?? `http ${res.status}`,
       };
     }
-    let parsed: TorrentioResponse;
-    try {
-      parsed = JSON.parse(res.text) as TorrentioResponse;
-    } catch (err) {
+    const parsed = safeJsonParse<TorrentioResponse>(res.text);
+    if (!parsed.ok) {
       return {
         status: 'error',
         torrents: [],
         rawResponse: res.text.slice(0, 4000),
         httpStatus: res.status,
-        error: err instanceof Error ? err.message : String(err),
+        error: parsed.error,
       };
     }
-    const torrents = (parsed.streams ?? [])
+    const torrents = (parsed.value.streams ?? [])
       .map((s) => this.parseStream(s))
       .filter((t): t is ParsedTorrent => t !== null);
     return {
@@ -73,7 +69,9 @@ export class TorrentioProvider implements TorrentProvider {
   }
 
   private parseStream(s: TorrentioStream): ParsedTorrent | null {
-    if (!s.infoHash) return null;
+    if (!s.infoHash) {
+      return null;
+    }
     const raw = s.title ?? '';
     const firstLine = raw.split('\n')[0] ?? '';
 
@@ -84,19 +82,10 @@ export class TorrentioProvider implements TorrentProvider {
         : null;
 
     const sizeMatch = raw.match(/💾\s*([\d.]+)\s*(GB|MB|TB|KB)/i);
-    let sizeBytes: number | null = null;
-    if (sizeMatch?.[1] !== undefined && sizeMatch[2] !== undefined) {
-      const n = Number(sizeMatch[1]);
-      const unit = sizeMatch[2].toUpperCase();
-      sizeBytes =
-        unit === 'TB'
-          ? n * 1_000_000_000_000
-          : unit === 'GB'
-            ? n * 1_000_000_000
-            : unit === 'MB'
-              ? n * 1_000_000
-              : n * 1_000;
-    }
+    const sizeBytes =
+      sizeMatch?.[1] !== undefined && sizeMatch[2] !== undefined
+        ? Number(sizeMatch[1]) * SIZE_UNIT_BYTES[sizeMatch[2].toUpperCase()]!
+        : null;
 
     const sourceMatch = raw.match(/⚙️\s*([^\s\n]+)/);
     const haystack = `${s.name ?? ''} ${firstLine}`;

@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
-import { getDB } from '@/lib/db';
-import { buildView, loadGenres } from '@/lib/catalog';
+import { getDB } from '@/lib/util';
+import { CatalogRepository, ViewBuilder } from '@/lib/catalog';
 import type { MovieRow, ScoredMovie } from '@/lib/catalog';
 
 export const dynamic = 'force-dynamic';
@@ -32,7 +32,9 @@ function genreNames(
   raw: string | null,
   lookup: ReadonlyMap<number, string>,
 ): string[] {
-  if (!raw) return [];
+  if (!raw) {
+    return [];
+  }
   try {
     const ids = JSON.parse(raw) as number[];
     return ids.map((id) => lookup.get(id) ?? `#${id}`);
@@ -42,7 +44,9 @@ function genreNames(
 }
 
 function castNames(raw: string | null): string[] {
-  if (!raw) return [];
+  if (!raw) {
+    return [];
+  }
   try {
     const items = JSON.parse(raw) as { name?: string }[];
     return items.map((c) => c.name ?? '').filter(Boolean);
@@ -52,7 +56,9 @@ function castNames(raw: string | null): string[] {
 }
 
 function fmtSize(bytes: number | null): string {
-  if (bytes == null || bytes <= 0) return '';
+  if (bytes == null || bytes <= 0) {
+    return '';
+  }
   const gb = bytes / 1_000_000_000;
   return gb >= 1
     ? `${gb.toFixed(1)} GB`
@@ -61,7 +67,9 @@ function fmtSize(bytes: number | null): string {
 
 function pubDate(at: string | null): string {
   const t = at ? Date.parse(at) : NaN;
-  if (!Number.isFinite(t)) return new Date(0).toUTCString();
+  if (!Number.isFinite(t)) {
+    return new Date(0).toUTCString();
+  }
   return new Date(t).toUTCString();
 }
 
@@ -71,35 +79,52 @@ function descriptionFor(
   score: number,
   genres: ReadonlyMap<number, string>,
 ): string {
-  const parts: string[] = [];
-  parts.push(`Score: ${score.toFixed(1)}`);
-  if (m.tmdb_year) parts.push(`Year: ${m.tmdb_year}`);
   const g = genreNames(m.tmdb_genre_ids, genres);
-  if (g.length) parts.push(`Genres: ${g.join(', ')}`);
-  if (m.runtime) {
-    const h = Math.floor(m.runtime / 60);
-    const min = m.runtime % 60;
-    parts.push(`Runtime: ${h > 0 ? `${h}h ${min}m` : `${min}m`}`);
-  }
-  if (m.vote_average != null) {
-    parts.push(
-      `Rating: ${m.vote_average.toFixed(1)}${
-        m.vote_count != null ? ` (${m.vote_count} votes)` : ''
-      }`,
-    );
-  }
-  if (studios.length) parts.push(`Studios: ${studios.join(', ')}`);
-  if (m.director) parts.push(`Director: ${m.director}`);
   const cast = castNames(m.top_cast);
-  if (cast.length) parts.push(`Cast: ${cast.join(', ')}`);
-  if (m.best_torrent_title) {
-    const bits = [m.best_quality, fmtSize(m.best_size_bytes), m.best_source]
-      .filter(Boolean)
-      .join(' · ');
-    parts.push(`Torrent: ${m.best_torrent_title} (${bits})`);
-    if (m.best_seeders != null) parts.push(`Seeders: ${m.best_seeders}`);
-  }
-  return parts.join('\n');
+  const runtime =
+    m.runtime != null && m.runtime
+      ? (() => {
+          const h = Math.floor(m.runtime / 60);
+          const min = m.runtime % 60;
+          return h > 0 ? `${h}h ${min}m` : `${min}m`;
+        })()
+      : null;
+  const rating =
+    m.vote_average != null
+      ? `${m.vote_average.toFixed(1)}${
+          m.vote_count != null ? ` (${m.vote_count} votes)` : ''
+        }`
+      : null;
+  const torrent = m.best_torrent_title
+    ? `${m.best_torrent_title} (${[
+        m.best_quality,
+        fmtSize(m.best_size_bytes),
+        m.best_source,
+      ]
+        .filter(Boolean)
+        .join(' · ')})`
+    : null;
+  const seeders =
+    m.best_torrent_title && m.best_seeders != null
+      ? String(m.best_seeders)
+      : null;
+
+  const parts: readonly (readonly [string, string | null])[] = [
+    ['Score', score.toFixed(1)],
+    ['Year', m.tmdb_year ? String(m.tmdb_year) : null],
+    ['Genres', g.length ? g.join(', ') : null],
+    ['Runtime', runtime],
+    ['Rating', rating],
+    ['Studios', studios.length ? studios.join(', ') : null],
+    ['Director', m.director ?? null],
+    ['Cast', cast.length ? cast.join(', ') : null],
+    ['Torrent', torrent],
+    ['Seeders', seeders],
+  ];
+  return parts
+    .filter((p): p is readonly [string, string] => p[1] !== null)
+    .map(([label, value]) => `${label}: ${value}`)
+    .join('\n');
 }
 
 function feedTitle(view: string, lang: string, sort: string): string {
@@ -125,12 +150,11 @@ function renderItem(
     ? `${m.imdb_id}:${m.best_info_hash}`
     : m.imdb_id;
 
-  let enclosure = '';
-  if (m.best_info_hash) {
-    const magnet = magnetFor(m.best_info_hash, m.best_torrent_title);
-    const length = m.best_size_bytes ?? 0;
-    enclosure = `<enclosure url="${escapeXml(magnet)}" length="${length}" type="application/x-bittorrent"/>`;
-  }
+  const enclosure = m.best_info_hash
+    ? `<enclosure url="${escapeXml(
+        magnetFor(m.best_info_hash, m.best_torrent_title),
+      )}" length="${m.best_size_bytes ?? 0}" type="application/x-bittorrent"/>`
+    : '';
 
   const pub = pubDate(m.latest_release_at);
   void origin;
@@ -163,27 +187,40 @@ export async function GET(request: NextRequest) {
       : Math.max(0, Number(budgetGbRaw)) * 1_000_000_000;
 
   const db = getDB();
+  const repo = new CatalogRepository(db);
   const [{ movies }, genres] = await Promise.all([
-    buildView(db, { lang, sort, view }),
-    loadGenres(db),
+    new ViewBuilder(repo).build({ lang, sort, view }),
+    repo.loadGenres(),
   ]);
 
   // In plan view, only emit movies that actually fit.
-  let usable: readonly ScoredMovie[] =
+  const eligible: readonly ScoredMovie[] =
     view === 'plan' ? movies.filter((m) => m.fits) : movies;
 
-  if (budgetBytes !== null) {
-    const sized = usable.filter((m) => (m.row.best_size_bytes ?? 0) > 0);
-    const within: ScoredMovie[] = [];
-    let cum = 0;
-    for (const m of sized) {
-      const next = cum + (m.row.best_size_bytes ?? 0);
-      if (next > budgetBytes) break;
-      within.push(m);
-      cum = next;
-    }
-    usable = within;
-  }
+  // Disk-space gate: walk the sized items in order and keep the prefix
+  // whose cumulative size stays within the budget. `reduce` carries the
+  // running total and the accepted prefix together so we never mutate.
+  const usable: readonly ScoredMovie[] =
+    budgetBytes === null
+      ? eligible
+      : eligible
+          .filter((m) => (m.row.best_size_bytes ?? 0) > 0)
+          .reduce<{
+            cum: number;
+            done: boolean;
+            within: readonly ScoredMovie[];
+          }>(
+            (acc, m) => {
+              if (acc.done) {
+                return acc;
+              }
+              const next = acc.cum + (m.row.best_size_bytes ?? 0);
+              return next > budgetBytes
+                ? { ...acc, done: true }
+                : { cum: next, done: false, within: [...acc.within, m] };
+            },
+            { cum: 0, done: false, within: [] },
+          ).within;
 
   const items = usable.slice(0, limit);
 

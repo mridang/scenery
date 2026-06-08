@@ -14,13 +14,13 @@
  */
 export interface RetryOptions {
   /** Number of attempts including the first. Defaults to 3. */
-  attempts?: number;
+  readonly attempts?: number;
   /** Base delay between attempts in ms. Doubled per attempt. */
-  baseDelayMs?: number;
+  readonly baseDelayMs?: number;
   /** Random jitter window in ms added to each delay. */
-  jitterMs?: number;
+  readonly jitterMs?: number;
   /** Optional caller-supplied AbortSignal — stops retries when fired. */
-  signal?: AbortSignal;
+  readonly signal?: AbortSignal;
 }
 
 /** Result of a retried operation, plus the attempt count used. */
@@ -30,7 +30,9 @@ export type RetryResult<T> =
 
 /** Sleep for the given ms, abort-aware. */
 async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  if (signal?.aborted) throw new Error('aborted');
+  if (signal?.aborted) {
+    throw new Error('aborted');
+  }
   return new Promise((resolve, reject) => {
     const t = setTimeout(resolve, ms);
     signal?.addEventListener(
@@ -61,18 +63,20 @@ export async function retry<T>(
   const baseDelayMs = opts.baseDelayMs ?? 200;
   const jitterMs = opts.jitterMs ?? 100;
 
-  let lastError = 'no attempts run';
-  for (let i = 0; i < attempts; i++) {
+  const attempt = async (i: number): Promise<RetryResult<T>> => {
     const r = await op();
-    if (r.ok) return { ok: true, value: r.value, attempts: i + 1 };
-    lastError = r.error;
+    if (r.ok) {
+      return { ok: true, value: r.value, attempts: i + 1 };
+    }
     if (!r.retry || i === attempts - 1) {
-      return { ok: false, error: lastError, attempts: i + 1 };
+      return { ok: false, error: r.error, attempts: i + 1 };
     }
     const delay = baseDelayMs * 2 ** i + Math.floor(Math.random() * jitterMs);
     await sleep(delay, opts.signal);
-  }
-  return { ok: false, error: lastError, attempts };
+    return attempt(i + 1);
+  };
+
+  return attempt(0);
 }
 
 /** Decide whether an HTTP status code merits a retry. */

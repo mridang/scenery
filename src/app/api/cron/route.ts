@@ -1,9 +1,8 @@
 import type { NextRequest } from 'next/server';
-import { getDB, getEnv } from '@/lib/db';
-import { logError, logInfo } from '@/lib/logging';
-import { runSourcePages } from '@/lib/orchestrator';
+import { getDB, getEnv, logError, logInfo } from '@/lib/util';
+import { ScrapeOrchestrator, ScrapingRepository } from '@/lib/scraping';
 import { buildSources } from '@/lib/sources';
-import { enrichMovies } from '@/lib/tmdb';
+import { buildEnricher } from '@/lib/tmdb';
 import {
   ApibayProvider,
   TorrentioProvider,
@@ -25,20 +24,26 @@ const HARDENED_KEYS = new Set([
 ]);
 
 function resolveProviders(spec: string): TorrentProvider[] {
-  const out: TorrentProvider[] = [];
-  for (const name of spec
+  return spec
     .split(',')
     .map((s) => s.trim())
-    .filter(Boolean)) {
-    if (name === 'torrentio') out.push(new TorrentioProvider());
-    else if (name === 'apibay') out.push(new ApibayProvider());
-  }
-  return out;
+    .filter(Boolean)
+    .flatMap((name): TorrentProvider[] => {
+      if (name === 'torrentio') {
+        return [new TorrentioProvider()];
+      }
+      if (name === 'apibay') {
+        return [new ApibayProvider()];
+      }
+      return [];
+    });
 }
 
 function authorized(request: NextRequest, env: CloudflareEnv): boolean {
   const secret = env.CRON_SECRET;
-  if (!secret) return true;
+  if (!secret) {
+    return true;
+  }
   const header = request.headers.get('authorization');
   return header === `Bearer ${secret}`;
 }
@@ -124,21 +129,41 @@ async function handle(request: NextRequest) {
   }
 
   const startedAt = new Date().toISOString();
-  const pageResults: Record<string, unknown> = {};
-  if (!enrichOnly && !torrentsOnly) {
-    for (const slug of slugs) {
-      try {
-        pageResults[slug] = await runSourcePages(db, env, slug, pages);
-      } catch (err) {
-        pageResults[slug] = {
-          error: err instanceof Error ? err.message : String(err),
-        };
-      }
-    }
-  }
+  // Sequential per-source scrapes (kept sequential on purpose so one
+  // source's failure can't take down the rest), accumulated immutably
+  // into an entries array that becomes the result map.
+  const pageEntries: (readonly [string, unknown])[] =
+    enrichOnly || torrentsOnly
+      ? []
+      : await slugs.reduce<Promise<(readonly [string, unknown])[]>>(
+          async (accP, slug) => {
+            const acc = await accP;
+            const orchestrator = new ScrapeOrchestrator(
+              new ScrapingRepository(db),
+              buildSources(env),
+            );
+            try {
+              const result = await orchestrator.run({
+                sourceSlug: slug,
+                pageNumbers: pages,
+              });
+              return [...acc, [slug, result] as const];
+            } catch (err) {
+              return [
+                ...acc,
+                [
+                  slug,
+                  { error: err instanceof Error ? err.message : String(err) },
+                ] as const,
+              ];
+            }
+          },
+          Promise.resolve([]),
+        );
+  const pageResults: Record<string, unknown> = Object.fromEntries(pageEntries);
 
   const enrich =
-    skipEnrich || torrentsOnly ? null : await enrichMovies(db, env);
+    skipEnrich || torrentsOnly ? null : await buildEnricher(db, env).run();
   const providerParam = url.searchParams.get('torrentProviders');
   const torrents = skipTorrents
     ? null

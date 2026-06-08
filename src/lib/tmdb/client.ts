@@ -43,7 +43,9 @@ export class TmdbClient {
 
   /** @throws When no API key is provided. */
   public constructor(opts: TmdbClientOptions) {
-    if (!opts.apiKey) throw new Error('TmdbClient requires apiKey');
+    if (!opts.apiKey) {
+      throw new Error('TmdbClient requires apiKey');
+    }
     this.apiKey = opts.apiKey;
     this.baseUrl = opts.baseUrl ?? 'https://api.themoviedb.org/3';
     this.timeoutMs = opts.timeoutMs ?? 10_000;
@@ -89,10 +91,10 @@ export class TmdbClient {
     query: Record<string, string>,
   ): Promise<TmdbResult<T>> {
     const u = new URL(url);
-    u.searchParams.set('api_key', this.apiKey);
-    for (const [k, v] of Object.entries(query)) {
-      u.searchParams.set(k, v);
-    }
+    u.search = new URLSearchParams({
+      ...query,
+      api_key: this.apiKey,
+    }).toString();
     // 3 attempts with jittered backoff on 408/429/5xx and transport
     // errors. Parse failures and 4xx-other are permanent.
     const result = await retry<TmdbResult<T>>(async () => {

@@ -17,12 +17,15 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
  */
 export type LogFields = {
   /** Stable event identifier (e.g. `"torrent.lookup"`). */
-  event: string;
+  readonly event: string;
 } & Record<string, unknown>;
 
 function emit(level: LogLevel, fields: LogFields): void {
-  const payload = { level, ...fields, ts: new Date().toISOString() };
-  const line = JSON.stringify(payload);
+  const line = JSON.stringify({
+    level,
+    ...fields,
+    ts: new Date().toISOString(),
+  });
   if (level === 'error' || level === 'warn') {
     console.error(line);
   } else {

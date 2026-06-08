@@ -3,13 +3,13 @@ import type { LookupResult, ResolvedLookup } from './types';
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface TorrentRunSummary {
-  scanned: number;
-  success: number;
-  empty: number;
-  errors: number;
-  totalStored: number;
-  skippedTooFresh: number;
-  byProvider: Record<string, number>;
+  readonly scanned: number;
+  readonly success: number;
+  readonly empty: number;
+  readonly errors: number;
+  readonly totalStored: number;
+  readonly skippedTooFresh: number;
+  readonly byProvider: Record<string, number>;
 }
 
 // All DB writes for torrent lookups + per-torrent rows.

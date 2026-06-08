@@ -46,7 +46,9 @@ const handler: ExportedHandler<CloudflareEnv> = {
       workflow: Workflow | undefined,
       params: unknown,
     ): Promise<void> => {
-      if (!workflow) return;
+      if (!workflow) {
+        return;
+      }
       try {
         const instance = await workflow.create({ params });
         const payload = {

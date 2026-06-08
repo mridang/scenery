@@ -1,5 +1,5 @@
 /**
- * Storage budget for the {@link buildView} plan mode, in bytes (1 TB).
+ * Storage budget for {@link ViewBuilder} plan mode, in bytes (1 TB).
  *
  * @public
  */
@@ -76,8 +76,8 @@ export type Tier = 'A' | 'B' | 'C' | '?';
 /**
  * Movie + everything the view layer needs to render it.
  *
- * Note: `cumBytes` and `fits` are populated by the plan-view loop and
- * are therefore mutable; everything else is immutable.
+ * `cumBytes` and `fits` are populated by {@link ViewBuilder} in plan
+ * view (zero / `true` otherwise).
  *
  * @public
  */
@@ -86,8 +86,8 @@ export interface ScoredMovie {
   readonly studios: readonly string[];
   readonly score: number;
   readonly tier: Tier;
-  cumBytes: number;
-  fits: boolean;
+  readonly cumBytes: number;
+  readonly fits: boolean;
 }
 
 /** Aggregate stats for plan view. @public */

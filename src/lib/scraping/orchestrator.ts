@@ -33,17 +33,21 @@ export class ScrapeOrchestrator {
    */
   public async run(opts: RunOptions): Promise<PageRunResult[]> {
     const src = this.sources[opts.sourceSlug];
-    if (!src) throw new Error(`unknown source: ${opts.sourceSlug}`);
+    if (!src) {
+      throw new Error(`unknown source: ${opts.sourceSlug}`);
+    }
     const srcRow = await this.repo.findSource(src.slug);
     if (!srcRow) {
       throw new Error(`source ${src.slug} not in db; run migrations`);
     }
 
-    const results: PageRunResult[] = [];
-    for (const pageNumber of opts.pageNumbers) {
-      results.push(await this.runOnePage(src, srcRow.id, pageNumber));
-    }
-    return results;
+    return opts.pageNumbers.reduce<Promise<PageRunResult[]>>(
+      async (acc, pageNumber) => [
+        ...(await acc),
+        await this.runOnePage(src, srcRow.id, pageNumber),
+      ],
+      Promise.resolve([]),
+    );
   }
 
   private async runOnePage(
