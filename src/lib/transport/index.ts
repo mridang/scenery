@@ -16,7 +16,6 @@ export { scrapingAntTransport } from './providers/scrapingant';
 export type { ScrapingAntOptions } from './providers/scrapingant';
 export { withRetry, isRetryableStatus } from './retry';
 export type { RetryOptions } from './retry';
-export { FetchBudget } from './budget';
 
 /**
  * Transport for JSON endpoints that ban a Worker's single egress IP: route

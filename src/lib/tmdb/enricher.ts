@@ -1,58 +1,21 @@
-import { FetchBudget } from '@/lib/transport';
 import type { TmdbClient } from './client';
 import type { TmdbRepository } from './repository';
-import type { EnrichSummary, TmdbPersonResponse } from './types';
-
-/** Options for {@link TmdbEnricher.run}. @public */
-export interface EnrichRunOptions {
-  /** Max movies/people to scan per phase. Defaults to 200. */
-  limit?: number;
-  /**
-   * Max external TMDB fetches in this run. Keep under the platform's
-   * per-invocation subrequest cap (50 on Free). Defaults to unlimited.
-   */
-  fetchBudget?: number;
-}
-
-/** {@link EnrichSummary} plus whether the budget was exhausted mid-run. */
-export type EnrichRunResult = EnrichSummary & {
-  /** True when the fetch budget ran out — more work likely remains. */
-  exhausted: boolean;
-};
-
-/** Partial counts contributed by the new-movie resolution phase. */
-interface ResolveSummary {
-  readonly scanned: number;
-  readonly found: number;
-  readonly notFound: number;
-  readonly errors: number;
-  readonly creditsFetched: number;
-  readonly creditsErrors: number;
-}
-
-/** Partial counts contributed by the missing-credits phase. */
-interface CreditsSummary {
-  readonly creditsFetched: number;
-  readonly creditsErrors: number;
-}
-
-/** Partial counts contributed by the missing-people phase. */
-interface PeopleSummary {
-  readonly peopleFetched: number;
-  readonly peopleErrors: number;
-}
+import type { TmdbPersonResponse } from './types';
 
 /**
- * Orchestrates one TMDB enrichment pass:
- *   1. ensure genre dictionary is populated,
- *   2. resolve any new movies via /find,
- *   3. fill in /movie credits for found rows that lack them,
- *   4. backfill columns derived from already-cached responses,
- *   5. fetch missing person rows,
- *   6. recompute every movie's talent_score.
+ * TMDB enrichment, exposed as granular units of work — one unit per
+ * public method — so a caller (a Workflow step, a queue consumer, or a
+ * bounded synchronous loop) can run exactly as much as fits its own
+ * subrequest budget and checkpoint between units:
  *
- * Plays nicely with retries: every step is idempotent and re-running
- * after a partial failure picks up where the previous run stopped.
+ *   - {@link ensureGenres} populates the genre dictionary,
+ *   - {@link enrichMovie} resolves one movie (/find then /movie credits),
+ *   - {@link enrichPerson} fetches one person's prestige,
+ *   - {@link backfillFromRawCredits} fills columns from cached responses,
+ *   - {@link recomputeTalentScoresPublic} rescores every movie (pure DB).
+ *
+ * Every method is idempotent: re-running after a partial failure simply
+ * picks up whatever is still pending.
  *
  * @public
  */
@@ -61,45 +24,6 @@ export class TmdbEnricher {
     private readonly client: TmdbClient,
     private readonly repo: TmdbRepository,
   ) {}
-
-  /**
-   * Run one enrichment pass. Bounded by `limit` (rows per phase) and
-   * `fetchBudget` (total external TMDB fetches). When the fetch budget
-   * is exhausted, phases stop early and `exhausted` is returned true so
-   * a surrounding Workflow can resume in a fresh step.
-   *
-   * @param opts - See {@link EnrichRunOptions}. A bare number is also
-   *   accepted as a `limit` for back-compat.
-   */
-  public async run(
-    opts: EnrichRunOptions | number = {},
-  ): Promise<EnrichRunResult> {
-    const { limit = 200, fetchBudget } =
-      typeof opts === 'number' ? { limit: opts } : opts;
-    const budget = new FetchBudget(fetchBudget ?? Number.MAX_SAFE_INTEGER);
-
-    await this.ensureGenres();
-    const resolved = await this.resolveNewMovies(limit, budget);
-    const credits = await this.fetchMissingCredits(limit, budget);
-    await this.repo.backfillFromRawCredits();
-    const people = await this.fetchMissingPeople(budget);
-    // Talent scoring is pure DB work (no subrequests); always run it so
-    // any people fetched this pass are reflected immediately.
-    const talentScored = await this.recomputeTalentScores();
-
-    return {
-      scanned: resolved.scanned,
-      found: resolved.found,
-      notFound: resolved.notFound,
-      errors: resolved.errors,
-      creditsFetched: resolved.creditsFetched + credits.creditsFetched,
-      creditsErrors: resolved.creditsErrors + credits.creditsErrors,
-      peopleFetched: people.peopleFetched,
-      peopleErrors: people.peopleErrors,
-      talentScored,
-      exhausted: budget.exhausted,
-    };
-  }
 
   /** Public hook so callers can refresh the genre table directly. */
   public async refreshGenres(): Promise<number> {
@@ -120,14 +44,9 @@ export class TmdbEnricher {
     }
   }
 
-  // ---------------------------------------------------------------------
-  // Granular API — one unit of work per call, so a Workflow can wrap each
-  // in its own step.do() (fresh subrequest budget + durable checkpoint).
-  // ---------------------------------------------------------------------
-
   /**
    * IMDb ids that still need a /find lookup (never fetched, or a prior
-   * attempt errored). Each will become one workflow step.
+   * attempt errored). Each is one unit of work.
    *
    * @public
    */
@@ -184,7 +103,7 @@ export class TmdbEnricher {
 
   /**
    * Person ids referenced by the catalog that we haven't fetched yet (or
-   * whose prestige score is missing). Each becomes one workflow step.
+   * whose prestige score is missing). Each is one unit of work.
    *
    * @public
    */
@@ -229,142 +148,6 @@ export class TmdbEnricher {
   /** Recompute talent_score for every movie. Pure DB, no subrequests. @public */
   public async recomputeTalentScoresPublic(): Promise<number> {
     return this.recomputeTalentScores();
-  }
-
-  private async resolveNewMovies(
-    limit: number,
-    budget: FetchBudget,
-  ): Promise<ResolveSummary> {
-    const pending = await this.repo.pendingMovieIds(limit);
-    const seed: ResolveSummary = {
-      scanned: pending.length,
-      found: 0,
-      notFound: 0,
-      errors: 0,
-      creditsFetched: 0,
-      creditsErrors: 0,
-    };
-
-    return pending.reduce<Promise<ResolveSummary>>(async (accP, imdbId) => {
-      const acc = await accP;
-      // /find + /movie credits are two subrequests; need both available.
-      if (budget.left < 2) {
-        budget.exhausted = true;
-        return acc;
-      }
-      const now = new Date().toISOString();
-      budget.take();
-      const find = await this.client.findByImdb(imdbId);
-      if (!find.ok) {
-        await this.repo.recordMovieError(imdbId, find.raw, find.error, now);
-        return { ...acc, errors: acc.errors + 1 };
-      }
-      const movie = find.value.movie_results?.[0];
-      if (!movie) {
-        await this.repo.recordMovieNotFound(imdbId, find.raw, now);
-        return { ...acc, notFound: acc.notFound + 1 };
-      }
-      await this.repo.upsertFoundMovie(imdbId, movie, find.raw, now);
-      const found = { ...acc, found: acc.found + 1 };
-
-      try {
-        budget.take();
-        const credits = await this.client.getMovieWithCredits(movie.id);
-        if (credits.ok) {
-          await this.repo.updateMovieCredits(
-            imdbId,
-            credits.value,
-            credits.raw,
-            new Date().toISOString(),
-          );
-          return { ...found, creditsFetched: found.creditsFetched + 1 };
-        }
-        await this.repo.recordCreditsError(
-          imdbId,
-          credits.raw,
-          credits.error,
-          new Date().toISOString(),
-        );
-        return { ...found, creditsErrors: found.creditsErrors + 1 };
-      } catch {
-        return { ...found, creditsErrors: found.creditsErrors + 1 };
-      }
-    }, Promise.resolve(seed));
-  }
-
-  private async fetchMissingCredits(
-    limit: number,
-    budget: FetchBudget,
-  ): Promise<CreditsSummary> {
-    const pending = await this.repo.pendingCreditIds(limit);
-    const seed: CreditsSummary = { creditsFetched: 0, creditsErrors: 0 };
-
-    return pending.reduce<Promise<CreditsSummary>>(async (accP, row) => {
-      const acc = await accP;
-      if (!budget.take()) {
-        return acc;
-      }
-      try {
-        const credits = await this.client.getMovieWithCredits(row.tmdb_id);
-        if (credits.ok) {
-          await this.repo.updateMovieCredits(
-            row.imdb_id,
-            credits.value,
-            credits.raw,
-            new Date().toISOString(),
-          );
-          return { ...acc, creditsFetched: acc.creditsFetched + 1 };
-        }
-        await this.repo.recordCreditsError(
-          row.imdb_id,
-          credits.raw,
-          credits.error,
-          new Date().toISOString(),
-        );
-        return { ...acc, creditsErrors: acc.creditsErrors + 1 };
-      } catch {
-        return { ...acc, creditsErrors: acc.creditsErrors + 1 };
-      }
-    }, Promise.resolve(seed));
-  }
-
-  private async fetchMissingPeople(
-    budget: FetchBudget,
-  ): Promise<PeopleSummary> {
-    const seed: PeopleSummary = { peopleFetched: 0, peopleErrors: 0 };
-    const wanted = await this.repo.collectReferencedPeople();
-    if (wanted.size === 0) {
-      return seed;
-    }
-    const have = await this.repo.knownPeopleIds();
-    const stale = await this.repo.stalePeopleIds();
-    const newIds = [...wanted].filter((id) => !have.has(id));
-    const todo = new Set<number>([...newIds, ...stale]);
-
-    return [...todo].reduce<Promise<PeopleSummary>>(async (accP, personId) => {
-      const acc = await accP;
-      if (!budget.take()) {
-        return acc;
-      }
-      try {
-        const r = await this.client.getPersonWithCredits(personId);
-        if (!r.ok) {
-          return { ...acc, peopleErrors: acc.peopleErrors + 1 };
-        }
-        const { prestige, totalCredits } = this.computePrestige(r.value);
-        await this.repo.upsertPerson(
-          r.value,
-          personId,
-          prestige,
-          totalCredits,
-          r.raw,
-          new Date().toISOString(),
-        );
-        return { ...acc, peopleFetched: acc.peopleFetched + 1 };
-      } catch {
-        return { ...acc, peopleErrors: acc.peopleErrors + 1 };
-      }
-    }, Promise.resolve(seed));
   }
 
   private computePrestige(person: TmdbPersonResponse): {

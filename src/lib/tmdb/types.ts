@@ -91,20 +91,3 @@ export interface TmdbPersonResponse {
     }[];
   };
 }
-
-/**
- * Aggregate summary returned by {@link TmdbEnricher}.
- *
- * @public
- */
-export interface EnrichSummary {
-  readonly found: number;
-  readonly notFound: number;
-  readonly errors: number;
-  readonly scanned: number;
-  readonly creditsFetched: number;
-  readonly creditsErrors: number;
-  readonly peopleFetched: number;
-  readonly peopleErrors: number;
-  readonly talentScored: number;
-}

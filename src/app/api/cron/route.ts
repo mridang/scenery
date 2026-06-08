@@ -44,6 +44,34 @@ function resolveProviders(
     });
 }
 
+/**
+ * Enrich a small fixed batch synchronously. `/api/cron` is a manual nudge
+ * (the real recurring enrichment is the scheduled EnrichWorkflow), so the
+ * constant caps keep this one Worker invocation comfortably under the
+ * per-invocation subrequest limit — no runtime budget bookkeeping needed.
+ */
+async function enrichBatch(
+  db: D1Database,
+  env: CloudflareEnv,
+): Promise<{ movies: number; people: number; talentScored: number }> {
+  const enricher = buildEnricher(db, env);
+  await enricher.ensureGenres();
+  const movieIds = await enricher.listPendingMovieIds(12);
+  for (const imdbId of movieIds) {
+    await enricher.enrichMovie(imdbId);
+  }
+  await enricher.backfillFromRawCredits();
+  const peopleIds = await enricher.listPendingPeopleIds(12);
+  for (const personId of peopleIds) {
+    await enricher.enrichPerson(personId);
+  }
+  return {
+    movies: movieIds.length,
+    people: peopleIds.length,
+    talentScored: await enricher.recomputeTalentScoresPublic(),
+  };
+}
+
 function authorized(request: NextRequest, env: CloudflareEnv): boolean {
   const secret = env.CRON_SECRET;
   if (!secret) {
@@ -171,8 +199,7 @@ async function handle(request: NextRequest) {
         );
   const pageResults: Record<string, unknown> = Object.fromEntries(pageEntries);
 
-  const enrich =
-    skipEnrich || torrentsOnly ? null : await buildEnricher(db, env).run();
+  const enrich = skipEnrich || torrentsOnly ? null : await enrichBatch(db, env);
   const providerParam = url.searchParams.get('torrentProviders');
   const torrentTransport = proxyTransport(env.SCRAPINGANT_API_KEY);
   const torrents = skipTorrents
