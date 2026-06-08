@@ -192,6 +192,11 @@ const MOVIE_QUERY = `SELECT
    __LANG__
    -- Order by FIRST appearance on the source (a re-listed/repacked post
    -- must not bump an older movie to the top), newest arrivals first.
+   -- Source dates are day-granular, so break same-day ties by the post
+   -- id (a monotonic WordPress id: higher = posted later that day) for a
+   -- stable, posting-order-faithful result.
    ORDER BY (SELECT MIN(COALESCE(r.posted_at, r.first_seen_at))
+               FROM releases r WHERE r.imdb_id = m.imdb_id) DESC,
+            (SELECT MIN(CAST(r.external_id AS INTEGER))
                FROM releases r WHERE r.imdb_id = m.imdb_id) DESC
    LIMIT 500`;
