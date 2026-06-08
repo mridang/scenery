@@ -36,6 +36,7 @@ export default {
   testTimeout: 60000,
   extensionsToTreatAsEsm: ['.ts', '.tsx', '.mts'],
   moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   reporters: [
