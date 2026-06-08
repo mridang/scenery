@@ -14,6 +14,9 @@ export default [
       'worker-configuration.d.ts',
       'migrations/**',
       'public/**',
+      // JSONC config — comments/trailing commas trip the strict JSON
+      // language the eslint-defaults preset registers for it.
+      'wrangler.jsonc',
       // src/worker.ts is the wrangler entry. It imports from
       // `.open-next/worker.js` (generated post-build) and is excluded
       // from tsconfig — type-aware lint can't parse it.
@@ -34,6 +37,16 @@ export default [
       // file to resolve to. Whitelist them globally so `import/no-unresolved`
       // stays active for everything else.
       'import/core-modules': ['cloudflare:workers', 'cloudflare:test'],
+    },
+  },
+  {
+    // Tailwind v4 drives styling through at-rules (@theme, @apply,
+    // @custom-variant, …) that the css plugin's at-rule validator doesn't
+    // know about. Tailwind owns this syntax, so disable just that check
+    // for CSS while keeping the rest of the css ruleset active.
+    files: ['**/*.css'],
+    rules: {
+      'css/no-invalid-at-rules': 'off',
     },
   },
   {

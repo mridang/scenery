@@ -240,6 +240,10 @@ export default async function Home({
   const planTotalFits = plan?.fits ?? 0;
   const planTotalSkipped = plan?.skipped ?? 0;
   const planBytesFits = plan?.bytesFits ?? 0;
+  // This is an async Server Component rendered once per request, so reading
+  // the wall clock here is deterministic for the render — not the
+  // re-render hazard react-hooks/purity guards against on the client.
+  // eslint-disable-next-line react-hooks/purity -- per-request server render
   const nowMs = Date.now();
 
   const feedQs = new URLSearchParams({ lang, sort, view });
