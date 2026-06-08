@@ -1,4 +1,4 @@
-import { FetchBudget } from '../util/budget';
+import { FetchBudget } from '@/lib/transport';
 import type { TmdbClient } from './client';
 import type { TmdbRepository } from './repository';
 import type { EnrichSummary, TmdbPersonResponse } from './types';

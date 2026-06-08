@@ -1,4 +1,4 @@
-import { proxyFetch, safeJsonParse } from '../../util';
+import { safeJsonParse } from '../../util';
 import { detectHdr, detectQuality, detectRemux } from '../parsing';
 import type { LookupResult, ParsedTorrent, TorrentProvider } from '../types';
 import type { ApibayOptions } from './types';
@@ -29,66 +29,75 @@ export class ApibayProvider implements TorrentProvider {
   readonly name = 'apibay';
   private readonly baseUrl: string;
   private readonly category: string;
-  private readonly timeoutMs: number;
-  private readonly scrapingAntKey?: string;
 
-  constructor(opts: ApibayOptions = {}) {
+  constructor(
+    private readonly transport: typeof fetch,
+    opts: ApibayOptions = {},
+  ) {
     this.baseUrl = opts.baseUrl ?? 'https://apibay.org/q.php';
     this.category = opts.category ?? '200'; // 200 = video/movies
-    this.timeoutMs = opts.timeoutMs ?? 15_000;
-    this.scrapingAntKey = opts.scrapingAntKey;
   }
 
   async search(imdbId: string): Promise<LookupResult> {
     const url = `${this.baseUrl}?q=${encodeURIComponent(imdbId)}&cat=${this.category}`;
-    const res = await proxyFetch(url, {
-      scrapingAntKey: this.scrapingAntKey,
-      timeoutMs: this.timeoutMs,
-    });
-    if (!res.ok) {
+    try {
+      const resp = await this.transport(url, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!resp.ok) {
+        const text = await resp.text();
+        return {
+          status: 'error',
+          torrents: [],
+          rawResponse: text.slice(0, 4000),
+          httpStatus: resp.status,
+          error: `http ${resp.status}`,
+        };
+      }
+
+      const text = await resp.text();
+      const parsed = safeJsonParse<ApibayStream[]>(text);
+      if (!parsed.ok) {
+        return {
+          status: 'error',
+          torrents: [],
+          rawResponse: text.slice(0, 4000),
+          httpStatus: resp.status,
+          error: parsed.error,
+        };
+      }
+
+      const streams = parsed.value;
+      if (
+        Array.isArray(streams) &&
+        streams.length === 1 &&
+        streams[0]?.info_hash === EMPTY_HASH
+      ) {
+        return {
+          status: 'empty',
+          torrents: [],
+          rawResponse: text,
+          httpStatus: resp.status,
+        };
+      }
+
+      const torrents = streams
+        .map((s) => this.parseStream(s))
+        .filter((t): t is ParsedTorrent => t !== null);
+      return {
+        status: torrents.length > 0 ? 'success' : 'empty',
+        torrents,
+        rawResponse: text,
+        httpStatus: resp.status,
+      };
+    } catch (err: unknown) {
       return {
         status: 'error',
         torrents: [],
-        rawResponse: res.text.slice(0, 4000),
-        httpStatus: res.status,
-        error: res.error ?? `http ${res.status}`,
+        rawResponse: '',
+        error: err instanceof Error ? err.message : String(err),
       };
     }
-
-    const parsed = safeJsonParse<ApibayStream[]>(res.text);
-    if (!parsed.ok) {
-      return {
-        status: 'error',
-        torrents: [],
-        rawResponse: res.text.slice(0, 4000),
-        httpStatus: res.status,
-        error: parsed.error,
-      };
-    }
-
-    const streams = parsed.value;
-    if (
-      Array.isArray(streams) &&
-      streams.length === 1 &&
-      streams[0]?.info_hash === EMPTY_HASH
-    ) {
-      return {
-        status: 'empty',
-        torrents: [],
-        rawResponse: res.text,
-        httpStatus: res.status,
-      };
-    }
-
-    const torrents = streams
-      .map((s) => this.parseStream(s))
-      .filter((t): t is ParsedTorrent => t !== null);
-    return {
-      status: torrents.length > 0 ? 'success' : 'empty',
-      torrents,
-      rawResponse: res.text,
-      httpStatus: res.status,
-    };
   }
 
   private parseStream(s: ApibayStream): ParsedTorrent | null {

@@ -6,6 +6,7 @@ import {
 
 import { ScrapeOrchestrator, ScrapingRepository } from '../lib/scraping';
 import { buildSources } from '../lib/sources';
+import { browserTransport } from '../lib/transport';
 
 /**
  * Parameters accepted by {@link ScrapeWorkflow}.
@@ -34,7 +35,10 @@ export class ScrapeWorkflow extends WorkflowEntrypoint<
     event: WorkflowEvent<ScrapeWorkflowParams>,
     step: WorkflowStep,
   ) {
-    const sources = buildSources(this.env);
+    const sources = buildSources(
+      browserTransport(this.env.SCRAPINGANT_API_KEY),
+      'scrapingant-browser',
+    );
     const pageNumbers = event.payload.pageNumbers ?? [1];
     const slugs = event.payload.sourceSlug
       ? [event.payload.sourceSlug]

@@ -1,4 +1,4 @@
-import { isRetryableStatus, retry } from '../util/retry';
+import { safeJsonParse } from '@/lib/util';
 import type {
   TmdbFindResponse,
   TmdbGenre,
@@ -13,11 +13,9 @@ import type {
  */
 export interface TmdbClientOptions {
   /** TMDB v3 API key. Required. */
-  apiKey: string;
+  readonly apiKey: string;
   /** Override the API root. Defaults to `https://api.themoviedb.org/3`. */
-  baseUrl?: string;
-  /** Per-request timeout in ms. Defaults to 10 000. */
-  timeoutMs?: number;
+  readonly baseUrl?: string;
 }
 
 /**
@@ -39,16 +37,17 @@ export type TmdbResult<T> =
 export class TmdbClient {
   private readonly apiKey: string;
   private readonly baseUrl: string;
-  private readonly timeoutMs: number;
 
   /** @throws When no API key is provided. */
-  public constructor(opts: TmdbClientOptions) {
+  public constructor(
+    private readonly transport: typeof fetch,
+    opts: TmdbClientOptions,
+  ) {
     if (!opts.apiKey) {
       throw new Error('TmdbClient requires apiKey');
     }
     this.apiKey = opts.apiKey;
     this.baseUrl = opts.baseUrl ?? 'https://api.themoviedb.org/3';
-    this.timeoutMs = opts.timeoutMs ?? 10_000;
   }
 
   /** Fetch the full movie-genre dictionary. */
@@ -95,60 +94,29 @@ export class TmdbClient {
       ...query,
       api_key: this.apiKey,
     }).toString();
-    // 3 attempts with jittered backoff on 408/429/5xx and transport
-    // errors. Parse failures and 4xx-other are permanent.
-    const result = await retry<TmdbResult<T>>(async () => {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-      try {
-        const resp = await globalThis.fetch(u, {
-          headers: { Accept: 'application/json' },
-          signal: controller.signal,
-        });
-        const raw = await resp.text();
-        if (!resp.ok) {
-          const value: TmdbResult<T> = {
-            ok: false,
-            error: `http ${resp.status}`,
-            raw,
-            httpStatus: resp.status,
-          };
-          return isRetryableStatus(resp.status)
-            ? { ok: false, error: value.error, retry: true }
-            : { ok: true, value };
-        }
-        try {
-          const value: TmdbResult<T> = {
-            ok: true,
-            value: JSON.parse(raw) as T,
-            raw,
-            httpStatus: resp.status,
-          };
-          return { ok: true, value };
-        } catch (err) {
-          return {
-            ok: true,
-            value: {
-              ok: false,
-              error: err instanceof Error ? err.message : String(err),
-              raw,
-              httpStatus: resp.status,
-            },
-          };
-        }
-      } catch (err) {
+    try {
+      const resp = await this.transport(u, {
+        headers: { Accept: 'application/json' },
+      });
+      const raw = await resp.text();
+      if (!resp.ok) {
         return {
           ok: false,
-          error: err instanceof Error ? err.message : String(err),
-          retry: true,
+          error: `http ${resp.status}`,
+          raw,
+          httpStatus: resp.status,
         };
-      } finally {
-        clearTimeout(timer);
       }
-    });
-    if (!result.ok) {
-      return { ok: false, error: result.error, raw: '' };
+      const parsed = safeJsonParse<T>(raw);
+      return parsed.ok
+        ? { ok: true, value: parsed.value, raw, httpStatus: resp.status }
+        : { ok: false, error: parsed.error, raw, httpStatus: resp.status };
+    } catch (err) {
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+        raw: '',
+      };
     }
-    return result.value;
   }
 }

@@ -3,9 +3,11 @@ import { getDB, getEnv, logError, logInfo } from '@/lib/util';
 import { ScrapeOrchestrator, ScrapingRepository } from '@/lib/scraping';
 import { buildSources } from '@/lib/sources';
 import { buildEnricher } from '@/lib/tmdb';
+import { browserTransport, proxyTransport } from '@/lib/transport';
 import {
   ApibayProvider,
   TorrentioProvider,
+  defaultProviders,
   runTorrentLookups,
 } from '@/lib/torrents';
 import type { TorrentProvider } from '@/lib/torrents';
@@ -23,17 +25,20 @@ const HARDENED_KEYS = new Set([
   'viaWorkflow',
 ]);
 
-function resolveProviders(spec: string): TorrentProvider[] {
+function resolveProviders(
+  spec: string,
+  transport: typeof fetch,
+): TorrentProvider[] {
   return spec
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
     .flatMap((name): TorrentProvider[] => {
       if (name === 'torrentio') {
-        return [new TorrentioProvider()];
+        return [new TorrentioProvider(transport)];
       }
       if (name === 'apibay') {
-        return [new ApibayProvider()];
+        return [new ApibayProvider(transport)];
       }
       return [];
     });
@@ -69,6 +74,10 @@ async function handle(request: NextRequest) {
   }
 
   const db = getDB();
+  const sources = buildSources(
+    browserTransport(env.SCRAPINGANT_API_KEY),
+    'scrapingant-browser',
+  );
   const url = request.nextUrl;
   const backfill = Number(url.searchParams.get('backfill') ?? '0');
   const sourceParam = url.searchParams.get('source');
@@ -79,7 +88,7 @@ async function handle(request: NextRequest) {
 
   // ?source=foo runs just that source; otherwise iterate every registered
   // source so a failure on one (e.g. scnsrc CF block) doesn't lose the run.
-  const slugs = sourceParam ? [sourceParam] : Object.keys(buildSources(env));
+  const slugs = sourceParam ? [sourceParam] : Object.keys(sources);
   const pages =
     backfill > 0 ? Array.from({ length: backfill }, (_, i) => i + 1) : [1];
 
@@ -140,7 +149,7 @@ async function handle(request: NextRequest) {
             const acc = await accP;
             const orchestrator = new ScrapeOrchestrator(
               new ScrapingRepository(db),
-              buildSources(env),
+              sources,
             );
             try {
               const result = await orchestrator.run({
@@ -165,10 +174,13 @@ async function handle(request: NextRequest) {
   const enrich =
     skipEnrich || torrentsOnly ? null : await buildEnricher(db, env).run();
   const providerParam = url.searchParams.get('torrentProviders');
+  const torrentTransport = proxyTransport(env.SCRAPINGANT_API_KEY);
   const torrents = skipTorrents
     ? null
     : await runTorrentLookups(db, {
-        providers: providerParam ? resolveProviders(providerParam) : undefined,
+        providers: providerParam
+          ? resolveProviders(providerParam, torrentTransport)
+          : defaultProviders(torrentTransport),
       });
   const finishedAt = new Date().toISOString();
   logInfo({

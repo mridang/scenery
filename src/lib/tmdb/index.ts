@@ -1,3 +1,5 @@
+import { genericTransport, withRetry } from '@/lib/transport';
+
 import { TmdbClient } from './client';
 import { TmdbEnricher } from './enricher';
 import { TmdbRepository } from './repository';
@@ -20,7 +22,9 @@ export function buildEnricher(
   env: CloudflareEnv,
 ): TmdbEnricher {
   return new TmdbEnricher(
-    new TmdbClient({ apiKey: env.TMDB_API_KEY }),
+    new TmdbClient(withRetry(genericTransport()), {
+      apiKey: env.TMDB_API_KEY,
+    }),
     new TmdbRepository(db),
   );
 }

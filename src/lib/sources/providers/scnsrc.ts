@@ -1,4 +1,4 @@
-import type { PageFetcher } from '../scrapingant';
+import { requestPage } from '../request-page';
 import type { ExtractedRelease, FetchResult, Source } from '../types';
 
 const BASE_URL = 'https://www.scnsrc.me/category/films/hd/';
@@ -33,20 +33,18 @@ function parseScnsrcDate(raw: string | undefined): string | undefined {
 export class ScnsrcSource implements Source {
   public readonly slug = 'scnsrc';
   public readonly baseUrl = BASE_URL;
-  public readonly fetcherLabel: string;
-  private readonly fetcher: PageFetcher;
 
-  public constructor(fetcher: PageFetcher) {
-    this.fetcher = fetcher;
-    this.fetcherLabel = fetcher.label;
-  }
+  public constructor(
+    private readonly transport: typeof fetch,
+    public readonly fetcherLabel: string,
+  ) {}
 
   public pageUrl(pageNumber: number): string {
     return pageNumber <= 1 ? BASE_URL : `${BASE_URL}page/${pageNumber}/`;
   }
 
   public async fetchPage(pageNumber: number): Promise<FetchResult> {
-    return this.fetcher.fetch(this.pageUrl(pageNumber));
+    return requestPage(this.transport, this.pageUrl(pageNumber));
   }
 
   public extract(html: string): ExtractedRelease[] {

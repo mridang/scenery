@@ -1,37 +1,25 @@
 import { DdlvalleySource, ScnsrcSource } from './providers';
-import { ScrapingAntFetcher } from './scrapingant';
-import type { PageFetcher } from './scrapingant';
 import type { Source } from './types';
 
-export type { PageFetcher } from './scrapingant';
-export { ScrapingAntFetcher } from './scrapingant';
 export { DdlvalleySource, ScnsrcSource } from './providers';
 export type { ExtractedRelease, FetchResult, Source } from './types';
 
 /**
- * Build a {@link PageFetcher} from environment variables. Single place
- * to swap proxy strategy across every source.
+ * Build the registered set of sources over a given transport. The caller
+ * (a composition root) decides how bytes are fetched and passes a label
+ * describing that path — the sources themselves stay transport-agnostic.
  *
- * @param env - Cloudflare bindings + secrets.
- * @returns A fetcher implementing the {@link PageFetcher} contract.
- * @public
- */
-export function buildDefaultFetcher(env: CloudflareEnv): PageFetcher {
-  return new ScrapingAntFetcher({ apiKey: env.SCRAPINGANT_API_KEY });
-}
-
-/**
- * Build the registered set of sources. Order matters only for status
- * reporting — independent failures don't affect one another.
- *
- * @param env - Cloudflare bindings + secrets.
+ * @param transport - A `fetch`-compatible transport (see `@/lib/transport`).
+ * @param fetcherLabel - Identifier persisted on each snapshot row.
  * @returns Map of slug → {@link Source}.
  * @public
  */
-export function buildSources(env: CloudflareEnv): Record<string, Source> {
-  const fetcher = buildDefaultFetcher(env);
+export function buildSources(
+  transport: typeof fetch,
+  fetcherLabel: string,
+): Record<string, Source> {
   return {
-    scnsrc: new ScnsrcSource(fetcher),
-    ddlvalley: new DdlvalleySource(fetcher),
+    scnsrc: new ScnsrcSource(transport, fetcherLabel),
+    ddlvalley: new DdlvalleySource(transport, fetcherLabel),
   };
 }

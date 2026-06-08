@@ -1,45 +1,41 @@
-import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
 
 import { TorrentioProvider } from './torrentio';
 
-const realFetch = globalThis.fetch;
-
-function stubFetch(body: unknown, opts: { status?: number } = {}): void {
-  const text = typeof body === 'string' ? body : JSON.stringify(body);
-  globalThis.fetch = jest.fn(() =>
+const transportOf = (
+  body: unknown,
+  init: { status?: number } = {},
+): typeof fetch =>
+  (() =>
     Promise.resolve(
-      new Response(text, {
-        status: opts.status ?? 200,
+      new Response(typeof body === 'string' ? body : JSON.stringify(body), {
+        status: init.status ?? 200,
         headers: { 'content-type': 'application/json' },
       }),
-    ),
-  ) as typeof fetch;
-}
-
-afterEach(() => {
-  globalThis.fetch = realFetch;
-});
+    )) as typeof fetch;
 
 describe('TorrentioProvider', () => {
   it("returns 'empty' when streams array is empty", async () => {
-    stubFetch({ streams: [] });
-    const r = await new TorrentioProvider().search('tt0000001');
+    const r = await new TorrentioProvider(transportOf({ streams: [] })).search(
+      'tt0000001',
+    );
     expect(r.status).toBe('empty');
     expect(r.torrents).toEqual([]);
   });
 
   it('parses seeders, size, source, quality from the emoji-delimited title', async () => {
-    stubFetch({
-      streams: [
-        {
-          name: 'Torrentio\n1080p',
-          title:
-            'Project.Hail.Mary.2026.1080p.WEB-DL.HDR.x265-CMRG\n👤 852 💾 5.4 GB ⚙️ 1337x',
-          infoHash: 'AAAA1234',
-        },
-      ],
-    });
-    const r = await new TorrentioProvider().search('tt12042730');
+    const r = await new TorrentioProvider(
+      transportOf({
+        streams: [
+          {
+            name: 'Torrentio\n1080p',
+            title:
+              'Project.Hail.Mary.2026.1080p.WEB-DL.HDR.x265-CMRG\n👤 852 💾 5.4 GB ⚙️ 1337x',
+            infoHash: 'AAAA1234',
+          },
+        ],
+      }),
+    ).search('tt12042730');
     expect(r.status).toBe('success');
     expect(r.torrents).toHaveLength(1);
     const t = r.torrents[0];
@@ -52,17 +48,17 @@ describe('TorrentioProvider', () => {
   });
 
   it("returns 'error' on non-2xx", async () => {
-    stubFetch('oops', { status: 502 });
-    const r = await new TorrentioProvider().search('tt0000001');
+    const r = await new TorrentioProvider(
+      transportOf('oops', { status: 502 }),
+    ).search('tt0000001');
     expect(r.status).toBe('error');
     expect(r.httpStatus).toBe(502);
   });
 
   it("returns 'error' on network failure without throwing", async () => {
-    globalThis.fetch = jest.fn(() =>
-      Promise.reject(new Error('ECONNRESET')),
-    ) as typeof fetch;
-    const r = await new TorrentioProvider().search('tt0000001');
+    const transport = (() =>
+      Promise.reject(new Error('ECONNRESET'))) as typeof fetch;
+    const r = await new TorrentioProvider(transport).search('tt0000001');
     expect(r.status).toBe('error');
     expect(r.error).toContain('ECONNRESET');
   });

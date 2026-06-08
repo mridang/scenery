@@ -4,7 +4,12 @@ import {
   type WorkflowStep,
 } from 'cloudflare:workers';
 
-import { listTorrentCandidates, lookupOneTorrent } from '../lib/torrents';
+import {
+  defaultProviders,
+  listTorrentCandidates,
+  lookupOneTorrent,
+} from '../lib/torrents';
+import { proxyTransport } from '../lib/transport';
 
 /**
  * Parameters accepted by {@link TorrentWorkflow}.
@@ -49,6 +54,12 @@ export class TorrentWorkflow extends WorkflowEntrypoint<
       listTorrentCandidates(this.env.DB, limit, force),
     );
 
+    // One provider chain for the whole run — Torrentio + apibay, routed
+    // through ScrapingAnt's rotating proxy when a key is configured.
+    const providerChain = defaultProviders(
+      proxyTransport(this.env.SCRAPINGANT_API_KEY),
+    );
+
     // Sequential per-movie steps (each preceded by a checkpointing sleep
     // to reset the subrequest budget). Collect the provider used by each
     // lookup, then tally them immutably into the per-provider counts.
@@ -63,9 +74,7 @@ export class TorrentWorkflow extends WorkflowEntrypoint<
           await step.sleep(`pace-${i}`, `${paceSeconds} seconds`);
         }
         const r = await step.do(`torrent:${imdbId}`, retry, async () =>
-          lookupOneTorrent(this.env.DB, imdbId, {
-            scrapingAntKey: this.env.SCRAPINGANT_API_KEY,
-          }),
+          lookupOneTorrent(this.env.DB, imdbId, providerChain),
         );
         return [...acc, r.provider];
       },

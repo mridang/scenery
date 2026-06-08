@@ -1,5 +1,4 @@
 import { TorrentLookupManager } from './manager';
-import { defaultProviders } from './providers';
 import { TorrentRepository } from './repository';
 import type { TorrentRunSummary } from './repository';
 import type { LookupStatus, ResolvedLookup, TorrentProvider } from './types';
@@ -9,11 +8,7 @@ export {
   TorrentioProvider,
   defaultProviders,
 } from './providers';
-export type {
-  ApibayOptions,
-  ProviderChainOptions,
-  ProviderOptions,
-} from './providers';
+export type { ApibayOptions, ProviderOptions } from './providers';
 export { TorrentLookupManager } from './manager';
 export { TorrentRepository } from './repository';
 export type { TorrentRunSummary } from './repository';
@@ -24,16 +19,6 @@ export type {
   ResolvedLookup,
   TorrentProvider,
 } from './types';
-
-/** Options shared by the torrent entry points. @public */
-export interface TorrentLookupOptions {
-  /**
-   * ScrapingAnt API key. When set, providers route through ScrapingAnt's
-   * rotating proxy so the Worker's egress IP can't get banned by a
-   * rate-limited upstream (Torrentio).
-   */
-  readonly scrapingAntKey?: string;
-}
 
 /** {@link TorrentRunSummary} plus whether more candidates remain. @public */
 export type TorrentRunResult = TorrentRunSummary & {
@@ -65,11 +50,9 @@ export async function listTorrentCandidates(
 export async function lookupOneTorrent(
   db: D1Database,
   imdbId: string,
-  opts: TorrentLookupOptions = {},
-): Promise<{ provider: string; status: string }> {
-  const manager = new TorrentLookupManager(
-    defaultProviders({ scrapingAntKey: opts.scrapingAntKey }),
-  );
+  providers: readonly TorrentProvider[],
+): Promise<{ readonly provider: string; readonly status: LookupStatus }> {
+  const manager = new TorrentLookupManager(providers);
   const repo = new TorrentRepository(db);
   const resolved = await manager.lookup(imdbId);
   await repo.persist(imdbId, resolved);
@@ -87,12 +70,11 @@ export async function lookupOneTorrent(
 export async function runTorrentLookups(
   db: D1Database,
   opts: {
+    readonly providers: readonly TorrentProvider[];
     readonly limit?: number;
-    readonly providers?: readonly TorrentProvider[];
-  } = {},
+  },
 ): Promise<TorrentRunResult> {
-  const providers = opts.providers ?? defaultProviders();
-  const manager = new TorrentLookupManager(providers);
+  const manager = new TorrentLookupManager(opts.providers);
   const repo = new TorrentRepository(db);
   const limit = opts.limit ?? 200;
 
