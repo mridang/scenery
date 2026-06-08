@@ -1,3 +1,15 @@
+import { and, eq, sql } from 'drizzle-orm';
+
+import {
+  createDatabase,
+  type Database,
+  fetch_attempts,
+  movies,
+  page_snapshots,
+  releases,
+  sources,
+} from '../db';
+
 import type { ExtractedRelease } from '../sources/types';
 
 /**
@@ -19,7 +31,11 @@ export interface SourceRow {
  * @public
  */
 export class ScrapingRepository {
-  public constructor(private readonly db: D1Database) {}
+  private readonly db: Database;
+
+  public constructor(d1: D1Database) {
+    this.db = createDatabase(d1);
+  }
 
   /**
    * Look up a registered source by its stable slug.
@@ -29,9 +45,10 @@ export class ScrapingRepository {
    */
   public async findSource(slug: string): Promise<SourceRow | null> {
     const row = await this.db
-      .prepare(`SELECT id, slug FROM sources WHERE slug = ?`)
-      .bind(slug)
-      .first<SourceRow>();
+      .select({ id: sources.id, slug: sources.slug })
+      .from(sources)
+      .where(eq(sources.slug, slug))
+      .get();
     return row ?? null;
   }
 
@@ -47,13 +64,17 @@ export class ScrapingRepository {
     pageNumber: number,
   ): Promise<number> {
     const row = await this.db
-      .prepare(
-        `SELECT COALESCE(MAX(attempt_number), 0) AS n
-           FROM fetch_attempts
-          WHERE source_id = ? AND page_number = ?`,
+      .select({
+        n: sql<number>`COALESCE(MAX(${fetch_attempts.attempt_number}), 0)`,
+      })
+      .from(fetch_attempts)
+      .where(
+        and(
+          eq(fetch_attempts.source_id, sourceId),
+          eq(fetch_attempts.page_number, pageNumber),
+        ),
       )
-      .bind(sourceId, pageNumber)
-      .first<{ n: number }>();
+      .get();
     return (row?.n ?? 0) + 1;
   }
 
@@ -69,25 +90,18 @@ export class ScrapingRepository {
     error?: string;
     responseBody?: string;
   }): Promise<void> {
-    await this.db
-      .prepare(
-        `INSERT INTO fetch_attempts
-            (source_id, page_number, page_url, attempt_number, started_at,
-             finished_at, status, http_status, error, response_body)
-          VALUES (?, ?, ?, ?, ?, ?, 'failed', ?, ?, ?)`,
-      )
-      .bind(
-        opts.sourceId,
-        opts.pageNumber,
-        opts.pageUrl,
-        opts.attemptNumber,
-        opts.startedAt,
-        opts.finishedAt,
-        opts.httpStatus ?? null,
-        opts.error ?? null,
-        opts.responseBody ?? null,
-      )
-      .run();
+    await this.db.insert(fetch_attempts).values({
+      source_id: opts.sourceId,
+      page_number: opts.pageNumber,
+      page_url: opts.pageUrl,
+      attempt_number: opts.attemptNumber,
+      started_at: opts.startedAt,
+      finished_at: opts.finishedAt,
+      status: 'failed',
+      http_status: opts.httpStatus ?? null,
+      error: opts.error ?? null,
+      response_body: opts.responseBody ?? null,
+    });
   }
 
   /** Persist a successful page snapshot and return its PK. */
@@ -102,26 +116,24 @@ export class ScrapingRepository {
     byteSize: number;
     responseHeaders?: Record<string, string>;
   }): Promise<number> {
-    const result = await this.db
-      .prepare(
-        `INSERT INTO page_snapshots
-            (source_id, page_number, page_url, fetched_at, fetcher,
-             http_status, html, byte_size, response_headers)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      )
-      .bind(
-        opts.sourceId,
-        opts.pageNumber,
-        opts.pageUrl,
-        opts.fetchedAt,
-        opts.fetcherLabel,
-        opts.httpStatus ?? null,
-        opts.html,
-        opts.byteSize,
-        opts.responseHeaders ? JSON.stringify(opts.responseHeaders) : null,
-      )
-      .run();
-    return Number(result.meta.last_row_id);
+    const row = await this.db
+      .insert(page_snapshots)
+      .values({
+        source_id: opts.sourceId,
+        page_number: opts.pageNumber,
+        page_url: opts.pageUrl,
+        fetched_at: opts.fetchedAt,
+        fetcher: opts.fetcherLabel,
+        http_status: opts.httpStatus ?? null,
+        html: opts.html,
+        byte_size: opts.byteSize,
+        response_headers: opts.responseHeaders
+          ? JSON.stringify(opts.responseHeaders)
+          : null,
+      })
+      .returning({ id: page_snapshots.id })
+      .get();
+    return Number(row.id);
   }
 
   /** Record a successful attempt linked to a snapshot row. */
@@ -135,24 +147,17 @@ export class ScrapingRepository {
     httpStatus?: number;
     snapshotId: number;
   }): Promise<void> {
-    await this.db
-      .prepare(
-        `INSERT INTO fetch_attempts
-            (source_id, page_number, page_url, attempt_number, started_at,
-             finished_at, status, http_status, snapshot_id)
-          VALUES (?, ?, ?, ?, ?, ?, 'success', ?, ?)`,
-      )
-      .bind(
-        opts.sourceId,
-        opts.pageNumber,
-        opts.pageUrl,
-        opts.attemptNumber,
-        opts.startedAt,
-        opts.finishedAt,
-        opts.httpStatus ?? null,
-        opts.snapshotId,
-      )
-      .run();
+    await this.db.insert(fetch_attempts).values({
+      source_id: opts.sourceId,
+      page_number: opts.pageNumber,
+      page_url: opts.pageUrl,
+      attempt_number: opts.attemptNumber,
+      started_at: opts.startedAt,
+      finished_at: opts.finishedAt,
+      status: 'success',
+      http_status: opts.httpStatus ?? null,
+      snapshot_id: opts.snapshotId,
+    });
   }
 
   /** Upsert one extracted release together with its parent movie row. */
@@ -162,50 +167,54 @@ export class ScrapingRepository {
     now: string,
   ): Promise<void> {
     await this.db
-      .prepare(
-        `INSERT INTO movies (imdb_id, first_seen_at, last_seen_at)
-              VALUES (?, ?, ?)
-            ON CONFLICT(imdb_id) DO UPDATE SET last_seen_at = excluded.last_seen_at`,
-      )
-      .bind(release.imdbId, now, now)
-      .run();
+      .insert(movies)
+      .values({
+        imdb_id: release.imdbId,
+        first_seen_at: now,
+        last_seen_at: now,
+      })
+      .onConflictDoUpdate({
+        target: movies.imdb_id,
+        set: { last_seen_at: now },
+      });
 
     await this.db
-      .prepare(
-        `INSERT INTO releases
-            (source_id, external_id, imdb_id, title, url,
-             posted_at, posted_at_raw, categories, author, image_url,
-             excerpt, post_html, first_seen_at, last_seen_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(source_id, external_id) DO UPDATE SET
-            imdb_id       = excluded.imdb_id,
-            title         = excluded.title,
-            url           = excluded.url,
-            posted_at     = excluded.posted_at,
-            posted_at_raw = excluded.posted_at_raw,
-            categories    = excluded.categories,
-            author        = excluded.author,
-            image_url     = excluded.image_url,
-            excerpt       = excluded.excerpt,
-            post_html     = excluded.post_html,
-            last_seen_at  = excluded.last_seen_at`,
-      )
-      .bind(
-        sourceId,
-        release.externalId,
-        release.imdbId,
-        release.title,
-        release.url,
-        release.postedAt ?? null,
-        release.postedAtRaw ?? null,
-        release.categories ? JSON.stringify(release.categories) : null,
-        release.author ?? null,
-        release.imageUrl ?? null,
-        release.excerpt ?? null,
-        release.postHtml,
-        now,
-        now,
-      )
-      .run();
+      .insert(releases)
+      .values({
+        source_id: sourceId,
+        external_id: release.externalId,
+        imdb_id: release.imdbId,
+        title: release.title,
+        url: release.url,
+        posted_at: release.postedAt ?? null,
+        posted_at_raw: release.postedAtRaw ?? null,
+        categories: release.categories
+          ? JSON.stringify(release.categories)
+          : null,
+        author: release.author ?? null,
+        image_url: release.imageUrl ?? null,
+        excerpt: release.excerpt ?? null,
+        post_html: release.postHtml,
+        first_seen_at: now,
+        last_seen_at: now,
+      })
+      .onConflictDoUpdate({
+        target: [releases.source_id, releases.external_id],
+        set: {
+          imdb_id: release.imdbId,
+          title: release.title,
+          url: release.url,
+          posted_at: release.postedAt ?? null,
+          posted_at_raw: release.postedAtRaw ?? null,
+          categories: release.categories
+            ? JSON.stringify(release.categories)
+            : null,
+          author: release.author ?? null,
+          image_url: release.imageUrl ?? null,
+          excerpt: release.excerpt ?? null,
+          post_html: release.postHtml,
+          last_seen_at: now,
+        },
+      });
   }
 }

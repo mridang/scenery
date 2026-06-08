@@ -1,3 +1,11 @@
+import { sql } from 'drizzle-orm';
+
+import {
+  createDatabase,
+  type Database,
+  torrent_lookups,
+  torrents,
+} from '@/lib/db';
 import type { LookupResult, ResolvedLookup } from './types';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -14,7 +22,11 @@ export interface TorrentRunSummary {
 
 // All DB writes for torrent lookups + per-torrent rows.
 export class TorrentRepository {
-  constructor(private readonly db: D1Database) {}
+  private readonly db: Database;
+
+  constructor(d1: D1Database) {
+    this.db = createDatabase(d1);
+  }
 
   // IDs to look up: movies whose newest release was POSTED at least 24h
   // ago (seeders accumulate from public-post time, not from when we
@@ -26,37 +38,31 @@ export class TorrentRepository {
   async candidates(limit: number, force = false): Promise<string[]> {
     const cutoff = new Date(Date.now() - ONE_DAY_MS).toISOString();
     const gate = force
-      ? ''
-      : `AND (SELECT MAX(COALESCE(r.posted_at, r.first_seen_at))
-               FROM releases r WHERE r.imdb_id = m.imdb_id) <= ?`;
-    const stmt = this.db.prepare(
-      `SELECT m.imdb_id
+      ? sql``
+      : sql`AND (SELECT MAX(COALESCE(r.posted_at, r.first_seen_at))
+               FROM releases r WHERE r.imdb_id = m.imdb_id) <= ${cutoff}`;
+    const rows = await this.db.all<{ imdb_id: string }>(
+      sql`SELECT m.imdb_id
          FROM movies m
          LEFT JOIN torrent_lookups tl ON tl.imdb_id = m.imdb_id
         WHERE (tl.imdb_id IS NULL OR tl.status = 'error')
           ${gate}
         ORDER BY (SELECT MAX(COALESCE(r.posted_at, r.first_seen_at))
                     FROM releases r WHERE r.imdb_id = m.imdb_id) ASC
-        LIMIT ?`,
+        LIMIT ${limit}`,
     );
-    const { results } = force
-      ? await stmt.bind(limit).all<{ imdb_id: string }>()
-      : await stmt.bind(cutoff, limit).all<{ imdb_id: string }>();
-    return (results ?? []).map((r) => r.imdb_id);
+    return rows.map((r) => r.imdb_id);
   }
 
   async tooFreshCount(): Promise<number> {
     const cutoff = new Date(Date.now() - ONE_DAY_MS).toISOString();
-    const row = await this.db
-      .prepare(
-        `SELECT COUNT(*) AS n FROM movies m
+    const row = await this.db.get<{ n: number }>(
+      sql`SELECT COUNT(*) AS n FROM movies m
             LEFT JOIN torrent_lookups tl ON tl.imdb_id = m.imdb_id
            WHERE tl.imdb_id IS NULL
              AND (SELECT MAX(COALESCE(r.posted_at, r.first_seen_at))
-                    FROM releases r WHERE r.imdb_id = m.imdb_id) > ?`,
-      )
-      .bind(cutoff)
-      .first<{ n: number }>();
+                    FROM releases r WHERE r.imdb_id = m.imdb_id) > ${cutoff}`,
+    );
     return row?.n ?? 0;
   }
 
@@ -66,36 +72,34 @@ export class TorrentRepository {
     if (result.status === 'success') {
       for (const t of result.torrents) {
         await this.db
-          .prepare(
-            `INSERT INTO torrents
-                (imdb_id, info_hash, title, raw_title, source, seeders,
-                 size_bytes, quality, is_hdr, is_remux, fetched_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(imdb_id, info_hash) DO UPDATE SET
-                  title       = excluded.title,
-                  raw_title   = excluded.raw_title,
-                  source      = excluded.source,
-                  seeders     = excluded.seeders,
-                  size_bytes  = excluded.size_bytes,
-                  quality     = excluded.quality,
-                  is_hdr      = excluded.is_hdr,
-                  is_remux    = excluded.is_remux,
-                  fetched_at  = excluded.fetched_at`,
-          )
-          .bind(
-            imdbId,
-            t.infoHash,
-            t.title,
-            t.rawTitle,
-            t.source,
-            t.seeders,
-            t.sizeBytes,
-            t.quality,
-            t.isHdr ? 1 : 0,
-            t.isRemux ? 1 : 0,
-            now,
-          )
-          .run();
+          .insert(torrents)
+          .values({
+            imdb_id: imdbId,
+            info_hash: t.infoHash,
+            title: t.title,
+            raw_title: t.rawTitle,
+            source: t.source,
+            seeders: t.seeders,
+            size_bytes: t.sizeBytes,
+            quality: t.quality,
+            is_hdr: t.isHdr ? 1 : 0,
+            is_remux: t.isRemux ? 1 : 0,
+            fetched_at: now,
+          })
+          .onConflictDoUpdate({
+            target: [torrents.imdb_id, torrents.info_hash],
+            set: {
+              title: t.title,
+              raw_title: t.rawTitle,
+              source: t.source,
+              seeders: t.seeders,
+              size_bytes: t.sizeBytes,
+              quality: t.quality,
+              is_hdr: t.isHdr ? 1 : 0,
+              is_remux: t.isRemux ? 1 : 0,
+              fetched_at: now,
+            },
+          });
       }
     }
     await this.upsertLookup(imdbId, provider, result, now);
@@ -108,36 +112,35 @@ export class TorrentRepository {
     now: string,
   ): Promise<void> {
     await this.db
-      .prepare(
-        `INSERT INTO torrent_lookups
-            (imdb_id, status, searched_at, attempt_count, result_count,
-             last_error, raw_response, provider)
-              VALUES (?, ?, ?, 1, ?, ?, ?, ?)
-            ON CONFLICT(imdb_id) DO UPDATE SET
-              status        = excluded.status,
-              searched_at   = excluded.searched_at,
-              attempt_count = torrent_lookups.attempt_count + 1,
-              result_count  = excluded.result_count,
-              last_error    = excluded.last_error,
-              raw_response  = excluded.raw_response,
-              provider      = excluded.provider`,
-      )
-      .bind(
-        imdbId,
-        result.status,
-        now,
-        result.torrents.length,
-        result.error ?? null,
-        result.rawResponse,
+      .insert(torrent_lookups)
+      .values({
+        imdb_id: imdbId,
+        status: result.status,
+        searched_at: now,
+        attempt_count: 1,
+        result_count: result.torrents.length,
+        last_error: result.error ?? null,
+        raw_response: result.rawResponse,
         provider,
-      )
-      .run();
+      })
+      .onConflictDoUpdate({
+        target: torrent_lookups.imdb_id,
+        set: {
+          status: result.status,
+          searched_at: now,
+          attempt_count: sql`${torrent_lookups.attempt_count} + 1`,
+          result_count: result.torrents.length,
+          last_error: result.error ?? null,
+          raw_response: result.rawResponse,
+          provider,
+        },
+      });
   }
 
   async totalStored(): Promise<number> {
-    const row = await this.db
-      .prepare(`SELECT COUNT(*) AS n FROM torrents`)
-      .first<{ n: number }>();
+    const row = await this.db.get<{ n: number }>(
+      sql`SELECT COUNT(*) AS n FROM torrents`,
+    );
     return row?.n ?? 0;
   }
 }

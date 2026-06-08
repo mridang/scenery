@@ -1,3 +1,7 @@
+import { sql } from 'drizzle-orm';
+
+import { createDatabase, type Database, tmdb_genres } from '../db';
+
 import type { CatalogStats, LangCount, LastUpdate, MovieRow } from './types';
 
 /**
@@ -8,102 +12,20 @@ import type { CatalogStats, LangCount, LastUpdate, MovieRow } from './types';
  * @public
  */
 export class CatalogRepository {
-  public constructor(private readonly db: D1Database) {}
+  private readonly db: Database;
+
+  public constructor(d1: D1Database) {
+    this.db = createDatabase(d1);
+  }
 
   /**
    * Load movies + their best-pick torrent, filtered by language code
    * (`'all'` skips the filter), capped at 500 rows.
    */
   public async loadMovies(lang: string): Promise<MovieRow[]> {
-    const langClause = lang === 'all' ? '' : `WHERE t.original_language = ?`;
-    const stmt = this.db.prepare(MOVIE_QUERY.replace('__LANG__', langClause));
-    const res =
-      lang === 'all'
-        ? await stmt.all<MovieRow>()
-        : await stmt.bind(lang).all<MovieRow>();
-    return res.results ?? [];
-  }
-
-  public async loadLanguageCounts(): Promise<LangCount[]> {
-    const res = await this.db
-      .prepare(
-        `SELECT COALESCE(t.original_language, '?') AS code, COUNT(*) AS count
-           FROM movies m
-           LEFT JOIN tmdb_movies t ON t.imdb_id = m.imdb_id
-          GROUP BY code
-          ORDER BY count DESC`,
-      )
-      .all<LangCount>();
-    return res.results ?? [];
-  }
-
-  public async loadGenres(): Promise<Map<number, string>> {
-    const res = await this.db
-      .prepare(`SELECT id, name FROM tmdb_genres`)
-      .all<{ id: number; name: string }>();
-    return new Map((res.results ?? []).map((g) => [g.id, g.name]));
-  }
-
-  public async loadStats(): Promise<CatalogStats> {
-    const r = await this.db
-      .prepare(
-        `SELECT
-           (SELECT COUNT(*) FROM releases)                                  AS releases,
-           (SELECT COUNT(*) FROM movies)                                    AS movies,
-           (SELECT COUNT(*) FROM page_snapshots)                            AS snapshots,
-           (SELECT COUNT(*) FROM fetch_attempts WHERE status='failed')      AS failed_attempts,
-           (SELECT COUNT(*) FROM tmdb_movies WHERE status='found')          AS tmdb_found,
-           (SELECT COUNT(*) FROM tmdb_movies WHERE status='not_found')      AS tmdb_not_found,
-           (SELECT COUNT(*) FROM movies m
-              LEFT JOIN tmdb_movies t ON t.imdb_id = m.imdb_id
-              WHERE t.imdb_id IS NULL)                                      AS tmdb_pending`,
-      )
-      .first<CatalogStats>();
-    return (
-      r ?? {
-        releases: 0,
-        movies: 0,
-        snapshots: 0,
-        failed_attempts: 0,
-        tmdb_found: 0,
-        tmdb_not_found: 0,
-        tmdb_pending: 0,
-      }
-    );
-  }
-
-  public async loadLastUpdate(): Promise<LastUpdate> {
-    const scrape = await this.db
-      .prepare(
-        `SELECT ps.fetched_at AS at, s.slug AS slug
-           FROM page_snapshots ps
-           JOIN sources s ON s.id = ps.source_id
-          ORDER BY ps.fetched_at DESC LIMIT 1`,
-      )
-      .first<{ at: string; slug: string }>();
-    const enrich = await this.db
-      .prepare(`SELECT MAX(fetched_at) AS at FROM tmdb_movies`)
-      .first<{ at: string | null }>();
-    const torrents = await this.db
-      .prepare(
-        `SELECT searched_at AS at, provider AS provider FROM torrent_lookups
-          ORDER BY searched_at DESC LIMIT 1`,
-      )
-      .first<{ at: string | null; provider: string | null }>();
-    return {
-      scrapeAt: scrape?.at ?? null,
-      scrapeSource: scrape?.slug ?? null,
-      enrichAt: enrich?.at ?? null,
-      torrentsAt: torrents?.at ?? null,
-      torrentsProvider: torrents?.provider ?? null,
-    };
-  }
-}
-
-// Big SQL is kept at module scope to avoid building it every call. The
-// __LANG__ placeholder is substituted at runtime depending on whether a
-// language filter is wanted.
-const MOVIE_QUERY = `SELECT
+    const langClause =
+      lang === 'all' ? sql`` : sql`WHERE t.original_language = ${lang}`;
+    const rows = await this.db.all<MovieRow>(sql`SELECT
      m.imdb_id                                  AS imdb_id,
      t.tmdb_id                                  AS tmdb_id,
      t.status                                   AS tmdb_status,
@@ -189,7 +111,7 @@ const MOVIE_QUERY = `SELECT
    FROM movies m
    LEFT JOIN tmdb_movies t ON t.imdb_id = m.imdb_id
    LEFT JOIN torrent_lookups tl ON tl.imdb_id = m.imdb_id
-   __LANG__
+   ${langClause}
    -- Order by FIRST appearance on the source (a re-listed/repacked post
    -- must not bump an older movie to the top), newest arrivals first.
    -- Source dates are day-granular, so break same-day ties by the post
@@ -199,4 +121,72 @@ const MOVIE_QUERY = `SELECT
                FROM releases r WHERE r.imdb_id = m.imdb_id) DESC,
             (SELECT MIN(CAST(r.external_id AS INTEGER))
                FROM releases r WHERE r.imdb_id = m.imdb_id) DESC
-   LIMIT 500`;
+   LIMIT 500`);
+    return rows;
+  }
+
+  public async loadLanguageCounts(): Promise<LangCount[]> {
+    const rows = await this.db.all<LangCount>(sql`
+      SELECT COALESCE(t.original_language, '?') AS code, COUNT(*) AS count
+        FROM movies m
+        LEFT JOIN tmdb_movies t ON t.imdb_id = m.imdb_id
+       GROUP BY code
+       ORDER BY count DESC`);
+    return rows;
+  }
+
+  public async loadGenres(): Promise<Map<number, string>> {
+    const rows = await this.db
+      .select({ id: tmdb_genres.id, name: tmdb_genres.name })
+      .from(tmdb_genres);
+    return new Map(rows.map((g) => [g.id, g.name]));
+  }
+
+  public async loadStats(): Promise<CatalogStats> {
+    const r = await this.db.get<CatalogStats>(sql`SELECT
+           (SELECT COUNT(*) FROM releases)                                  AS releases,
+           (SELECT COUNT(*) FROM movies)                                    AS movies,
+           (SELECT COUNT(*) FROM page_snapshots)                            AS snapshots,
+           (SELECT COUNT(*) FROM fetch_attempts WHERE status='failed')      AS failed_attempts,
+           (SELECT COUNT(*) FROM tmdb_movies WHERE status='found')          AS tmdb_found,
+           (SELECT COUNT(*) FROM tmdb_movies WHERE status='not_found')      AS tmdb_not_found,
+           (SELECT COUNT(*) FROM movies m
+              LEFT JOIN tmdb_movies t ON t.imdb_id = m.imdb_id
+              WHERE t.imdb_id IS NULL)                                      AS tmdb_pending`);
+    return (
+      r ?? {
+        releases: 0,
+        movies: 0,
+        snapshots: 0,
+        failed_attempts: 0,
+        tmdb_found: 0,
+        tmdb_not_found: 0,
+        tmdb_pending: 0,
+      }
+    );
+  }
+
+  public async loadLastUpdate(): Promise<LastUpdate> {
+    const scrape = await this.db.get<{ at: string; slug: string }>(sql`
+      SELECT ps.fetched_at AS at, s.slug AS slug
+        FROM page_snapshots ps
+        JOIN sources s ON s.id = ps.source_id
+       ORDER BY ps.fetched_at DESC LIMIT 1`);
+    const enrich = await this.db.get<{ at: string | null }>(
+      sql`SELECT MAX(fetched_at) AS at FROM tmdb_movies`,
+    );
+    const torrents = await this.db.get<{
+      at: string | null;
+      provider: string | null;
+    }>(sql`
+      SELECT searched_at AS at, provider AS provider FROM torrent_lookups
+       ORDER BY searched_at DESC LIMIT 1`);
+    return {
+      scrapeAt: scrape?.at ?? null,
+      scrapeSource: scrape?.slug ?? null,
+      enrichAt: enrich?.at ?? null,
+      torrentsAt: torrents?.at ?? null,
+      torrentsProvider: torrents?.provider ?? null,
+    };
+  }
+}

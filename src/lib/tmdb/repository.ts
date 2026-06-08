@@ -1,3 +1,12 @@
+import { eq, sql } from 'drizzle-orm';
+
+import {
+  createDatabase,
+  type Database,
+  tmdb_genres,
+  tmdb_movies,
+  tmdb_people,
+} from '@/lib/db';
 import type {
   TmdbCastEntry,
   TmdbCrewEntry,
@@ -14,25 +23,30 @@ import type {
  * @public
  */
 export class TmdbRepository {
-  public constructor(private readonly db: D1Database) {}
+  private readonly db: Database;
+
+  public constructor(d1: D1Database) {
+    this.db = createDatabase(d1);
+  }
 
   /** Number of rows currently in {@link tmdb_genres}. */
   public async countGenres(): Promise<number> {
     const row = await this.db
-      .prepare(`SELECT COUNT(*) AS n FROM tmdb_genres`)
-      .first<{ n: number }>();
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(tmdb_genres)
+      .get();
     return row?.n ?? 0;
   }
 
   /** Upsert one TMDB genre. */
   public async upsertGenre(genre: TmdbGenre): Promise<void> {
     await this.db
-      .prepare(
-        `INSERT INTO tmdb_genres (id, name) VALUES (?, ?)
-            ON CONFLICT(id) DO UPDATE SET name = excluded.name`,
-      )
-      .bind(genre.id, genre.name)
-      .run();
+      .insert(tmdb_genres)
+      .values({ id: genre.id, name: genre.name })
+      .onConflictDoUpdate({
+        target: tmdb_genres.id,
+        set: { name: genre.name },
+      });
   }
 
   /**
@@ -42,34 +56,27 @@ export class TmdbRepository {
    * are a settled verdict, not a transient failure.
    */
   public async pendingMovieIds(limit: number): Promise<string[]> {
-    const res = await this.db
-      .prepare(
-        `SELECT m.imdb_id
+    const rows = await this.db.all<{ imdb_id: string }>(
+      sql`SELECT m.imdb_id
            FROM movies m
            LEFT JOIN tmdb_movies t ON t.imdb_id = m.imdb_id
           WHERE t.imdb_id IS NULL OR t.status = 'error'
-          LIMIT ?`,
-      )
-      .bind(limit)
-      .all<{ imdb_id: string }>();
-    return (res.results ?? []).map((r) => r.imdb_id);
+          LIMIT ${limit}`,
+    );
+    return rows.map((r) => r.imdb_id);
   }
 
   /** Imdb ids already found but missing credit data. */
   public async pendingCreditIds(
     limit: number,
   ): Promise<{ imdb_id: string; tmdb_id: number }[]> {
-    const res = await this.db
-      .prepare(
-        `SELECT imdb_id, tmdb_id FROM tmdb_movies
+    return this.db.all<{ imdb_id: string; tmdb_id: number }>(
+      sql`SELECT imdb_id, tmdb_id FROM tmdb_movies
           WHERE status = 'found'
             AND tmdb_id IS NOT NULL
             AND credits_fetched_at IS NULL
-          LIMIT ?`,
-      )
-      .bind(limit)
-      .all<{ imdb_id: string; tmdb_id: number }>();
-    return res.results ?? [];
+          LIMIT ${limit}`,
+    );
   }
 
   /** Persist an HTTP error against a movie's tmdb_movies row. */
@@ -80,17 +87,23 @@ export class TmdbRepository {
     now: string,
   ): Promise<void> {
     await this.db
-      .prepare(
-        `INSERT INTO tmdb_movies (imdb_id, status, raw_response, fetched_at, error)
-              VALUES (?, 'error', ?, ?, ?)
-            ON CONFLICT(imdb_id) DO UPDATE SET
-              status = excluded.status,
-              raw_response = excluded.raw_response,
-              fetched_at = excluded.fetched_at,
-              error = excluded.error`,
-      )
-      .bind(imdbId, raw, now, errorMessage)
-      .run();
+      .insert(tmdb_movies)
+      .values({
+        imdb_id: imdbId,
+        status: 'error',
+        raw_response: raw,
+        fetched_at: now,
+        error: errorMessage,
+      })
+      .onConflictDoUpdate({
+        target: tmdb_movies.imdb_id,
+        set: {
+          status: 'error',
+          raw_response: raw,
+          fetched_at: now,
+          error: errorMessage,
+        },
+      });
   }
 
   /** Persist a 'not_found' verdict against a movie's tmdb_movies row. */
@@ -100,16 +113,21 @@ export class TmdbRepository {
     now: string,
   ): Promise<void> {
     await this.db
-      .prepare(
-        `INSERT INTO tmdb_movies (imdb_id, status, raw_response, fetched_at)
-              VALUES (?, 'not_found', ?, ?)
-            ON CONFLICT(imdb_id) DO UPDATE SET
-              status = excluded.status,
-              raw_response = excluded.raw_response,
-              fetched_at = excluded.fetched_at`,
-      )
-      .bind(imdbId, raw, now)
-      .run();
+      .insert(tmdb_movies)
+      .values({
+        imdb_id: imdbId,
+        status: 'not_found',
+        raw_response: raw,
+        fetched_at: now,
+      })
+      .onConflictDoUpdate({
+        target: tmdb_movies.imdb_id,
+        set: {
+          status: 'not_found',
+          raw_response: raw,
+          fetched_at: now,
+        },
+      });
   }
 
   /** Persist a successful /find lookup. */
@@ -123,49 +141,30 @@ export class TmdbRepository {
       movie.release_date !== undefined && /^\d{4}/.test(movie.release_date)
         ? Number(movie.release_date.slice(0, 4))
         : null;
+    const values = {
+      tmdb_id: movie.id,
+      status: 'found' as const,
+      title: movie.title ?? null,
+      original_title: movie.original_title ?? null,
+      release_date: movie.release_date ?? null,
+      release_year: year,
+      overview: movie.overview ?? null,
+      poster_path: movie.poster_path ?? null,
+      backdrop_path: movie.backdrop_path ?? null,
+      genre_ids: JSON.stringify(movie.genre_ids ?? []),
+      popularity: movie.popularity ?? null,
+      vote_average: movie.vote_average ?? null,
+      vote_count: movie.vote_count ?? null,
+      raw_response: raw,
+      fetched_at: now,
+    };
     await this.db
-      .prepare(
-        `INSERT INTO tmdb_movies
-            (imdb_id, tmdb_id, status, title, original_title, release_date,
-             release_year, overview, poster_path, backdrop_path, genre_ids,
-             popularity, vote_average, vote_count, raw_response, fetched_at)
-          VALUES (?, ?, 'found', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(imdb_id) DO UPDATE SET
-            tmdb_id        = excluded.tmdb_id,
-            status         = excluded.status,
-            title          = excluded.title,
-            original_title = excluded.original_title,
-            release_date   = excluded.release_date,
-            release_year   = excluded.release_year,
-            overview       = excluded.overview,
-            poster_path    = excluded.poster_path,
-            backdrop_path  = excluded.backdrop_path,
-            genre_ids      = excluded.genre_ids,
-            popularity     = excluded.popularity,
-            vote_average   = excluded.vote_average,
-            vote_count     = excluded.vote_count,
-            raw_response   = excluded.raw_response,
-            fetched_at     = excluded.fetched_at,
-            error          = NULL`,
-      )
-      .bind(
-        imdbId,
-        movie.id,
-        movie.title ?? null,
-        movie.original_title ?? null,
-        movie.release_date ?? null,
-        year,
-        movie.overview ?? null,
-        movie.poster_path ?? null,
-        movie.backdrop_path ?? null,
-        JSON.stringify(movie.genre_ids ?? []),
-        movie.popularity ?? null,
-        movie.vote_average ?? null,
-        movie.vote_count ?? null,
-        raw,
-        now,
-      )
-      .run();
+      .insert(tmdb_movies)
+      .values({ imdb_id: imdbId, ...values })
+      .onConflictDoUpdate({
+        target: tmdb_movies.imdb_id,
+        set: { ...values, error: null },
+      });
   }
 
   /**
@@ -195,43 +194,31 @@ export class TmdbRepository {
       .map((c) => ({ id: c.id, name: c.name }));
 
     await this.db
-      .prepare(
-        `UPDATE tmdb_movies
-            SET runtime = ?,
-                budget = ?,
-                revenue = ?,
-                original_language = ?,
-                director = ?,
-                top_cast = ?,
-                cast_ids = ?,
-                director_ids = ?,
-                production_companies = ?,
-                raw_credits = ?,
-                credits_fetched_at = ?
-          WHERE imdb_id = ?`,
-      )
-      .bind(
-        movie.runtime ?? null,
-        movie.budget ?? null,
-        movie.revenue ?? null,
-        movie.original_language ?? null,
-        directors.length > 0 ? directors.join(', ') : null,
-        cast.length > 0
-          ? JSON.stringify(
-              cast.map((c: TmdbCastEntry) => ({
-                name: c.name,
-                character: c.character,
-              })),
-            )
-          : null,
-        castIds.length > 0 ? JSON.stringify(castIds) : null,
-        directorIds.length > 0 ? JSON.stringify(directorIds) : null,
-        companies.length > 0 ? JSON.stringify(companies) : null,
-        raw,
-        now,
-        imdbId,
-      )
-      .run();
+      .update(tmdb_movies)
+      .set({
+        runtime: movie.runtime ?? null,
+        budget: movie.budget ?? null,
+        revenue: movie.revenue ?? null,
+        original_language: movie.original_language ?? null,
+        director: directors.length > 0 ? directors.join(', ') : null,
+        top_cast:
+          cast.length > 0
+            ? JSON.stringify(
+                cast.map((c: TmdbCastEntry) => ({
+                  name: c.name,
+                  character: c.character,
+                })),
+              )
+            : null,
+        cast_ids: castIds.length > 0 ? JSON.stringify(castIds) : null,
+        director_ids:
+          directorIds.length > 0 ? JSON.stringify(directorIds) : null,
+        production_companies:
+          companies.length > 0 ? JSON.stringify(companies) : null,
+        raw_credits: raw,
+        credits_fetched_at: now,
+      })
+      .where(eq(tmdb_movies.imdb_id, imdbId));
   }
 
   /** Record a credits-fetch error without overwriting a prior good row. */
@@ -242,13 +229,9 @@ export class TmdbRepository {
     now: string,
   ): Promise<void> {
     await this.db
-      .prepare(
-        `UPDATE tmdb_movies
-            SET raw_credits = ?, credits_fetched_at = ?, error = ?
-          WHERE imdb_id = ?`,
-      )
-      .bind(raw, now, errorMessage, imdbId)
-      .run();
+      .update(tmdb_movies)
+      .set({ raw_credits: raw, credits_fetched_at: now, error: errorMessage })
+      .where(eq(tmdb_movies.imdb_id, imdbId));
   }
 
   /**
@@ -257,19 +240,17 @@ export class TmdbRepository {
    * director_ids, production_companies, original_language). No network.
    */
   public async backfillFromRawCredits(): Promise<number> {
-    const rows = await this.db
-      .prepare(
-        `SELECT imdb_id, raw_credits FROM tmdb_movies
+    const rows = await this.db.all<{ imdb_id: string; raw_credits: string }>(
+      sql`SELECT imdb_id, raw_credits FROM tmdb_movies
           WHERE status = 'found'
             AND raw_credits IS NOT NULL
             AND (budget IS NULL
                  OR cast_ids IS NULL
                  OR production_companies IS NULL
                  OR original_language IS NULL)`,
-      )
-      .all<{ imdb_id: string; raw_credits: string }>();
+    );
 
-    return (rows.results ?? []).reduce<Promise<number>>(async (accP, row) => {
+    return rows.reduce<Promise<number>>(async (accP, row) => {
       const updated = await accP;
       try {
         const json = JSON.parse(row.raw_credits) as TmdbMovieResponse;
@@ -286,26 +267,16 @@ export class TmdbRepository {
           .filter((c) => c.id !== undefined)
           .map((c) => ({ id: c.id, name: c.name }));
         await this.db
-          .prepare(
-            `UPDATE tmdb_movies
-                SET budget = ?,
-                    revenue = ?,
-                    original_language = COALESCE(original_language, ?),
-                    cast_ids = COALESCE(cast_ids, ?),
-                    director_ids = COALESCE(director_ids, ?),
-                    production_companies = COALESCE(production_companies, ?)
-              WHERE imdb_id = ?`,
-          )
-          .bind(
-            json.budget ?? null,
-            json.revenue ?? null,
-            json.original_language ?? null,
-            castIds.length > 0 ? JSON.stringify(castIds) : null,
-            dirIds.length > 0 ? JSON.stringify(dirIds) : null,
-            companies.length > 0 ? JSON.stringify(companies) : null,
-            row.imdb_id,
-          )
-          .run();
+          .update(tmdb_movies)
+          .set({
+            budget: json.budget ?? null,
+            revenue: json.revenue ?? null,
+            original_language: sql`COALESCE(original_language, ${json.original_language ?? null})`,
+            cast_ids: sql`COALESCE(cast_ids, ${castIds.length > 0 ? JSON.stringify(castIds) : null})`,
+            director_ids: sql`COALESCE(director_ids, ${dirIds.length > 0 ? JSON.stringify(dirIds) : null})`,
+            production_companies: sql`COALESCE(production_companies, ${companies.length > 0 ? JSON.stringify(companies) : null})`,
+          })
+          .where(eq(tmdb_movies.imdb_id, row.imdb_id));
         return updated + 1;
       } catch {
         /* skip malformed rows */
@@ -316,14 +287,15 @@ export class TmdbRepository {
 
   /** Collect cast+director ids referenced by any successful movie. */
   public async collectReferencedPeople(): Promise<Set<number>> {
-    const res = await this.db
-      .prepare(
-        `SELECT cast_ids, director_ids FROM tmdb_movies
+    const rows = await this.db.all<{
+      cast_ids: string | null;
+      director_ids: string | null;
+    }>(
+      sql`SELECT cast_ids, director_ids FROM tmdb_movies
           WHERE status = 'found'
             AND (cast_ids IS NOT NULL OR director_ids IS NOT NULL)`,
-      )
-      .all<{ cast_ids: string | null; director_ids: string | null }>();
-    const ids = (res.results ?? []).flatMap((row) =>
+    );
+    const ids = rows.flatMap((row) =>
       [row.cast_ids, row.director_ids]
         .filter((raw): raw is string => raw !== null)
         .flatMap((raw) => {
@@ -339,18 +311,16 @@ export class TmdbRepository {
 
   /** Ids in tmdb_people. */
   public async knownPeopleIds(): Promise<Set<number>> {
-    const res = await this.db
-      .prepare(`SELECT id FROM tmdb_people`)
-      .all<{ id: number }>();
-    return new Set<number>((res.results ?? []).map((r) => r.id));
+    const rows = await this.db.select({ id: tmdb_people.id }).from(tmdb_people);
+    return new Set<number>(rows.map((r) => r.id));
   }
 
   /** People still missing a prestige_score — covers the migration backfill. */
   public async stalePeopleIds(): Promise<Set<number>> {
-    const res = await this.db
-      .prepare(`SELECT id FROM tmdb_people WHERE prestige_score IS NULL`)
-      .all<{ id: number }>();
-    return new Set<number>((res.results ?? []).map((r) => r.id));
+    const rows = await this.db.all<{ id: number }>(
+      sql`SELECT id FROM tmdb_people WHERE prestige_score IS NULL`,
+    );
+    return new Set<number>(rows.map((r) => r.id));
   }
 
   /** Persist a person row with their computed prestige score. */
@@ -362,62 +332,47 @@ export class TmdbRepository {
     raw: string,
     now: string,
   ): Promise<void> {
+    const values = {
+      name: person.name ?? null,
+      popularity: person.popularity ?? null,
+      known_for_department: person.known_for_department ?? null,
+      prestige_score: prestige,
+      total_credits: totalCredits,
+      fetched_at: now,
+      raw_response: raw,
+    };
     await this.db
-      .prepare(
-        `INSERT INTO tmdb_people
-            (id, name, popularity, known_for_department,
-             prestige_score, total_credits, fetched_at, raw_response)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(id) DO UPDATE SET
-            name = excluded.name,
-            popularity = excluded.popularity,
-            known_for_department = excluded.known_for_department,
-            prestige_score = excluded.prestige_score,
-            total_credits = excluded.total_credits,
-            fetched_at = excluded.fetched_at,
-            raw_response = excluded.raw_response`,
-      )
-      .bind(
-        person.id ?? fallbackId,
-        person.name ?? null,
-        person.popularity ?? null,
-        person.known_for_department ?? null,
-        prestige,
-        totalCredits,
-        now,
-        raw,
-      )
-      .run();
+      .insert(tmdb_people)
+      .values({ id: person.id ?? fallbackId, ...values })
+      .onConflictDoUpdate({
+        target: tmdb_people.id,
+        set: values,
+      });
   }
 
   /** Movies + their person id arrays. Used to recompute talent_score. */
   public async movieTalentInputs(): Promise<
     { imdb_id: string; cast_ids: string | null; director_ids: string | null }[]
   > {
-    const res = await this.db
-      .prepare(
-        `SELECT imdb_id, cast_ids, director_ids
+    return this.db.all<{
+      imdb_id: string;
+      cast_ids: string | null;
+      director_ids: string | null;
+    }>(
+      sql`SELECT imdb_id, cast_ids, director_ids
            FROM tmdb_movies
           WHERE status = 'found'
             AND (cast_ids IS NOT NULL OR director_ids IS NOT NULL)`,
-      )
-      .all<{
-        imdb_id: string;
-        cast_ids: string | null;
-        director_ids: string | null;
-      }>();
-    return res.results ?? [];
+    );
   }
 
   /** Map person_id → max(prestige_score, popularity) for scoring. */
   public async peoplePrestigeMap(): Promise<Map<number, number>> {
-    const res = await this.db
-      .prepare(
-        `SELECT id, COALESCE(prestige_score, popularity) AS pop FROM tmdb_people`,
-      )
-      .all<{ id: number; pop: number | null }>();
+    const rows = await this.db.all<{ id: number; pop: number | null }>(
+      sql`SELECT id, COALESCE(prestige_score, popularity) AS pop FROM tmdb_people`,
+    );
     return new Map<number, number>(
-      (res.results ?? [])
+      rows
         .filter((r): r is { id: number; pop: number } => r.pop !== null)
         .map((r) => [r.id, r.pop]),
     );
@@ -426,8 +381,8 @@ export class TmdbRepository {
   /** Write a movie's computed talent_score. */
   public async updateTalentScore(imdbId: string, score: number): Promise<void> {
     await this.db
-      .prepare(`UPDATE tmdb_movies SET talent_score = ? WHERE imdb_id = ?`)
-      .bind(score, imdbId)
-      .run();
+      .update(tmdb_movies)
+      .set({ talent_score: score })
+      .where(eq(tmdb_movies.imdb_id, imdbId));
   }
 }

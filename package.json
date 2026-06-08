@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.19.11",
+    "drizzle-orm": "^0.45.2",
     "next": "16.2.7",
     "react": "19.2.4",
     "react-dom": "19.2.4"
@@ -29,8 +30,8 @@
   "devDependencies": {
     "@jest/globals": "^30.0.3",
     "@mridang/eslint-defaults": "^1.4.0",
-    "@types/jest": "^30.0.0",
     "@tailwindcss/postcss": "^4",
+    "@types/jest": "^30.0.0",
     "@types/node": "^24.13.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
