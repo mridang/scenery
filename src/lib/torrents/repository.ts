@@ -1,8 +1,10 @@
-import { sql } from 'drizzle-orm';
+import { and, count, eq, notExists, sql } from 'drizzle-orm';
 
 import {
   createDatabase,
   type Database,
+  movies,
+  releases,
   torrent_lookups,
   torrents,
 } from '@/lib/db';
@@ -37,33 +39,52 @@ export class TorrentRepository {
   // to the movie's first_seen_at when a source didn't expose a date.
   async candidates(limit: number, force = false): Promise<string[]> {
     const cutoff = new Date(Date.now() - ONE_DAY_MS).toISOString();
-    const gate = force
-      ? sql``
-      : sql`AND (SELECT MAX(COALESCE(r.posted_at, r.first_seen_at))
-               FROM releases r WHERE r.imdb_id = m.imdb_id) <= ${cutoff}`;
-    const rows = await this.db.all<{ imdb_id: string }>(
-      sql`SELECT m.imdb_id
-         FROM movies m
-         LEFT JOIN torrent_lookups tl ON tl.imdb_id = m.imdb_id
-        WHERE (tl.imdb_id IS NULL OR tl.status = 'error')
-          ${gate}
-        ORDER BY (SELECT MAX(COALESCE(r.posted_at, r.first_seen_at))
-                    FROM releases r WHERE r.imdb_id = m.imdb_id) ASC
-        LIMIT ${limit}`,
-    );
+    const newestRelease = sql`(SELECT MAX(COALESCE(${releases.posted_at}, ${releases.first_seen_at}))
+               FROM ${releases} WHERE ${releases.imdb_id} = ${movies.imdb_id})`;
+    const freshness = force ? undefined : sql`${newestRelease} <= ${cutoff}`;
+    const rows = await this.db
+      .select({ imdb_id: movies.imdb_id })
+      .from(movies)
+      .where(
+        and(
+          notExists(
+            this.db
+              .select({ one: sql`1` })
+              .from(torrent_lookups)
+              .where(
+                and(
+                  eq(torrent_lookups.imdb_id, movies.imdb_id),
+                  sql`${torrent_lookups.status} <> 'error'`,
+                ),
+              ),
+          ),
+          freshness,
+        ),
+      )
+      .orderBy(sql`${newestRelease} ASC`)
+      .limit(limit);
     return rows.map((r) => r.imdb_id);
   }
 
   async tooFreshCount(): Promise<number> {
     const cutoff = new Date(Date.now() - ONE_DAY_MS).toISOString();
-    const row = await this.db.get<{ n: number }>(
-      sql`SELECT COUNT(*) AS n FROM movies m
-            LEFT JOIN torrent_lookups tl ON tl.imdb_id = m.imdb_id
-           WHERE tl.imdb_id IS NULL
-             AND (SELECT MAX(COALESCE(r.posted_at, r.first_seen_at))
-                    FROM releases r WHERE r.imdb_id = m.imdb_id) > ${cutoff}`,
-    );
-    return row?.n ?? 0;
+    const newestRelease = sql`(SELECT MAX(COALESCE(${releases.posted_at}, ${releases.first_seen_at}))
+               FROM ${releases} WHERE ${releases.imdb_id} = ${movies.imdb_id})`;
+    const rows = await this.db
+      .select({ n: count() })
+      .from(movies)
+      .where(
+        and(
+          notExists(
+            this.db
+              .select({ one: sql`1` })
+              .from(torrent_lookups)
+              .where(eq(torrent_lookups.imdb_id, movies.imdb_id)),
+          ),
+          sql`${newestRelease} > ${cutoff}`,
+        ),
+      );
+    return Number(rows[0]?.n ?? 0);
   }
 
   async persist(imdbId: string, resolved: ResolvedLookup): Promise<void> {
@@ -138,9 +159,7 @@ export class TorrentRepository {
   }
 
   async totalStored(): Promise<number> {
-    const row = await this.db.get<{ n: number }>(
-      sql`SELECT COUNT(*) AS n FROM torrents`,
-    );
-    return row?.n ?? 0;
+    const rows = await this.db.select({ n: count() }).from(torrents);
+    return Number(rows[0]?.n ?? 0);
   }
 }

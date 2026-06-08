@@ -1,8 +1,9 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, or, sql } from 'drizzle-orm';
 
 import {
   createDatabase,
   type Database,
+  movies,
   tmdb_genres,
   tmdb_movies,
   tmdb_people,
@@ -56,13 +57,12 @@ export class TmdbRepository {
    * are a settled verdict, not a transient failure.
    */
   public async pendingMovieIds(limit: number): Promise<string[]> {
-    const rows = await this.db.all<{ imdb_id: string }>(
-      sql`SELECT m.imdb_id
-           FROM movies m
-           LEFT JOIN tmdb_movies t ON t.imdb_id = m.imdb_id
-          WHERE t.imdb_id IS NULL OR t.status = 'error'
-          LIMIT ${limit}`,
-    );
+    const rows = await this.db
+      .select({ imdb_id: movies.imdb_id })
+      .from(movies)
+      .leftJoin(tmdb_movies, eq(tmdb_movies.imdb_id, movies.imdb_id))
+      .where(or(isNull(tmdb_movies.imdb_id), eq(tmdb_movies.status, 'error')))
+      .limit(limit);
     return rows.map((r) => r.imdb_id);
   }
 
@@ -70,13 +70,17 @@ export class TmdbRepository {
   public async pendingCreditIds(
     limit: number,
   ): Promise<{ imdb_id: string; tmdb_id: number }[]> {
-    return this.db.all<{ imdb_id: string; tmdb_id: number }>(
-      sql`SELECT imdb_id, tmdb_id FROM tmdb_movies
-          WHERE status = 'found'
-            AND tmdb_id IS NOT NULL
-            AND credits_fetched_at IS NULL
-          LIMIT ${limit}`,
-    );
+    return this.db
+      .select({ imdb_id: tmdb_movies.imdb_id, tmdb_id: tmdb_movies.tmdb_id })
+      .from(tmdb_movies)
+      .where(
+        and(
+          eq(tmdb_movies.status, 'found'),
+          sql`${tmdb_movies.tmdb_id} IS NOT NULL`,
+          isNull(tmdb_movies.credits_fetched_at),
+        ),
+      )
+      .limit(limit) as Promise<{ imdb_id: string; tmdb_id: number }[]>;
   }
 
   /** Persist an HTTP error against a movie's tmdb_movies row. */
@@ -240,15 +244,24 @@ export class TmdbRepository {
    * director_ids, production_companies, original_language). No network.
    */
   public async backfillFromRawCredits(): Promise<number> {
-    const rows = await this.db.all<{ imdb_id: string; raw_credits: string }>(
-      sql`SELECT imdb_id, raw_credits FROM tmdb_movies
-          WHERE status = 'found'
-            AND raw_credits IS NOT NULL
-            AND (budget IS NULL
-                 OR cast_ids IS NULL
-                 OR production_companies IS NULL
-                 OR original_language IS NULL)`,
-    );
+    const rows = (await this.db
+      .select({
+        imdb_id: tmdb_movies.imdb_id,
+        raw_credits: tmdb_movies.raw_credits,
+      })
+      .from(tmdb_movies)
+      .where(
+        and(
+          eq(tmdb_movies.status, 'found'),
+          sql`${tmdb_movies.raw_credits} IS NOT NULL`,
+          or(
+            isNull(tmdb_movies.budget),
+            isNull(tmdb_movies.cast_ids),
+            isNull(tmdb_movies.production_companies),
+            isNull(tmdb_movies.original_language),
+          ),
+        ),
+      )) as { imdb_id: string; raw_credits: string }[];
 
     return rows.reduce<Promise<number>>(async (accP, row) => {
       const updated = await accP;
@@ -287,14 +300,21 @@ export class TmdbRepository {
 
   /** Collect cast+director ids referenced by any successful movie. */
   public async collectReferencedPeople(): Promise<Set<number>> {
-    const rows = await this.db.all<{
-      cast_ids: string | null;
-      director_ids: string | null;
-    }>(
-      sql`SELECT cast_ids, director_ids FROM tmdb_movies
-          WHERE status = 'found'
-            AND (cast_ids IS NOT NULL OR director_ids IS NOT NULL)`,
-    );
+    const rows = await this.db
+      .select({
+        cast_ids: tmdb_movies.cast_ids,
+        director_ids: tmdb_movies.director_ids,
+      })
+      .from(tmdb_movies)
+      .where(
+        and(
+          eq(tmdb_movies.status, 'found'),
+          or(
+            sql`${tmdb_movies.cast_ids} IS NOT NULL`,
+            sql`${tmdb_movies.director_ids} IS NOT NULL`,
+          ),
+        ),
+      );
     const ids = rows.flatMap((row) =>
       [row.cast_ids, row.director_ids]
         .filter((raw): raw is string => raw !== null)
@@ -317,9 +337,10 @@ export class TmdbRepository {
 
   /** People still missing a prestige_score — covers the migration backfill. */
   public async stalePeopleIds(): Promise<Set<number>> {
-    const rows = await this.db.all<{ id: number }>(
-      sql`SELECT id FROM tmdb_people WHERE prestige_score IS NULL`,
-    );
+    const rows = await this.db
+      .select({ id: tmdb_people.id })
+      .from(tmdb_people)
+      .where(isNull(tmdb_people.prestige_score));
     return new Set<number>(rows.map((r) => r.id));
   }
 
@@ -354,23 +375,36 @@ export class TmdbRepository {
   public async movieTalentInputs(): Promise<
     { imdb_id: string; cast_ids: string | null; director_ids: string | null }[]
   > {
-    return this.db.all<{
-      imdb_id: string;
-      cast_ids: string | null;
-      director_ids: string | null;
-    }>(
-      sql`SELECT imdb_id, cast_ids, director_ids
-           FROM tmdb_movies
-          WHERE status = 'found'
-            AND (cast_ids IS NOT NULL OR director_ids IS NOT NULL)`,
-    );
+    return this.db
+      .select({
+        imdb_id: tmdb_movies.imdb_id,
+        cast_ids: tmdb_movies.cast_ids,
+        director_ids: tmdb_movies.director_ids,
+      })
+      .from(tmdb_movies)
+      .where(
+        and(
+          eq(tmdb_movies.status, 'found'),
+          or(
+            sql`${tmdb_movies.cast_ids} IS NOT NULL`,
+            sql`${tmdb_movies.director_ids} IS NOT NULL`,
+          ),
+        ),
+      );
   }
 
   /** Map person_id → max(prestige_score, popularity) for scoring. */
   public async peoplePrestigeMap(): Promise<Map<number, number>> {
-    const rows = await this.db.all<{ id: number; pop: number | null }>(
-      sql`SELECT id, COALESCE(prestige_score, popularity) AS pop FROM tmdb_people`,
-    );
+    const rows = await this.db
+      .select({
+        id: tmdb_people.id,
+        pop: sql<
+          number | null
+        >`COALESCE(${tmdb_people.prestige_score}, ${tmdb_people.popularity})`.as(
+          'pop',
+        ),
+      })
+      .from(tmdb_people);
     return new Map<number, number>(
       rows
         .filter((r): r is { id: number; pop: number } => r.pop !== null)

@@ -1,6 +1,17 @@
-import { sql, type SQL } from 'drizzle-orm';
+import { count, desc, eq, isNull, max, sql, type SQL } from 'drizzle-orm';
 
-import { createDatabase, type Database, tmdb_genres } from '../db';
+import {
+  createDatabase,
+  type Database,
+  fetch_attempts,
+  movies,
+  page_snapshots,
+  releases,
+  sources,
+  tmdb_genres,
+  tmdb_movies,
+  torrent_lookups,
+} from '../db';
 
 import { PRESTIGE_IDS } from './prestige';
 import type { CatalogStats, LangCount, LastUpdate, ScoredRow } from './types';
@@ -239,13 +250,14 @@ export class CatalogRepository {
   }
 
   public async loadLanguageCounts(): Promise<LangCount[]> {
-    const rows = await this.db.all<LangCount>(sql`
-      SELECT COALESCE(t.original_language, '?') AS code, COUNT(*) AS count
-        FROM movies m
-        LEFT JOIN tmdb_movies t ON t.imdb_id = m.imdb_id
-       GROUP BY code
-       ORDER BY count DESC`);
-    return rows;
+    const code = sql<string>`COALESCE(${tmdb_movies.original_language}, '?')`;
+    const rows = await this.db
+      .select({ code, count: count() })
+      .from(movies)
+      .leftJoin(tmdb_movies, eq(tmdb_movies.imdb_id, movies.imdb_id))
+      .groupBy(code)
+      .orderBy(desc(count()));
+    return rows.map((r) => ({ code: r.code, count: Number(r.count) }));
   }
 
   public async loadGenres(): Promise<Map<number, string>> {
@@ -256,44 +268,77 @@ export class CatalogRepository {
   }
 
   public async loadStats(): Promise<CatalogStats> {
-    const r = await this.db.get<CatalogStats>(sql`SELECT
-           (SELECT COUNT(*) FROM releases)                                  AS releases,
-           (SELECT COUNT(*) FROM movies)                                    AS movies,
-           (SELECT COUNT(*) FROM page_snapshots)                            AS snapshots,
-           (SELECT COUNT(*) FROM fetch_attempts WHERE status='failed')      AS failed_attempts,
-           (SELECT COUNT(*) FROM tmdb_movies WHERE status='found')          AS tmdb_found,
-           (SELECT COUNT(*) FROM tmdb_movies WHERE status='not_found')      AS tmdb_not_found,
-           (SELECT COUNT(*) FROM movies m
-              LEFT JOIN tmdb_movies t ON t.imdb_id = m.imdb_id
-              WHERE t.imdb_id IS NULL)                                      AS tmdb_pending`);
-    return (
-      r ?? {
-        releases: 0,
-        movies: 0,
-        snapshots: 0,
-        failed_attempts: 0,
-        tmdb_found: 0,
-        tmdb_not_found: 0,
-        tmdb_pending: 0,
-      }
-    );
+    const scalar = async (query: Promise<{ n: number }[]>): Promise<number> => {
+      const [row] = await query;
+      return Number(row?.n ?? 0);
+    };
+    const [
+      releaseCount,
+      movieCount,
+      snapshotCount,
+      failedAttempts,
+      tmdbFound,
+      tmdbNotFound,
+      tmdbPending,
+    ] = await Promise.all([
+      scalar(this.db.select({ n: count() }).from(releases)),
+      scalar(this.db.select({ n: count() }).from(movies)),
+      scalar(this.db.select({ n: count() }).from(page_snapshots)),
+      scalar(
+        this.db
+          .select({ n: count() })
+          .from(fetch_attempts)
+          .where(eq(fetch_attempts.status, 'failed')),
+      ),
+      scalar(
+        this.db
+          .select({ n: count() })
+          .from(tmdb_movies)
+          .where(eq(tmdb_movies.status, 'found')),
+      ),
+      scalar(
+        this.db
+          .select({ n: count() })
+          .from(tmdb_movies)
+          .where(eq(tmdb_movies.status, 'not_found')),
+      ),
+      scalar(
+        this.db
+          .select({ n: count() })
+          .from(movies)
+          .leftJoin(tmdb_movies, eq(tmdb_movies.imdb_id, movies.imdb_id))
+          .where(isNull(tmdb_movies.imdb_id)),
+      ),
+    ]);
+    return {
+      releases: releaseCount,
+      movies: movieCount,
+      snapshots: snapshotCount,
+      failed_attempts: failedAttempts,
+      tmdb_found: tmdbFound,
+      tmdb_not_found: tmdbNotFound,
+      tmdb_pending: tmdbPending,
+    };
   }
 
   public async loadLastUpdate(): Promise<LastUpdate> {
-    const scrape = await this.db.get<{ at: string; slug: string }>(sql`
-      SELECT ps.fetched_at AS at, s.slug AS slug
-        FROM page_snapshots ps
-        JOIN sources s ON s.id = ps.source_id
-       ORDER BY ps.fetched_at DESC LIMIT 1`);
-    const enrich = await this.db.get<{ at: string | null }>(
-      sql`SELECT MAX(fetched_at) AS at FROM tmdb_movies`,
-    );
-    const torrents = await this.db.get<{
-      at: string | null;
-      provider: string | null;
-    }>(sql`
-      SELECT searched_at AS at, provider AS provider FROM torrent_lookups
-       ORDER BY searched_at DESC LIMIT 1`);
+    const [scrape] = await this.db
+      .select({ at: page_snapshots.fetched_at, slug: sources.slug })
+      .from(page_snapshots)
+      .innerJoin(sources, eq(sources.id, page_snapshots.source_id))
+      .orderBy(desc(page_snapshots.fetched_at))
+      .limit(1);
+    const [enrich] = await this.db
+      .select({ at: max(tmdb_movies.fetched_at) })
+      .from(tmdb_movies);
+    const [torrents] = await this.db
+      .select({
+        at: torrent_lookups.searched_at,
+        provider: torrent_lookups.provider,
+      })
+      .from(torrent_lookups)
+      .orderBy(desc(torrent_lookups.searched_at))
+      .limit(1);
     return {
       scrapeAt: scrape?.at ?? null,
       scrapeSource: scrape?.slug ?? null,
