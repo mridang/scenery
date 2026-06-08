@@ -3,7 +3,12 @@ import { getDB, getEnv, logError, logInfo } from '@/lib/util';
 import { ScrapeOrchestrator, ScrapingRepository } from '@/lib/scraping';
 import { buildSources } from '@/lib/sources';
 import { buildEnricher } from '@/lib/tmdb';
-import { browserTransport, proxyTransport } from '@/lib/transport';
+import {
+  browserTransport,
+  genericTransport,
+  proxyTransport,
+  withRetry,
+} from '@/lib/transport';
 import {
   ApibayProvider,
   TorrentioProvider,
@@ -54,7 +59,7 @@ async function enrichBatch(
   db: D1Database,
   env: CloudflareEnv,
 ): Promise<{ movies: number; people: number; talentScored: number }> {
-  const enricher = buildEnricher(db, env);
+  const enricher = buildEnricher(db, env, withRetry(genericTransport()));
   await enricher.ensureGenres();
   const movieIds = await enricher.listPendingMovieIds(12);
   for (const imdbId of movieIds) {

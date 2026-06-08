@@ -5,6 +5,7 @@ import {
 } from 'cloudflare:workers';
 
 import { buildEnricher } from '../lib/tmdb/index';
+import { genericTransport, withRetry } from '../lib/transport';
 
 /**
  * Parameters accepted by {@link EnrichWorkflow}.
@@ -42,7 +43,8 @@ export class EnrichWorkflow extends WorkflowEntrypoint<
   ) {
     const movieLimit = event.payload.movieLimit ?? 80;
     const peopleLimit = event.payload.peopleLimit ?? 250;
-    const enricher = () => buildEnricher(this.env.DB, this.env);
+    const transport = withRetry(genericTransport());
+    const enricher = () => buildEnricher(this.env.DB, this.env, transport);
     const retry = { retries: { limit: 3, delay: '10 seconds' } } as const;
     // Yield to a fresh Worker invocation every PACE items so the shared
     // per-invocation subrequest budget resets and TMDB isn't throttled.
