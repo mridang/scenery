@@ -31,6 +31,7 @@ function row(overrides: Partial<MovieRow> = {}): MovieRow {
     release_count: 1,
     latest_release_title: null,
     latest_release_at: null,
+    first_posted_at: null,
     torrent_status: null,
     torrent_count: null,
     best_info_hash: null,

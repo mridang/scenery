@@ -116,7 +116,10 @@ export class ScoringEngine {
     const budgetM = (m.budget ?? 0) / 1_000_000;
     const budgetPts = budgetM > 0 ? Math.log10(budgetM + 1) * 8 : 0;
     const prestige = hasPrestige ? 10 : 0;
-    const recency = this.recencyBoost(m.release_date);
+    // Recency is about how recently the movie became AVAILABLE on the
+    // source (first appearance), not its TMDB theatrical date — a fresh
+    // rip of an old film is a new arrival here.
+    const recency = this.recencyBoost(m.first_posted_at);
     return bayesian * 5 * confidence + talent + budgetPts + prestige + recency;
   }
 

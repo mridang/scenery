@@ -34,6 +34,8 @@ export interface MovieRow {
   readonly release_count: number;
   readonly latest_release_title: string | null;
   readonly latest_release_at: string | null;
+  /** Earliest time this movie appeared on any source — its "actual" date. */
+  readonly first_posted_at: string | null;
   readonly torrent_status: string | null;
   readonly torrent_count: number | null;
   readonly best_info_hash: string | null;

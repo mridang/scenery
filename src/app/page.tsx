@@ -249,11 +249,11 @@ export default async function Home({
 }) {
   const sp = await searchParams;
   const lang = (sp.lang ?? 'en').toLowerCase();
-  const rawSort = (sp.sort ?? 'score').toLowerCase();
+  const rawSort = (sp.sort ?? 'date').toLowerCase();
   const rawView = (sp.view ?? 'catalog').toLowerCase();
   // Reject unknown values so a typo / malicious query lands on the
   // default view rather than throwing the SQL path off.
-  const sort = KNOWN_SORTS.has(rawSort) ? rawSort : 'score';
+  const sort = KNOWN_SORTS.has(rawSort) ? rawSort : 'date';
   const view = KNOWN_VIEWS.has(rawView) ? rawView : 'catalog';
 
   const db = getDB();
@@ -471,7 +471,7 @@ export default async function Home({
               ? `https://image.tmdb.org/t/p/w92${m.poster_path}`
               : null;
             const title = m.tmdb_title ?? m.latest_release_title ?? m.imdb_id;
-            const fresh = isFresh(m.latest_release_at, nowMs);
+            const fresh = isFresh(m.first_posted_at, nowMs);
             const budget = fmtMoney(m.budget);
             const tierClass = TIER_STYLE[tier];
             const planMode = view === 'plan';

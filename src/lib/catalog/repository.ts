@@ -183,11 +183,15 @@ const MOVIE_QUERY = `SELECT
      (SELECT COALESCE(r.posted_at, r.first_seen_at) FROM releases r
         WHERE r.imdb_id = m.imdb_id
         ORDER BY COALESCE(r.posted_at, r.first_seen_at) DESC
-        LIMIT 1)                                AS latest_release_at
+        LIMIT 1)                                AS latest_release_at,
+     (SELECT MIN(COALESCE(r.posted_at, r.first_seen_at)) FROM releases r
+        WHERE r.imdb_id = m.imdb_id)            AS first_posted_at
    FROM movies m
    LEFT JOIN tmdb_movies t ON t.imdb_id = m.imdb_id
    LEFT JOIN torrent_lookups tl ON tl.imdb_id = m.imdb_id
    __LANG__
-   ORDER BY (SELECT MAX(COALESCE(r.posted_at, r.first_seen_at))
+   -- Order by FIRST appearance on the source (a re-listed/repacked post
+   -- must not bump an older movie to the top), newest arrivals first.
+   ORDER BY (SELECT MIN(COALESCE(r.posted_at, r.first_seen_at))
                FROM releases r WHERE r.imdb_id = m.imdb_id) DESC
    LIMIT 500`;

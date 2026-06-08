@@ -171,7 +171,7 @@ function renderItem(
 export async function GET(request: NextRequest) {
   const url = request.nextUrl;
   const lang = (url.searchParams.get('lang') ?? 'en').toLowerCase();
-  const sort = (url.searchParams.get('sort') ?? 'score').toLowerCase();
+  const sort = (url.searchParams.get('sort') ?? 'date').toLowerCase();
   const view = (url.searchParams.get('view') ?? 'catalog').toLowerCase();
   const limit = Math.min(
     Math.max(1, Number(url.searchParams.get('limit') ?? '100')),
