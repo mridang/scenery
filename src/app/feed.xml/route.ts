@@ -89,11 +89,7 @@ function feedTitle(view: string, lang: string, sort: string): string {
   return `scenery — ${v} (${langPart}, ${sortPart})`;
 }
 
-function renderItem(
-  origin: string,
-  s: ScoredMovie,
-  trackers: readonly string[],
-): string {
+function renderItem(s: ScoredMovie, trackers: readonly string[]): string {
   const { row: m, score } = s;
   const title = m.tmdb_title ?? m.latest_release_title ?? m.imdb_id;
   const year = m.tmdb_year ? ` (${m.tmdb_year})` : '';
@@ -111,7 +107,6 @@ function renderItem(
     : '';
 
   const pub = pubDate(m.latest_release_at);
-  void origin;
   return `<item>
   <title>${escapeXml(fullTitle)}</title>
   <link>${escapeXml(imdbLink)}</link>
@@ -178,7 +173,7 @@ export async function GET(request: NextRequest) {
 <language>en-us</language>
 <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
 <atom:link href="${escapeXml(selfHref)}" rel="self" type="application/rss+xml"/>
-${items.map((s) => renderItem(origin, s, trackers)).join('\n')}
+${items.map((s) => renderItem(s, trackers)).join('\n')}
 </channel>
 </rss>
 `;
