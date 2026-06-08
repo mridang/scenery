@@ -27,7 +27,7 @@ jobs:
           node-version-file: '.nvmrc'
 
       - name: Install Dependencies
-        run: npm ci --no-optional
+        run: npm ci
 
       - name: Run Prettier
         run: npm run format
