@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import { getDB } from '@/lib/util';
 import { CatalogService, parseViewOptions } from '@/lib/catalog';
 import type { ScoredMovie } from '@/lib/catalog';
-import { bestTrackers, buildMagnet } from '@/lib/torrents';
+import { bestTrackers, buildMagnet } from '@/lib/magnet';
 import { genericTransport, withRetry } from '@/lib/transport';
 
 export const dynamic = 'force-dynamic';

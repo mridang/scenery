@@ -9,12 +9,6 @@ export {
   defaultProviders,
 } from './providers';
 export type { ApibayOptions, ProviderOptions } from './providers';
-export {
-  buildMagnet,
-  magnetPath,
-  bestTrackers,
-  isValidInfoHash,
-} from './magnet';
 export { TorrentLookupManager } from './manager';
 export { TorrentRepository } from './repository';
 export type { TorrentRunSummary } from './repository';

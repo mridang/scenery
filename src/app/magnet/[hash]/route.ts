@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { bestTrackers, buildMagnet, isValidInfoHash } from '@/lib/torrents';
+import { bestTrackers, buildMagnet, isValidInfoHash } from '@/lib/magnet';
 import { genericTransport, withRetry } from '@/lib/transport';
 
 export const dynamic = 'force-dynamic';

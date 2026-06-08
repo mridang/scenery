@@ -8,7 +8,7 @@ import {
   parseViewOptions,
 } from '@/lib/catalog';
 import type { Tier } from '@/lib/catalog';
-import { magnetPath } from '@/lib/torrents';
+import { magnetPath } from '@/lib/magnet';
 
 /**
  * Staleness threshold for the top-of-page banner. Beyond this, the
