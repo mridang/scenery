@@ -28,6 +28,13 @@ export default [
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    settings: {
+      // `cloudflare:workers` is a Workers runtime built-in (like Node's
+      // `node:` modules) — an ambient module with no file to resolve to.
+      // Whitelist it globally so `import/no-unresolved` stays active for
+      // everything else.
+      'import/core-modules': ['cloudflare:workers'],
+    },
   },
   {
     // TypeScript checks unresolved identifiers better than eslint's
@@ -41,14 +48,6 @@ export default [
       // the plugin since the underlying check is already covered by
       // next-config-typescript's compiler-level rules.
       '@next/next/no-img-element': 'off',
-    },
-  },
-  {
-    // `cloudflare:workers` is a virtual module the Workers runtime
-    // resolves at deploy time. eslint-plugin-import has no concept of it.
-    files: ['src/workflows/**/*.ts', 'src/worker.ts'],
-    rules: {
-      'import/no-unresolved': ['error', { ignore: ['^cloudflare:'] }],
     },
   },
 ];
