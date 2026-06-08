@@ -161,8 +161,8 @@ describe('CatalogService.view — prestige labels', () => {
   });
 });
 
-describe('CatalogService.view — catalog view ignores budget columns', () => {
-  it('reports cumBytes 0 and fits true regardless of SQL values', async () => {
+describe('CatalogService.view — catalog view', () => {
+  it('carries the SQL running total but always fits with no plan summary', async () => {
     const reader = new FakeReader([
       scoredRow({ cum_size_bytes: 999, fits: 0 }),
     ]);
@@ -172,7 +172,9 @@ describe('CatalogService.view — catalog view ignores budget columns', () => {
       sort: 'date',
       view: 'catalog',
     });
-    expect(movies[0]!.cumBytes).toBe(0);
+    // cumBytes passes the SQL value through (the feed's budgetGb gate
+    // relies on it), but fits is forced true and no plan is built.
+    expect(movies[0]!.cumBytes).toBe(999);
     expect(movies[0]!.fits).toBe(true);
     expect(plan).toBeUndefined();
   });

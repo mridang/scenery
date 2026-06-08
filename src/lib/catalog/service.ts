@@ -70,7 +70,10 @@ export class CatalogService {
       studios: labelsForPrestigeIds(r.prestige_ids),
       score: r.score,
       tier: r.tier,
-      cumBytes: isPlan ? (r.cum_size_bytes ?? 0) : 0,
+      // The SQL running total (in the requested sort order) — used by the
+      // page's plan view and the feed's ?budgetGb= disk gate alike, so
+      // the cumulative sum never has to be re-done in JS.
+      cumBytes: r.cum_size_bytes ?? 0,
       fits: isPlan ? r.fits === 1 : true,
     }));
 

@@ -197,30 +197,17 @@ export async function GET(request: NextRequest) {
   const eligible: readonly ScoredMovie[] =
     view === 'plan' ? movies.filter((m) => m.fits) : movies;
 
-  // Disk-space gate: walk the sized items in order and keep the prefix
-  // whose cumulative size stays within the budget. `reduce` carries the
-  // running total and the accepted prefix together so we never mutate.
+  // Disk-space gate: `cumBytes` is the SQL-computed running total in the
+  // feed's sort order (unsized rows contribute 0), so keeping the sized
+  // rows whose running total stays within the budget is a threshold
+  // filter — no cumulative summing in JS. The total is monotonic, so the
+  // kept rows are exactly the in-budget prefix.
   const usable: readonly ScoredMovie[] =
     budgetBytes === null
       ? eligible
-      : eligible
-          .filter((m) => (m.row.best_size_bytes ?? 0) > 0)
-          .reduce<{
-            cum: number;
-            done: boolean;
-            within: readonly ScoredMovie[];
-          }>(
-            (acc, m) => {
-              if (acc.done) {
-                return acc;
-              }
-              const next = acc.cum + (m.row.best_size_bytes ?? 0);
-              return next > budgetBytes
-                ? { ...acc, done: true }
-                : { cum: next, done: false, within: [...acc.within, m] };
-            },
-            { cum: 0, done: false, within: [] },
-          ).within;
+      : eligible.filter(
+          (m) => (m.row.best_size_bytes ?? 0) > 0 && m.cumBytes <= budgetBytes,
+        );
 
   const items = usable.slice(0, limit);
 
