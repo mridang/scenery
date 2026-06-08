@@ -49,7 +49,7 @@ export class TorrentRepository {
         and(
           notExists(
             this.db
-              .select({ one: sql`1` })
+              .select({ one: torrent_lookups.imdb_id })
               .from(torrent_lookups)
               .where(
                 and(
@@ -77,7 +77,7 @@ export class TorrentRepository {
         and(
           notExists(
             this.db
-              .select({ one: sql`1` })
+              .select({ one: torrent_lookups.imdb_id })
               .from(torrent_lookups)
               .where(eq(torrent_lookups.imdb_id, movies.imdb_id)),
           ),
