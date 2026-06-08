@@ -3,8 +3,9 @@ module.exports = {
     'src/app/**/{page,layout,route}.{ts,tsx}',
     'cypress/**/*.cy.{js,ts}',
     'src/**/*.test.ts',
+    'test/**/*.test.ts',
   ],
-  project: ['src/**/*.{ts,tsx}'],
+  project: ['src/**/*.{ts,tsx}', 'test/**/*.ts'],
   ignoreDependencies: [
     // `cloudflare:workers` is a Workers runtime virtual module, not a
     // package; knip reads the prefix as a `cloudflare` dependency.

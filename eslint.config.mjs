@@ -29,11 +29,11 @@ export default [
       },
     },
     settings: {
-      // `cloudflare:workers` is a Workers runtime built-in (like Node's
-      // `node:` modules) — an ambient module with no file to resolve to.
-      // Whitelist it globally so `import/no-unresolved` stays active for
-      // everything else.
-      'import/core-modules': ['cloudflare:workers'],
+      // `cloudflare:workers`/`cloudflare:test` are Workers runtime
+      // built-ins (like Node's `node:` modules) — ambient modules with no
+      // file to resolve to. Whitelist them globally so `import/no-unresolved`
+      // stays active for everything else.
+      'import/core-modules': ['cloudflare:workers', 'cloudflare:test'],
     },
   },
   {

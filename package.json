@@ -27,6 +27,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.16.13",
     "@mridang/eslint-defaults": "^1.4.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24.13.1",
