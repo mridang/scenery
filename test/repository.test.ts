@@ -130,13 +130,13 @@ describe('CatalogRepository (real D1)', () => {
 
     const catalog = new CatalogRepository(harness.db);
 
-    const all = await catalog.loadMovies('all');
+    const all = await catalog.loadMovies('all', 'date', 'catalog');
     expect(all.map((m) => m.imdb_id).sort()).toEqual([
       'tt2000001',
       'tt2000002',
     ]);
 
-    const english = await catalog.loadMovies('en');
+    const english = await catalog.loadMovies('en', 'date', 'catalog');
     expect(english).toHaveLength(1);
     expect(english[0]?.imdb_id).toBe('tt2000001');
 
@@ -145,5 +145,120 @@ describe('CatalogRepository (real D1)', () => {
     expect(stats.releases).toBe(2);
     expect(stats.tmdb_found).toBe(1);
     expect(stats.tmdb_pending).toBe(1);
+  });
+
+  /**
+   * The composite score, tier and prestige detection are now computed
+   * entirely in SQL, so this exercises the real D1 query: a strong
+   * prestige title must outscore a weak one and earn an 'A' tier.
+   */
+  it('scores and tiers movies in SQL (sort=score)', async () => {
+    const scraping = new ScrapingRepository(harness.db);
+    const sourceId = (await scraping.findSource('scnsrc'))!.id;
+    const seedRelease = async (
+      ext: string,
+      imdb: string,
+      postedAt: string,
+    ): Promise<void> =>
+      scraping.upsertRelease(
+        sourceId,
+        {
+          externalId: ext,
+          imdbId: imdb,
+          title: `Release ${ext}`,
+          url: `https://example.test/${ext}`,
+          postHtml: '<p>b</p>',
+          postedAt,
+        },
+        postedAt,
+      );
+    // Same posted date so recency is equal — score order is decided by
+    // the rating / budget / prestige signals alone.
+    await seedRelease('s-strong', 'tt3000001', '2026-06-01T00:00:00Z');
+    await seedRelease('s-weak', 'tt3000002', '2026-06-01T00:00:00Z');
+
+    await harness.db.batch([
+      harness.db
+        .prepare(
+          `INSERT INTO tmdb_movies (imdb_id, status, original_language,
+             vote_average, vote_count, budget, production_companies,
+             raw_response, fetched_at)
+           VALUES (?, 'found', 'en', 8.0, 5000, 200000000,
+             '[{"id":210099,"name":"Amazon MGM"}]', '{}', '2026-06-03T00:00:00Z')`,
+        )
+        .bind('tt3000001'),
+      harness.db
+        .prepare(
+          `INSERT INTO tmdb_movies (imdb_id, status, original_language,
+             vote_average, vote_count, budget, raw_response, fetched_at)
+           VALUES (?, 'found', 'en', 4.0, 5, 0, '{}', '2026-06-03T00:00:00Z')`,
+        )
+        .bind('tt3000002'),
+    ]);
+
+    const catalog = new CatalogRepository(harness.db);
+    const rows = await catalog.loadMovies('all', 'score', 'catalog');
+
+    expect(rows.map((r) => r.imdb_id)).toEqual(['tt3000001', 'tt3000002']);
+    expect(rows[0]!.score).toBeGreaterThan(rows[1]!.score);
+    expect(rows[0]!.tier).toBe('A'); // prestige studio → A
+    expect(rows[0]!.prestige_ids).toContain('210099');
+    expect(rows[1]!.prestige_ids).toBeNull();
+  });
+
+  /**
+   * Plan view budgets disk space with a SQL window function: the running
+   * total and the fits flag are computed in the database.
+   */
+  it('computes the cumulative 1 TB budget in SQL (view=plan)', async () => {
+    const scraping = new ScrapingRepository(harness.db);
+    const sourceId = (await scraping.findSource('scnsrc'))!.id;
+    const seedRelease = async (
+      ext: string,
+      imdb: string,
+      postedAt: string,
+    ): Promise<void> =>
+      scraping.upsertRelease(
+        sourceId,
+        {
+          externalId: ext,
+          imdbId: imdb,
+          title: `Release ${ext}`,
+          url: `https://example.test/${ext}`,
+          postHtml: '<p>b</p>',
+          postedAt,
+        },
+        postedAt,
+      );
+    // Newer first in date order: tt-a (Jun 2) then tt-b (Jun 1).
+    await seedRelease('p-a', 'tt4000001', '2026-06-02T00:00:00Z');
+    await seedRelease('p-b', 'tt4000002', '2026-06-01T00:00:00Z');
+
+    // Two 600 GB torrents — cumulative 1.2 TB overflows the 1 TB budget,
+    // so the second (older) one must not fit.
+    const big = 600_000_000_000;
+    await harness.db.batch([
+      harness.db
+        .prepare(
+          `INSERT INTO torrents (imdb_id, info_hash, title, raw_title,
+             size_bytes, seeders, fetched_at)
+           VALUES (?, 'hasha', 'A', 'A', ?, 10, '2026-06-03T00:00:00Z')`,
+        )
+        .bind('tt4000001', big),
+      harness.db
+        .prepare(
+          `INSERT INTO torrents (imdb_id, info_hash, title, raw_title,
+             size_bytes, seeders, fetched_at)
+           VALUES (?, 'hashb', 'B', 'B', ?, 10, '2026-06-03T00:00:00Z')`,
+        )
+        .bind('tt4000002', big),
+    ]);
+
+    const catalog = new CatalogRepository(harness.db);
+    const rows = await catalog.loadMovies('all', 'date', 'plan');
+
+    expect(rows.map((r) => r.imdb_id)).toEqual(['tt4000001', 'tt4000002']);
+    expect(rows.map((r) => r.cum_size_bytes)).toEqual([big, big * 2]);
+    expect(rows.map((r) => r.fits)).toEqual([1, 0]);
   });
 });

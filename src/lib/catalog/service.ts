@@ -1,28 +1,29 @@
 import { CatalogRepository } from './repository';
-import { ScoringEngine } from './scoring';
+import { labelsForPrestigeIds } from './prestige';
 import type {
   CatalogReader,
   CatalogStats,
   LangCount,
   LastUpdate,
-  MovieRow,
+  PlanSummary,
   ScoredMovie,
   ViewOptions,
   ViewResult,
 } from './types';
-import { BUDGET_BYTES } from './types';
 
 /**
  * The single entry point for every catalog read the UI performs. It
- * wraps the data layer ({@link CatalogReader}) and the
- * {@link ScoringEngine} so consumers — the home page, the RSS feed and
- * the health endpoint — never touch raw queries or scoring math
- * directly. There is exactly one "catalog thing" the UI talks to.
+ * wraps the data layer ({@link CatalogReader}) so consumers — the home
+ * page, the RSS feed and the health endpoint — never touch raw queries.
+ * There is exactly one "catalog thing" the UI talks to.
+ *
+ * All ranking, ordering and budgeting now happen in SQL (see
+ * {@link CatalogRepository.loadMovies}); this class only adapts the
+ * scored rows into the {@link ScoredMovie} shape the views render —
+ * mapping prestige-studio ids to labels and tallying the plan summary.
  *
  * Construct with {@link CatalogService.fromD1} in production. Unit tests
- * pass a stub {@link CatalogReader} straight to the constructor, so the
- * scoring / sorting / plan-trimming composition can be verified without
- * a database.
+ * pass a stub {@link CatalogReader} straight to the constructor.
  *
  * @public
  */
@@ -55,64 +56,38 @@ export class CatalogService {
   }
 
   /**
-   * Resolve a view by selection strategy:
-   *
-   * - `sort='date'` — most-recently-posted first (the DB already orders
-   *   rows by first appearance on the source).
-   * - `sort='score'` — top-ranked first, using the Bayesian-weighted
-   *   {@link ScoringEngine} score.
-   * - `view='plan'` — additionally walk the result in order and tag each
-   *   movie with its cumulative byte cost against the 1 TB budget.
+   * Resolve a view. The database does the work — scoring, the
+   * `sort='date'` (recent-first) / `sort='score'` (top-ranked) strategy,
+   * and, in plan view, the cumulative 1 TB budget. Here we only shape
+   * the rows for rendering.
    */
   public async view(opts: ViewOptions): Promise<ViewResult> {
-    const rows = await this.reader.loadMovies(opts.lang);
-    return CatalogService.compose(rows, opts);
-  }
+    const rows = await this.reader.loadMovies(opts.lang, opts.sort, opts.view);
+    const isPlan = opts.view === 'plan';
 
-  /**
-   * Pure composition: score every row, sort by the requested strategy
-   * and, in plan view, trim to the storage budget. Side-effect free, so
-   * it is unit-tested directly against fixture rows.
-   */
-  private static compose(rows: MovieRow[], opts: ViewOptions): ViewResult {
-    const C = ScoringEngine.computeCentroid(rows);
-    const engine = new ScoringEngine(C);
+    const movies: readonly ScoredMovie[] = rows.map((r) => ({
+      row: r,
+      studios: labelsForPrestigeIds(r.prestige_ids),
+      score: r.score,
+      tier: r.tier,
+      cumBytes: isPlan ? (r.cum_size_bytes ?? 0) : 0,
+      fits: isPlan ? r.fits === 1 : true,
+    }));
 
-    const scored: readonly ScoredMovie[] = rows.map((row) => {
-      const studios = engine.prestigeStudios(row.production_companies);
-      const hasPrestige = studios.length > 0;
-      return {
-        row,
-        studios,
-        score: engine.score(row, hasPrestige),
-        tier: engine.tier(row, hasPrestige),
-        cumBytes: 0,
-        fits: true,
-      };
-    });
-
-    const sorted =
-      opts.sort === 'date'
-        ? scored
-        : scored.toSorted((a, b) => b.score - a.score);
-
-    if (opts.view !== 'plan') {
-      return { movies: sorted, C: engine.C, M: engine.M };
+    if (!isPlan) {
+      return { movies };
     }
 
-    const withSize = sorted.filter((r) => (r.row.best_size_bytes ?? 0) > 0);
-    const planned = withSize.reduce<readonly ScoredMovie[]>((acc, r) => {
-      const cum = acc.at(-1)?.cumBytes ?? 0;
-      const next = cum + (r.row.best_size_bytes ?? 0);
-      return [...acc, { ...r, cumBytes: next, fits: next <= BUDGET_BYTES }];
-    }, []);
-    const plan = planned.reduce(
-      (p, r) =>
-        r.fits
-          ? { ...p, fits: p.fits + 1, bytesFits: r.cumBytes }
-          : { ...p, skipped: p.skipped + 1 },
+    // Tally the SQL-computed fits flags. The cumulative total is
+    // monotonic, so the fitting rows form a prefix and bytesFits ends as
+    // the running total of the last row that fit.
+    const plan: PlanSummary = movies.reduce<PlanSummary>(
+      (p, m) =>
+        m.fits
+          ? { fits: p.fits + 1, skipped: p.skipped, bytesFits: m.cumBytes }
+          : { fits: p.fits, skipped: p.skipped + 1, bytesFits: p.bytesFits },
       { fits: 0, skipped: 0, bytesFits: 0 },
     );
-    return { movies: planned, C: engine.C, M: engine.M, plan };
+    return { movies, plan };
   }
 }

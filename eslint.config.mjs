@@ -1,4 +1,5 @@
 import mridang from '@mridang/eslint-defaults';
+import drizzle from 'eslint-plugin-drizzle';
 
 export default [
   {
@@ -47,6 +48,23 @@ export default [
     files: ['**/*.css'],
     rules: {
       'css/no-invalid-at-rules': 'off',
+    },
+  },
+  {
+    // Drizzle safety net: a bare .delete()/.update() on the db wipes or
+    // rewrites the whole table. Require a .where() on every one. Our
+    // drizzle instance is reached as `this.db` in the repositories.
+    files: ['src/**/*.ts'],
+    plugins: { drizzle },
+    rules: {
+      'drizzle/enforce-delete-with-where': [
+        'error',
+        { drizzleObjectName: ['db'] },
+      ],
+      'drizzle/enforce-update-with-where': [
+        'error',
+        { drizzleObjectName: ['db'] },
+      ],
     },
   },
   {

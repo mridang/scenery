@@ -6,11 +6,10 @@ import type {
   CatalogStats,
   LangCount,
   LastUpdate,
-  MovieRow,
+  ScoredRow,
 } from './types';
-import { BUDGET_BYTES } from './types';
 
-function row(overrides: Partial<MovieRow> = {}): MovieRow {
+function scoredRow(overrides: Partial<ScoredRow> = {}): ScoredRow {
   return {
     imdb_id: 'tt0000001',
     tmdb_id: 1,
@@ -34,8 +33,6 @@ function row(overrides: Partial<MovieRow> = {}): MovieRow {
     release_count: 1,
     latest_release_title: null,
     latest_release_at: null,
-    // Null so scoring is time-independent: recency contributes 0 and the
-    // test stays deterministic regardless of the wall clock.
     first_posted_at: null,
     torrent_status: null,
     torrent_count: null,
@@ -45,21 +42,31 @@ function row(overrides: Partial<MovieRow> = {}): MovieRow {
     best_size_bytes: null,
     best_seeders: null,
     best_quality: null,
+    // Scoring columns the SQL query would have populated.
+    score: 0,
+    tier: 'B',
+    prestige_ids: null,
+    cum_size_bytes: null,
+    fits: 1,
     ...overrides,
   };
 }
 
 /**
- * In-memory {@link CatalogReader} stub. Records the language passed to
- * loadMovies so we can assert the service forwards it, and returns
- * whatever fixtures the test supplied.
+ * In-memory {@link CatalogReader} stub. Records the (lang, sort, view)
+ * triple passed to loadMovies so we can assert the service forwards the
+ * selection strategy to the database, and returns supplied fixtures.
  */
 class FakeReader implements CatalogReader {
-  public lastLang: string | null = null;
-  public constructor(private readonly movies: MovieRow[]) {}
+  public lastArgs: { lang: string; sort: string; view: string } | null = null;
+  public constructor(private readonly movies: ScoredRow[]) {}
 
-  public loadMovies(lang: string): Promise<MovieRow[]> {
-    this.lastLang = lang;
+  public loadMovies(
+    lang: string,
+    sort: string,
+    view: string,
+  ): Promise<ScoredRow[]> {
+    this.lastArgs = { lang, sort, view };
     return Promise.resolve(this.movies);
   }
   public loadGenres(): Promise<Map<number, string>> {
@@ -107,87 +114,86 @@ describe('CatalogService delegations', () => {
   });
 });
 
-describe('CatalogService.view — language', () => {
-  it('passes the requested language through to the reader', async () => {
-    const reader = new FakeReader([row()]);
+describe('CatalogService.view — strategy is delegated to SQL', () => {
+  it('forwards the (lang, sort, view) selection strategy to the reader', async () => {
+    const reader = new FakeReader([scoredRow()]);
     const svc = new CatalogService(reader);
-    await svc.view({ lang: 'fr', sort: 'date', view: 'catalog' });
-    expect(reader.lastLang).toBe('fr');
-  });
-});
-
-describe('CatalogService.view — sort strategies', () => {
-  // The DB returns rows already ordered "recent first"; date sort must
-  // preserve that order, score sort must re-order by descending score.
-  const movies = [
-    row({ imdb_id: 'tt-weak', vote_average: 4, vote_count: 10 }),
-    row({ imdb_id: 'tt-strong', vote_average: 9, vote_count: 5000 }),
-  ];
-
-  it("sort='date' preserves the reader's order", async () => {
-    const svc = new CatalogService(new FakeReader(movies));
-    const { movies: out } = await svc.view({
-      lang: 'all',
-      sort: 'date',
-      view: 'catalog',
+    await svc.view({ lang: 'fr', sort: 'score', view: 'plan' });
+    expect(reader.lastArgs).toEqual({
+      lang: 'fr',
+      sort: 'score',
+      view: 'plan',
     });
-    expect(out.map((m) => m.row.imdb_id)).toEqual(['tt-weak', 'tt-strong']);
   });
 
-  it("sort='score' orders by descending score", async () => {
-    const svc = new CatalogService(new FakeReader(movies));
-    const { movies: out } = await svc.view({
+  it('preserves the order the reader returned (SQL already sorted)', async () => {
+    const reader = new FakeReader([
+      scoredRow({ imdb_id: 'tt-a', score: 10 }),
+      scoredRow({ imdb_id: 'tt-b', score: 99 }),
+    ]);
+    const svc = new CatalogService(reader);
+    const { movies } = await svc.view({
       lang: 'all',
       sort: 'score',
       view: 'catalog',
     });
-    expect(out.map((m) => m.row.imdb_id)).toEqual(['tt-strong', 'tt-weak']);
-    expect(out[0]!.score).toBeGreaterThan(out[1]!.score);
-  });
-
-  it('does not attach a plan summary in catalog view', async () => {
-    const svc = new CatalogService(new FakeReader(movies));
-    const result = await svc.view({
-      lang: 'all',
-      sort: 'score',
-      view: 'catalog',
-    });
-    expect(result.plan).toBeUndefined();
+    expect(movies.map((m) => m.row.imdb_id)).toEqual(['tt-a', 'tt-b']);
+    expect(movies.map((m) => m.score)).toEqual([10, 99]);
   });
 });
 
-describe('CatalogService.view — plan (within-budget) strategy', () => {
-  it('tags cumulative bytes and flips fits when the budget overflows', async () => {
-    const half = BUDGET_BYTES * 0.6;
-    const movies = [
-      row({ imdb_id: 'tt-a', best_size_bytes: half }),
-      row({ imdb_id: 'tt-b', best_size_bytes: half }), // cumulative > budget
-    ];
-    const svc = new CatalogService(new FakeReader(movies));
-    const { movies: out, plan } = await svc.view({
+describe('CatalogService.view — prestige labels', () => {
+  it('maps matched prestige ids to distinct studio labels', async () => {
+    const reader = new FakeReader([
+      scoredRow({ imdb_id: 'tt-mgm', prestige_ids: '[210099]' }),
+      scoredRow({ imdb_id: 'tt-hbo', prestige_ids: '[3268,7429]' }), // both HBO
+      scoredRow({ imdb_id: 'tt-none', prestige_ids: null }),
+    ]);
+    const svc = new CatalogService(reader);
+    const { movies } = await svc.view({
       lang: 'all',
       sort: 'date',
-      view: 'plan',
+      view: 'catalog',
     });
-
-    expect(out[0]!.cumBytes).toBe(half);
-    expect(out[0]!.fits).toBe(true);
-    expect(out[1]!.cumBytes).toBe(half * 2);
-    expect(out[1]!.fits).toBe(false);
-    expect(plan).toEqual({ fits: 1, skipped: 1, bytesFits: half });
+    expect(movies[0]!.studios).toEqual(['Amazon MGM']);
+    expect(movies[1]!.studios).toEqual(['HBO']);
+    expect(movies[2]!.studios).toEqual([]);
   });
+});
 
-  it('excludes rows without a measured torrent size from the plan', async () => {
-    const movies = [
-      row({ imdb_id: 'tt-sized', best_size_bytes: 1_000 }),
-      row({ imdb_id: 'tt-unsized', best_size_bytes: null }),
-    ];
-    const svc = new CatalogService(new FakeReader(movies));
-    const { movies: out } = await svc.view({
+describe('CatalogService.view — catalog view ignores budget columns', () => {
+  it('reports cumBytes 0 and fits true regardless of SQL values', async () => {
+    const reader = new FakeReader([
+      scoredRow({ cum_size_bytes: 999, fits: 0 }),
+    ]);
+    const svc = new CatalogService(reader);
+    const { movies, plan } = await svc.view({
+      lang: 'all',
+      sort: 'date',
+      view: 'catalog',
+    });
+    expect(movies[0]!.cumBytes).toBe(0);
+    expect(movies[0]!.fits).toBe(true);
+    expect(plan).toBeUndefined();
+  });
+});
+
+describe('CatalogService.view — plan view surfaces the SQL budget', () => {
+  it('passes through cum_size_bytes / fits and tallies the plan summary', async () => {
+    const reader = new FakeReader([
+      scoredRow({ imdb_id: 'tt-1', cum_size_bytes: 400, fits: 1 }),
+      scoredRow({ imdb_id: 'tt-2', cum_size_bytes: 900, fits: 1 }),
+      scoredRow({ imdb_id: 'tt-3', cum_size_bytes: 1500, fits: 0 }),
+    ]);
+    const svc = new CatalogService(reader);
+    const { movies, plan } = await svc.view({
       lang: 'all',
       sort: 'date',
       view: 'plan',
     });
-    expect(out.map((m) => m.row.imdb_id)).toEqual(['tt-sized']);
+    expect(movies.map((m) => m.cumBytes)).toEqual([400, 900, 1500]);
+    expect(movies.map((m) => m.fits)).toEqual([true, true, false]);
+    // Two rows fit; bytesFits is the running total of the last fitting row.
+    expect(plan).toEqual({ fits: 2, skipped: 1, bytesFits: 900 });
   });
 });

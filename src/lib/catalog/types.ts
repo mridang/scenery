@@ -102,12 +102,28 @@ export interface PlanSummary {
 /** End-to-end output of {@link CatalogService#view}. @public */
 export interface ViewResult {
   readonly movies: readonly ScoredMovie[];
-  /** Bayesian centroid used in scoring. */
-  readonly C: number;
-  /** Bayesian min-vote threshold used in scoring. */
-  readonly M: number;
   /** Populated only when view='plan'. */
   readonly plan?: PlanSummary;
+}
+
+/**
+ * A {@link MovieRow} with the scoring columns the catalog query computes
+ * in SQL: the composite {@link CatalogService#view | score}, the
+ * download-priority {@link Tier}, the matched prestige-studio ids (a
+ * `json_group_array` string), and — in plan view — the running storage
+ * total and whether the row fits the 1 TB budget.
+ *
+ * @public
+ */
+export interface ScoredRow extends MovieRow {
+  readonly score: number;
+  readonly tier: Tier;
+  /** JSON array of matched prestige-studio ids, e.g. `"[210099]"`. */
+  readonly prestige_ids: string | null;
+  /** Cumulative bytes up to and including this row (plan view). */
+  readonly cum_size_bytes: number | null;
+  /** 1 when the cumulative total is within the budget, else 0. */
+  readonly fits: number;
 }
 
 /** Options accepted by {@link CatalogService#view}. @public */
@@ -130,7 +146,7 @@ export interface ViewOptions {
  * @public
  */
 export interface CatalogReader {
-  loadMovies(lang: string): Promise<MovieRow[]>;
+  loadMovies(lang: string, sort: string, view: string): Promise<ScoredRow[]>;
   loadGenres(): Promise<Map<number, string>>;
   loadStats(): Promise<CatalogStats>;
   loadLanguageCounts(): Promise<LangCount[]>;
