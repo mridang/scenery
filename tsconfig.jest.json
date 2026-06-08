@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2022",
+    "rootDir": ".",
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+    "allowJs": true,
+    "sourceMap": true,
+    "declaration": false,
+    "noEmit": true
+  },
+  "include": ["**/*"],
+  "exclude": ["node_modules", ".next", ".open-next", "dist"]
+}

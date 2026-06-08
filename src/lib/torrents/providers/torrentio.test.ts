@@ -1,29 +1,35 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import { TorrentioProvider } from './torrentio';
 
-function mockJson(body: unknown, opts: { status?: number } = {}) {
+const realFetch = globalThis.fetch;
+
+function stubFetch(body: unknown, opts: { status?: number } = {}): void {
   const text = typeof body === 'string' ? body : JSON.stringify(body);
-  return vi.fn().mockResolvedValue(
-    new Response(text, {
-      status: opts.status ?? 200,
-      headers: { 'content-type': 'application/json' },
-    }),
-  );
+  globalThis.fetch = jest.fn(() =>
+    Promise.resolve(
+      new Response(text, {
+        status: opts.status ?? 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    ),
+  ) as typeof fetch;
 }
+
+afterEach(() => {
+  globalThis.fetch = realFetch;
+});
 
 describe('TorrentioProvider', () => {
   it("returns 'empty' when streams array is empty", async () => {
-    const fetch = mockJson({ streams: [] });
-    vi.stubGlobal('fetch', fetch);
+    stubFetch({ streams: [] });
     const r = await new TorrentioProvider().search('tt0000001');
     expect(r.status).toBe('empty');
     expect(r.torrents).toEqual([]);
-    vi.unstubAllGlobals();
   });
 
   it('parses seeders, size, source, quality from the emoji-delimited title', async () => {
-    const fetch = mockJson({
+    stubFetch({
       streams: [
         {
           name: 'Torrentio\n1080p',
@@ -33,7 +39,6 @@ describe('TorrentioProvider', () => {
         },
       ],
     });
-    vi.stubGlobal('fetch', fetch);
     const r = await new TorrentioProvider().search('tt12042730');
     expect(r.status).toBe('success');
     expect(r.torrents).toHaveLength(1);
@@ -44,24 +49,21 @@ describe('TorrentioProvider', () => {
     expect(t.source).toBe('1337x');
     expect(t.quality).toBe('1080p');
     expect(t.isHdr).toBe(true);
-    vi.unstubAllGlobals();
   });
 
   it("returns 'error' on non-2xx", async () => {
-    const fetch = mockJson('oops', { status: 502 });
-    vi.stubGlobal('fetch', fetch);
+    stubFetch('oops', { status: 502 });
     const r = await new TorrentioProvider().search('tt0000001');
     expect(r.status).toBe('error');
     expect(r.httpStatus).toBe(502);
-    vi.unstubAllGlobals();
   });
 
   it("returns 'error' on network failure without throwing", async () => {
-    const fetch = vi.fn().mockRejectedValue(new Error('ECONNRESET'));
-    vi.stubGlobal('fetch', fetch);
+    globalThis.fetch = jest.fn(() =>
+      Promise.reject(new Error('ECONNRESET')),
+    ) as typeof fetch;
     const r = await new TorrentioProvider().search('tt0000001');
     expect(r.status).toBe('error');
     expect(r.error).toContain('ECONNRESET');
-    vi.unstubAllGlobals();
   });
 });

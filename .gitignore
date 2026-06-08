@@ -42,3 +42,6 @@ next-env.d.ts
 .dev.vars
 .open-next/
 .wrangler/
+
+# Jest coverage + junit output
+/.out/

@@ -12,8 +12,8 @@
     "format:check": "prettier --check .",
     "lint": "npx eslint .",
     "lint:fix": "npx eslint . --fix",
-    "test": "vitest run --config vitest.config.mjs",
-    "test:watch": "vitest --config vitest.config.mjs",
+    "test": "jest --verbose --config=jest.config.mjs --runInBand",
+    "test:watch": "npm run test -- --watch",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run --browser chrome"
   },
@@ -27,8 +27,9 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.16.13",
+    "@jest/globals": "^30.0.3",
     "@mridang/eslint-defaults": "^1.4.0",
+    "@types/jest": "^30.0.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24.13.1",
     "@types/react": "^19",
@@ -36,11 +37,14 @@
     "cypress": "^14.5.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
+    "jest": "^30.0.3",
+    "jest-junit": "^17.0.0",
     "knip": "^5.88.1",
+    "miniflare": "4.20260603.0",
     "prettier": "^3.8.3",
     "tailwindcss": "^4",
+    "ts-jest": "^29.4.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.8",
     "wrangler": "^4.86.0"
   }
 }

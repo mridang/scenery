@@ -1,37 +1,52 @@
-import { env } from 'cloudflare:test';
-import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from '@jest/globals';
 
 import { CatalogRepository } from '../src/lib/catalog/repository';
 import { ScrapingRepository } from '../src/lib/scraping/repository';
 import type { ExtractedRelease } from '../src/lib/sources/types';
+import { createTestD1, type TestD1 } from './d1';
 
-// v0.16 of the pool dropped per-test storage isolation, so migrations are
-// applied once (in the setup file) and writes persist across tests in a
-// file. Wipe every mutable table before each test — children before
-// parents to respect D1's enforced foreign keys — while leaving the
-// `sources` seed from 0001/0010 intact.
+/**
+ * These run against a real workerd-backed D1 (via Miniflare), not a SQL
+ * mock, so they exercise the actual ON CONFLICT upsert semantics, the
+ * seeded `scnsrc` source, and the multi-table joins the catalog page
+ * relies on. One database is booted per file; `beforeEach` wipes the
+ * mutable tables (keeping the seed) so each test starts clean.
+ */
+let harness: TestD1;
+
+beforeAll(async () => {
+  harness = await createTestD1();
+});
+
+afterAll(async () => {
+  await harness.dispose();
+});
+
 beforeEach(async () => {
-  await env.DB.batch([
-    env.DB.prepare('DELETE FROM fetch_attempts'),
-    env.DB.prepare('DELETE FROM page_snapshots'),
-    env.DB.prepare('DELETE FROM releases'),
-    env.DB.prepare('DELETE FROM tmdb_movies'),
-    env.DB.prepare('DELETE FROM tmdb_people'),
-    env.DB.prepare('DELETE FROM tmdb_genres'),
-    env.DB.prepare('DELETE FROM torrents'),
-    env.DB.prepare('DELETE FROM torrent_lookups'),
-    env.DB.prepare('DELETE FROM movies'),
+  const db = harness.db;
+  await db.batch([
+    db.prepare('DELETE FROM fetch_attempts'),
+    db.prepare('DELETE FROM page_snapshots'),
+    db.prepare('DELETE FROM releases'),
+    db.prepare('DELETE FROM tmdb_movies'),
+    db.prepare('DELETE FROM tmdb_people'),
+    db.prepare('DELETE FROM tmdb_genres'),
+    db.prepare('DELETE FROM torrents'),
+    db.prepare('DELETE FROM torrent_lookups'),
+    db.prepare('DELETE FROM movies'),
   ]);
 });
 
-/**
- * These run inside workerd against a real in-memory D1 (not a SQL mock),
- * so they exercise the actual ON CONFLICT upsert semantics, the seeded
- * `scnsrc` source, and the multi-table joins the catalog page relies on.
- */
 describe('ScrapingRepository (real D1)', () => {
   it('upserts movie + release and dedupes on re-scrape', async () => {
-    const repo = new ScrapingRepository(env.DB);
+    const repo = new ScrapingRepository(harness.db);
 
     const source = await repo.findSource('scnsrc');
     expect(source).not.toBeNull();
@@ -54,9 +69,9 @@ describe('ScrapingRepository (real D1)', () => {
       '2026-06-09T00:00:00Z',
     );
 
-    const movies = await env.DB.prepare(
-      'SELECT imdb_id, first_seen_at, last_seen_at FROM movies',
-    ).all();
+    const movies = await harness.db
+      .prepare('SELECT imdb_id, first_seen_at, last_seen_at FROM movies')
+      .all();
     expect(movies.results).toHaveLength(1);
     expect(movies.results[0]).toMatchObject({
       imdb_id: 'tt1234567',
@@ -64,9 +79,9 @@ describe('ScrapingRepository (real D1)', () => {
       last_seen_at: '2026-06-09T00:00:00Z',
     });
 
-    const releases = await env.DB.prepare(
-      'SELECT title, first_seen_at, last_seen_at FROM releases',
-    ).all();
+    const releases = await harness.db
+      .prepare('SELECT title, first_seen_at, last_seen_at FROM releases')
+      .all();
     expect(releases.results).toHaveLength(1);
     expect(releases.results[0]).toMatchObject({
       title: 'Test Movie 2026 2160p',
@@ -78,7 +93,7 @@ describe('ScrapingRepository (real D1)', () => {
 
 describe('CatalogRepository (real D1)', () => {
   it('loadMovies filters by language and loadStats counts the catalog', async () => {
-    const scraping = new ScrapingRepository(env.DB);
+    const scraping = new ScrapingRepository(harness.db);
     const source = await scraping.findSource('scnsrc');
     const sourceId = source!.id;
 
@@ -104,15 +119,16 @@ describe('CatalogRepository (real D1)', () => {
     await seed('hi-1', 'tt2000002', '2026-06-02T00:00:00Z');
 
     // Enrich only the English movie so the language filter has a target.
-    await env.DB.prepare(
-      `INSERT INTO tmdb_movies
-          (imdb_id, status, original_language, raw_response, fetched_at)
-        VALUES (?, 'found', 'en', '{}', '2026-06-03T00:00:00Z')`,
-    )
+    await harness.db
+      .prepare(
+        `INSERT INTO tmdb_movies
+            (imdb_id, status, original_language, raw_response, fetched_at)
+          VALUES (?, 'found', 'en', '{}', '2026-06-03T00:00:00Z')`,
+      )
       .bind('tt2000001')
       .run();
 
-    const catalog = new CatalogRepository(env.DB);
+    const catalog = new CatalogRepository(harness.db);
 
     const all = await catalog.loadMovies('all');
     expect(all.map((m) => m.imdb_id).sort()).toEqual([
