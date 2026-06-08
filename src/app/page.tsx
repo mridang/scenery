@@ -8,6 +8,7 @@ import {
   parseViewOptions,
 } from '@/lib/catalog';
 import type { Tier } from '@/lib/catalog';
+import { magnetPath } from '@/lib/torrents';
 
 /**
  * Staleness threshold for the top-of-page banner. Beyond this, the
@@ -119,20 +120,6 @@ function fmtSize(bytes: number | null): string | null {
   return gb >= 1
     ? `${gb.toFixed(1)} GB`
     : `${Math.round(bytes / 1_000_000)} MB`;
-}
-
-const PUBLIC_TRACKERS = [
-  'udp://tracker.opentrackr.org:1337/announce',
-  'udp://open.demonii.com:1337/announce',
-  'udp://tracker.openbittorrent.com:6969/announce',
-  'udp://exodus.desync.com:6969/announce',
-]
-  .map((t) => `&tr=${encodeURIComponent(t)}`)
-  .join('');
-
-function magnetFor(hash: string, name: string | null): string {
-  const dn = name ? `&dn=${encodeURIComponent(name)}` : '';
-  return `magnet:?xt=urn:btih:${hash}${dn}${PUBLIC_TRACKERS}`;
 }
 
 type TorrentBadge =
@@ -567,7 +554,7 @@ export default async function Home({
                       {m.best_info_hash ? (
                         <div className="text-xs text-emerald-700">
                           <a
-                            href={magnetFor(
+                            href={magnetPath(
                               m.best_info_hash,
                               m.best_torrent_title,
                             )}

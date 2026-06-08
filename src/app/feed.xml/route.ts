@@ -2,22 +2,10 @@ import type { NextRequest } from 'next/server';
 import { getDB } from '@/lib/util';
 import { CatalogService, parseViewOptions } from '@/lib/catalog';
 import type { ScoredMovie } from '@/lib/catalog';
+import { bestTrackers, buildMagnet } from '@/lib/torrents';
+import { genericTransport, withRetry } from '@/lib/transport';
 
 export const dynamic = 'force-dynamic';
-
-const PUBLIC_TRACKERS = [
-  'udp://tracker.opentrackr.org:1337/announce',
-  'udp://open.demonii.com:1337/announce',
-  'udp://tracker.openbittorrent.com:6969/announce',
-  'udp://exodus.desync.com:6969/announce',
-]
-  .map((t) => `&tr=${encodeURIComponent(t)}`)
-  .join('');
-
-function magnetFor(hash: string, name: string | null): string {
-  const dn = name ? `&dn=${encodeURIComponent(name)}` : '';
-  return `magnet:?xt=urn:btih:${hash}${dn}${PUBLIC_TRACKERS}`;
-}
 
 function escapeXml(s: string): string {
   return s
@@ -101,7 +89,11 @@ function feedTitle(view: string, lang: string, sort: string): string {
   return `scenery — ${v} (${langPart}, ${sortPart})`;
 }
 
-function renderItem(origin: string, s: ScoredMovie): string {
+function renderItem(
+  origin: string,
+  s: ScoredMovie,
+  trackers: readonly string[],
+): string {
   const { row: m, score } = s;
   const title = m.tmdb_title ?? m.latest_release_title ?? m.imdb_id;
   const year = m.tmdb_year ? ` (${m.tmdb_year})` : '';
@@ -114,7 +106,7 @@ function renderItem(origin: string, s: ScoredMovie): string {
 
   const enclosure = m.best_info_hash
     ? `<enclosure url="${escapeXml(
-        magnetFor(m.best_info_hash, m.best_torrent_title),
+        buildMagnet(m.best_info_hash, m.best_torrent_title, trackers),
       )}" length="${m.best_size_bytes ?? 0}" type="application/x-bittorrent"/>`
     : '';
 
@@ -153,6 +145,7 @@ export async function GET(request: NextRequest) {
   const db = getDB();
   const catalog = CatalogService.fromD1(db);
   const { movies } = await catalog.view({ lang, sort, view });
+  const trackers = await bestTrackers(withRetry(genericTransport()));
 
   // In plan view, only emit movies that actually fit.
   const eligible: readonly ScoredMovie[] =
@@ -185,7 +178,7 @@ export async function GET(request: NextRequest) {
 <language>en-us</language>
 <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
 <atom:link href="${escapeXml(selfHref)}" rel="self" type="application/rss+xml"/>
-${items.map((s) => renderItem(origin, s)).join('\n')}
+${items.map((s) => renderItem(origin, s, trackers)).join('\n')}
 </channel>
 </rss>
 `;
