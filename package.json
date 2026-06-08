@@ -23,23 +23,23 @@
   "dependencies": {
     "@opennextjs/cloudflare": "^1.19.11",
     "next": "16.2.7",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
   },
   "devDependencies": {
-    "@mridang/eslint-defaults": "^1.4.0",
+    "@mridang/eslint-defaults": "^1.6.3",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^24.13.1",
+    "@types/node": "^25.9.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "cypress": "^14.5.4",
-    "eslint": "^9",
+    "cypress": "^15.16.0",
+    "eslint": "^10",
     "eslint-config-next": "16.2.7",
-    "knip": "^5.88.1",
+    "knip": "^6.16.1",
     "prettier": "^3.8.3",
     "tailwindcss": "^4",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8",
-    "wrangler": "^4.86.0"
+    "wrangler": "^4.98.0"
   }
 }
