@@ -1,3 +1,9 @@
+// @ts-nocheck — this is the wrangler entry, not part of the Next app. It
+// statically imports `../.open-next/worker.js`, which OpenNext only emits
+// during `opennextjs-cloudflare build` (after `next build`). That module
+// therefore can't exist at type-check time, so type-checking this glue
+// file is impossible by construction; wrangler resolves the import at
+// bundle time, once the file has been generated.
 /**
  * @packageDocumentation
  *
