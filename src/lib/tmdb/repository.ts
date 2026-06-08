@@ -1,4 +1,4 @@
-import { and, eq, isNull, or, sql } from 'drizzle-orm';
+import { and, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
 
 import {
   createDatabase,
@@ -76,7 +76,7 @@ export class TmdbRepository {
       .where(
         and(
           eq(tmdb_movies.status, 'found'),
-          sql`${tmdb_movies.tmdb_id} IS NOT NULL`,
+          isNotNull(tmdb_movies.tmdb_id),
           isNull(tmdb_movies.credits_fetched_at),
         ),
       )
@@ -253,7 +253,7 @@ export class TmdbRepository {
       .where(
         and(
           eq(tmdb_movies.status, 'found'),
-          sql`${tmdb_movies.raw_credits} IS NOT NULL`,
+          isNotNull(tmdb_movies.raw_credits),
           or(
             isNull(tmdb_movies.budget),
             isNull(tmdb_movies.cast_ids),
@@ -310,8 +310,8 @@ export class TmdbRepository {
         and(
           eq(tmdb_movies.status, 'found'),
           or(
-            sql`${tmdb_movies.cast_ids} IS NOT NULL`,
-            sql`${tmdb_movies.director_ids} IS NOT NULL`,
+            isNotNull(tmdb_movies.cast_ids),
+            isNotNull(tmdb_movies.director_ids),
           ),
         ),
       );
@@ -386,8 +386,8 @@ export class TmdbRepository {
         and(
           eq(tmdb_movies.status, 'found'),
           or(
-            sql`${tmdb_movies.cast_ids} IS NOT NULL`,
-            sql`${tmdb_movies.director_ids} IS NOT NULL`,
+            isNotNull(tmdb_movies.cast_ids),
+            isNotNull(tmdb_movies.director_ids),
           ),
         ),
       );

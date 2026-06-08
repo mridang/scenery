@@ -1,4 +1,4 @@
-import { and, count, eq, notExists, sql } from 'drizzle-orm';
+import { and, asc, count, eq, gt, lte, ne, notExists, sql } from 'drizzle-orm';
 
 import {
   createDatabase,
@@ -41,7 +41,7 @@ export class TorrentRepository {
     const cutoff = new Date(Date.now() - ONE_DAY_MS).toISOString();
     const newestRelease = sql`(SELECT MAX(COALESCE(${releases.posted_at}, ${releases.first_seen_at}))
                FROM ${releases} WHERE ${releases.imdb_id} = ${movies.imdb_id})`;
-    const freshness = force ? undefined : sql`${newestRelease} <= ${cutoff}`;
+    const freshness = force ? undefined : lte(newestRelease, cutoff);
     const rows = await this.db
       .select({ imdb_id: movies.imdb_id })
       .from(movies)
@@ -54,14 +54,14 @@ export class TorrentRepository {
               .where(
                 and(
                   eq(torrent_lookups.imdb_id, movies.imdb_id),
-                  sql`${torrent_lookups.status} <> 'error'`,
+                  ne(torrent_lookups.status, 'error'),
                 ),
               ),
           ),
           freshness,
         ),
       )
-      .orderBy(sql`${newestRelease} ASC`)
+      .orderBy(asc(newestRelease))
       .limit(limit);
     return rows.map((r) => r.imdb_id);
   }
@@ -81,7 +81,7 @@ export class TorrentRepository {
               .from(torrent_lookups)
               .where(eq(torrent_lookups.imdb_id, movies.imdb_id)),
           ),
-          sql`${newestRelease} > ${cutoff}`,
+          gt(newestRelease, cutoff),
         ),
       );
     return Number(rows[0]?.n ?? 0);
