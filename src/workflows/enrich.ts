@@ -76,8 +76,10 @@ export class EnrichWorkflow extends WorkflowEntrypoint<
       );
       return [...acc, verdict];
     }, Promise.resolve([]));
-    const found = movieVerdicts.filter((v) => v === 'found').length;
-    const notFound = movieVerdicts.filter((v) => v === 'not_found').length;
+    const found = movieVerdicts.filter((verdict) => verdict === 'found').length;
+    const notFound = movieVerdicts.filter(
+      (verdict) => verdict === 'not_found',
+    ).length;
     const movieErrors = movieVerdicts.length - found - notFound;
 
     // Cheap pass to fill columns derived from cached responses.

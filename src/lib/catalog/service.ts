@@ -31,7 +31,7 @@ function castNames(raw: string | null): string[] {
   }
   try {
     const items = JSON.parse(raw) as { name?: string }[];
-    return items.map((c) => c.name ?? '').filter(Boolean);
+    return items.map((castMember) => castMember.name ?? '').filter(Boolean);
   } catch {
     return [];
   }
@@ -94,18 +94,18 @@ export class CatalogService {
     ]);
     const isPlan = opts.view === 'plan';
 
-    const movies: readonly ScoredMovie[] = rows.map((r) => ({
-      row: r,
-      studios: labelsForPrestigeIds(r.prestige_ids),
-      genres: genreNames(r.tmdb_genre_ids, genreLookup),
-      cast: castNames(r.top_cast),
-      score: r.score,
-      tier: r.tier,
+    const movies: readonly ScoredMovie[] = rows.map((scoredRow) => ({
+      row: scoredRow,
+      studios: labelsForPrestigeIds(scoredRow.prestige_ids),
+      genres: genreNames(scoredRow.tmdb_genre_ids, genreLookup),
+      cast: castNames(scoredRow.top_cast),
+      score: scoredRow.score,
+      tier: scoredRow.tier,
       // The SQL running total (in the requested sort order) — used by the
       // page's plan view and the feed's ?budgetGb= disk gate alike, so
       // the cumulative sum never has to be re-done in JS.
-      cumBytes: r.cum_size_bytes ?? 0,
-      fits: isPlan ? r.fits === 1 : true,
+      cumBytes: scoredRow.cum_size_bytes ?? 0,
+      fits: isPlan ? scoredRow.fits === 1 : true,
     }));
 
     if (!isPlan) {
@@ -116,10 +116,18 @@ export class CatalogService {
     // monotonic, so the fitting rows form a prefix and bytesFits ends as
     // the running total of the last row that fit.
     const plan: PlanSummary = movies.reduce<PlanSummary>(
-      (p, m) =>
-        m.fits
-          ? { fits: p.fits + 1, skipped: p.skipped, bytesFits: m.cumBytes }
-          : { fits: p.fits, skipped: p.skipped + 1, bytesFits: p.bytesFits },
+      (summary, movie) =>
+        movie.fits
+          ? {
+              fits: summary.fits + 1,
+              skipped: summary.skipped,
+              bytesFits: movie.cumBytes,
+            }
+          : {
+              fits: summary.fits,
+              skipped: summary.skipped + 1,
+              bytesFits: summary.bytesFits,
+            },
       { fits: 0, skipped: 0, bytesFits: 0 },
     );
     return { movies, plan };

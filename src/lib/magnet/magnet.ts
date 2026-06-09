@@ -40,17 +40,19 @@ export function buildMagnet(
   name: string | null,
   trackers: readonly string[],
 ): string {
-  const dn =
+  const displayNameParam =
     name === null || name === '' ? '' : `&dn=${encodeURIComponent(name)}`;
-  const tr = trackers.map((t) => `&tr=${encodeURIComponent(t)}`).join('');
-  return `magnet:?xt=urn:btih:${infoHash}${dn}${tr}`;
+  const trackerParams = trackers
+    .map((tracker) => `&tr=${encodeURIComponent(tracker)}`)
+    .join('');
+  return `magnet:?xt=urn:btih:${infoHash}${displayNameParam}${trackerParams}`;
 }
 
 /** The relative URL of the magnet endpoint for a given torrent. */
 export function magnetPath(infoHash: string, name: string | null): string {
-  const q =
+  const query =
     name === null || name === '' ? '' : `?dn=${encodeURIComponent(name)}`;
-  return `/magnet/${infoHash}${q}`;
+  return `/magnet/${infoHash}${query}`;
 }
 
 // Per-isolate memo so a burst of clicks doesn't refetch the list. Cold
@@ -78,11 +80,11 @@ export async function bestTrackers(
     return cache.trackers;
   }
   try {
-    const res = await transport(TRACKERS_URL);
-    if (!res.ok) {
-      throw new Error(`tracker list HTTP ${res.status}`);
+    const response = await transport(TRACKERS_URL);
+    if (!response.ok) {
+      throw new Error(`tracker list HTTP ${response.status}`);
     }
-    const trackers = (await res.text())
+    const trackers = (await response.text())
       .split('\n')
       .map((line) => line.trim())
       .filter((line) => line.length > 0);

@@ -44,21 +44,21 @@ export function withRetry(
   const jitterMs = opts.jitterMs ?? 100;
 
   return (input, init) => {
-    const attempt = async (i: number): Promise<Response> => {
-      const isLast = i === attempts - 1;
+    const attempt = async (attemptNumber: number): Promise<Response> => {
+      const isLast = attemptNumber === attempts - 1;
       try {
         const response = await transport(input, init);
         if (!isLast && isRetryableStatus(response.status)) {
-          await sleep(backoffMs(i, baseDelayMs, jitterMs));
-          return attempt(i + 1);
+          await sleep(backoffMs(attemptNumber, baseDelayMs, jitterMs));
+          return attempt(attemptNumber + 1);
         }
         return response;
       } catch (err) {
         if (isLast) {
           throw err;
         }
-        await sleep(backoffMs(i, baseDelayMs, jitterMs));
-        return attempt(i + 1);
+        await sleep(backoffMs(attemptNumber, baseDelayMs, jitterMs));
+        return attempt(attemptNumber + 1);
       }
     };
     return attempt(0);

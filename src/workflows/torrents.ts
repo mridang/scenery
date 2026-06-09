@@ -73,10 +73,10 @@ export class TorrentWorkflow extends WorkflowEntrypoint<
         if (i > 0) {
           await step.sleep(`pace-${i}`, `${paceSeconds} seconds`);
         }
-        const r = await step.do(`torrent:${imdbId}`, retry, async () =>
+        const result = await step.do(`torrent:${imdbId}`, retry, async () =>
           lookupOneTorrent(this.env.DB, imdbId, providerChain),
         );
-        return [...acc, r.provider];
+        return [...acc, result.provider];
       },
       Promise.resolve([]),
     );

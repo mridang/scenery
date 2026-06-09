@@ -59,8 +59,8 @@ export class TorrentioProvider implements TorrentProvider {
         };
       }
       const torrents = (parsed.value.streams ?? [])
-        .map((s) => this.parseStream(s))
-        .filter((t): t is ParsedTorrent => t !== null);
+        .map((stream) => this.parseStream(stream))
+        .filter((torrent): torrent is ParsedTorrent => torrent !== null);
       return {
         status: torrents.length > 0 ? 'success' : 'empty',
         torrents,
@@ -77,11 +77,11 @@ export class TorrentioProvider implements TorrentProvider {
     }
   }
 
-  private parseStream(s: TorrentioStream): ParsedTorrent | null {
-    if (!s.infoHash) {
+  private parseStream(stream: TorrentioStream): ParsedTorrent | null {
+    if (!stream.infoHash) {
       return null;
     }
-    const raw = s.title ?? '';
+    const raw = stream.title ?? '';
     const firstLine = raw.split('\n')[0] ?? '';
 
     const seedersMatch = raw.match(/👤\s*([\d,]+)/);
@@ -97,11 +97,11 @@ export class TorrentioProvider implements TorrentProvider {
         : null;
 
     const sourceMatch = raw.match(/⚙️\s*([^\s\n]+)/);
-    const haystack = `${s.name ?? ''} ${firstLine}`;
+    const haystack = `${stream.name ?? ''} ${firstLine}`;
 
     return {
-      infoHash: s.infoHash.toLowerCase(),
-      title: firstLine.trim() || s.infoHash,
+      infoHash: stream.infoHash.toLowerCase(),
+      title: firstLine.trim() || stream.infoHash,
       rawTitle: raw,
       source: sourceMatch?.[1] ?? null,
       seeders,

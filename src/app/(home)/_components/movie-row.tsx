@@ -29,7 +29,7 @@ export function MovieRow({
   nowMs: number;
 }) {
   const {
-    row: m,
+    row,
     studios,
     genres: names,
     cast,
@@ -40,13 +40,13 @@ export function MovieRow({
   } = movie;
   const planMode = view === 'plan';
   const cutoffHere = planMode && prev !== null && prev.fits && !fits;
-  const runtime = formatRuntime(m.runtime);
-  const poster = m.poster_path
-    ? `https://image.tmdb.org/t/p/w92${m.poster_path}`
+  const runtime = formatRuntime(row.runtime);
+  const poster = row.poster_path
+    ? `https://image.tmdb.org/t/p/w92${row.poster_path}`
     : null;
-  const title = m.tmdb_title ?? m.latest_release_title ?? m.imdb_id;
-  const fresh = isFresh(m.first_posted_at, nowMs);
-  const budget = fmtMoney(m.budget);
+  const title = row.tmdb_title ?? row.latest_release_title ?? row.imdb_id;
+  const fresh = isFresh(row.first_posted_at, nowMs);
+  const budget = fmtMoney(row.budget);
   const planCumGb = planMode ? (cumBytes / 1_000_000_000).toFixed(1) : null;
   const tierClass = TIER_STYLE[tier];
   const freshClass = planMode
@@ -59,10 +59,10 @@ export function MovieRow({
         ? `border-l-4 ${tierClass}`
         : '';
   const badge = torrentBadge(
-    m.torrent_status,
-    m.latest_release_at,
+    row.torrent_status,
+    row.latest_release_at,
     nowMs,
-    m.torrent_count,
+    row.torrent_count,
   );
 
   return (
@@ -100,14 +100,14 @@ export function MovieRow({
               </span>
             ) : null}
             <Link
-              href={`https://www.imdb.com/title/${m.imdb_id}/`}
+              href={`https://www.imdb.com/title/${row.imdb_id}/`}
               target="_blank"
               className="truncate font-semibold hover:underline"
             >
               {title}
             </Link>
-            {m.tmdb_year ? (
-              <span className="text-gray-500">({m.tmdb_year})</span>
+            {row.tmdb_year ? (
+              <span className="text-gray-500">({row.tmdb_year})</span>
             ) : null}
             {studios.map((label) => (
               <span
@@ -127,7 +127,7 @@ export function MovieRow({
                 new
               </span>
             ) : null}
-            {m.tmdb_status === 'not_found' ? (
+            {row.tmdb_status === 'not_found' ? (
               <span className="text-xs text-red-500 uppercase">
                 no tmdb match
               </span>
@@ -136,32 +136,32 @@ export function MovieRow({
           <div className="text-xs text-gray-500">
             {names.length ? names.join(', ') : '—'}
             {runtime ? ` · ${runtime}` : ''}
-            {m.vote_average != null
-              ? ` · ★ ${m.vote_average.toFixed(1)}${m.vote_count != null ? ` (${m.vote_count})` : ''}`
+            {row.vote_average != null
+              ? ` · ★ ${row.vote_average.toFixed(1)}${row.vote_count != null ? ` (${row.vote_count})` : ''}`
               : ''}
             {budget ? ` · ${budget} budget` : ''}
-            {m.talent_score != null && m.talent_score > 0
-              ? ` · talent ${m.talent_score.toFixed(1)}`
+            {row.talent_score != null && row.talent_score > 0
+              ? ` · talent ${row.talent_score.toFixed(1)}`
               : ''}
             {' · '}
             <Link
-              href={`https://www.imdb.com/title/${m.imdb_id}/`}
+              href={`https://www.imdb.com/title/${row.imdb_id}/`}
               target="_blank"
               className="hover:underline"
             >
-              {m.imdb_id}
+              {row.imdb_id}
             </Link>
             {' · '}
-            {m.release_count} release{m.release_count === 1 ? '' : 's'}
+            {row.release_count} release{row.release_count === 1 ? '' : 's'}
           </div>
-          {m.director || cast.length ? (
+          {row.director || cast.length ? (
             <div className="text-xs text-gray-700">
-              {m.director ? (
+              {row.director ? (
                 <span>
-                  <span className="text-gray-500">Dir:</span> {m.director}
+                  <span className="text-gray-500">Dir:</span> {row.director}
                 </span>
               ) : null}
-              {m.director && cast.length ? (
+              {row.director && cast.length ? (
                 <span className="text-gray-400"> · </span>
               ) : null}
               {cast.length ? (
@@ -171,26 +171,26 @@ export function MovieRow({
               ) : null}
             </div>
           ) : null}
-          {m.best_info_hash ? (
+          {row.best_info_hash ? (
             <div className="text-xs text-emerald-700">
               <a
-                href={magnetPath(m.best_info_hash, m.best_torrent_title)}
+                href={magnetPath(row.best_info_hash, row.best_torrent_title)}
                 className="font-medium hover:underline"
               >
                 magnet ↗
               </a>
-              {m.best_quality ? ` · ${m.best_quality}` : ''}
-              {m.best_size_bytes ? ` · ${fmtSize(m.best_size_bytes)}` : ''}
-              {m.best_seeders != null ? ` · 👤 ${m.best_seeders}` : ''}
-              {m.best_source ? ` · ${m.best_source}` : ''}
-              {(m.torrent_count ?? 0) > 1
-                ? ` · +${(m.torrent_count ?? 0) - 1} more`
+              {row.best_quality ? ` · ${row.best_quality}` : ''}
+              {row.best_size_bytes ? ` · ${fmtSize(row.best_size_bytes)}` : ''}
+              {row.best_seeders != null ? ` · 👤 ${row.best_seeders}` : ''}
+              {row.best_source ? ` · ${row.best_source}` : ''}
+              {(row.torrent_count ?? 0) > 1
+                ? ` · +${(row.torrent_count ?? 0) - 1} more`
                 : ''}
             </div>
           ) : null}
-          {m.latest_release_title ? (
+          {row.latest_release_title ? (
             <div className="truncate text-xs text-gray-400">
-              {m.latest_release_title}
+              {row.latest_release_title}
             </div>
           ) : null}
         </div>

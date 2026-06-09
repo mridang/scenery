@@ -93,11 +93,11 @@ export async function runTorrentLookups(
   }, Promise.resolve([]));
 
   const countOf = (status: LookupStatus): number =>
-    resolvedList.filter((r) => r.result.status === status).length;
+    resolvedList.filter((resolved) => resolved.result.status === status).length;
   const byProvider = Object.fromEntries(
-    Object.entries(Object.groupBy(resolvedList, (r) => r.provider)).map(
-      ([provider, group]) => [provider, group?.length ?? 0],
-    ),
+    Object.entries(
+      Object.groupBy(resolvedList, (resolved) => resolved.provider),
+    ).map(([provider, group]) => [provider, group?.length ?? 0]),
   );
 
   return {

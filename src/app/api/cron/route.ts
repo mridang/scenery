@@ -36,7 +36,7 @@ function resolveProviders(
 ): TorrentProvider[] {
   return spec
     .split(',')
-    .map((s) => s.trim())
+    .map((name) => name.trim())
     .filter(Boolean)
     .flatMap((name): TorrentProvider[] => {
       if (name === 'torrentio') {

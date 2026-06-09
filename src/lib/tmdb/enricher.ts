@@ -27,14 +27,14 @@ export class TmdbEnricher {
 
   /** Public hook so callers can refresh the genre table directly. */
   public async refreshGenres(): Promise<number> {
-    const r = await this.client.getMovieGenres();
-    if (!r.ok) {
-      throw new Error(`tmdb genres: ${r.error}`);
+    const result = await this.client.getMovieGenres();
+    if (!result.ok) {
+      throw new Error(`tmdb genres: ${result.error}`);
     }
-    for (const g of r.value) {
-      await this.repo.upsertGenre(g);
+    for (const genre of result.value) {
+      await this.repo.upsertGenre(genre);
     }
-    return r.value.length;
+    return result.value.length;
   }
 
   /** Populate the genre dictionary if empty. Idempotent. @public */
@@ -129,17 +129,17 @@ export class TmdbEnricher {
    * @public
    */
   public async enrichPerson(personId: number): Promise<boolean> {
-    const r = await this.client.getPersonWithCredits(personId);
-    if (!r.ok) {
+    const result = await this.client.getPersonWithCredits(personId);
+    if (!result.ok) {
       return false;
     }
-    const { prestige, totalCredits } = this.computePrestige(r.value);
+    const { prestige, totalCredits } = this.computePrestige(result.value);
     await this.repo.upsertPerson(
-      r.value,
+      result.value,
       personId,
       prestige,
       totalCredits,
-      r.raw,
+      result.raw,
       new Date().toISOString(),
     );
     return true;
@@ -156,10 +156,10 @@ export class TmdbEnricher {
   } {
     const cast = person.movie_credits?.cast ?? [];
     const crew = (person.movie_credits?.crew ?? []).filter(
-      (c) => c.job === 'Director',
+      (credit) => credit.job === 'Director',
     );
     const totalVotes = [...cast, ...crew].reduce(
-      (sum, c) => sum + (c.vote_count ?? 0),
+      (sum, credit) => sum + (credit.vote_count ?? 0),
       0,
     );
     return {
@@ -182,11 +182,11 @@ export class TmdbEnricher {
             return [];
           }
         });
-      const max = ids.reduce((acc, id) => {
-        const p = prestige.get(id);
-        return p !== undefined && p > acc ? p : acc;
+      const maxScore = ids.reduce((acc, id) => {
+        const score = prestige.get(id);
+        return score !== undefined && score > acc ? score : acc;
       }, 0);
-      await this.repo.updateTalentScore(row.imdb_id, max);
+      await this.repo.updateTalentScore(row.imdb_id, maxScore);
     }
     return inputs.length;
   }

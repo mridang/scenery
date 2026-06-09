@@ -18,8 +18,8 @@ function parseDdlvalleyDate(raw: string | undefined): string | undefined {
   }
   // Format observed: "Jun 7th, 2026" (no time of day).
   const cleaned = raw.replace(/(\d+)(st|nd|rd|th)/, '$1').trim();
-  const d = new Date(cleaned);
-  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+  const parsed = new Date(cleaned);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
 }
 
 /**
@@ -48,8 +48,11 @@ export class DdlvalleySource implements Source {
 
   public extract(html: string): ExtractedRelease[] {
     const offsets = Array.from(html.matchAll(POST_RE))
-      .map((m) => ({ id: m[1], idx: m.index ?? 0 }))
-      .filter((o): o is { id: string; idx: number } => o.id !== undefined);
+      .map((match) => ({ id: match[1], idx: match.index ?? 0 }))
+      .filter(
+        (offset): offset is { id: string; idx: number } =>
+          offset.id !== undefined,
+      );
 
     return offsets.flatMap((offset, i) => {
       const start = offset.idx;
@@ -57,14 +60,14 @@ export class DdlvalleySource implements Source {
       const end = next ? next.idx : html.length;
       const chunk = html.slice(start, end);
 
-      const dl = chunk.match(DL_LINK_RE);
-      const imdb = chunk.match(IMDB_RE);
-      if (!dl || !imdb) {
+      const downloadMatch = chunk.match(DL_LINK_RE);
+      const imdbMatch = chunk.match(IMDB_RE);
+      if (!downloadMatch || !imdbMatch) {
         return [];
       }
-      const url = dl[1];
-      const title = dl[2];
-      const imdbId = imdb[1];
+      const url = downloadMatch[1];
+      const title = downloadMatch[2];
+      const imdbId = imdbMatch[1];
       if (url === undefined || title === undefined || imdbId === undefined) {
         return [];
       }
@@ -72,8 +75,8 @@ export class DdlvalleySource implements Source {
       const dateRaw = chunk.match(DATE_RE)?.[1]?.trim();
       const author = chunk.match(AUTHOR_RE)?.[1]?.trim();
       const categories = Array.from(chunk.matchAll(CATEGORY_RE))
-        .map((m) => m[1]?.trim())
-        .filter((s): s is string => s !== undefined);
+        .map((match) => match[1]?.trim())
+        .filter((category): category is string => category !== undefined);
       const imageUrl = chunk.match(IMG_RE)?.[1];
       const plotRaw = chunk.match(PLOT_RE)?.[1];
       const excerpt = plotRaw

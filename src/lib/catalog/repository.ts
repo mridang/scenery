@@ -257,14 +257,14 @@ export class CatalogRepository {
       .leftJoin(tmdb_movies, eq(tmdb_movies.imdb_id, movies.imdb_id))
       .groupBy(code)
       .orderBy(desc(count()));
-    return rows.map((r) => ({ code: r.code, count: Number(r.count) }));
+    return rows.map((row) => ({ code: row.code, count: Number(row.count) }));
   }
 
   public async loadGenres(): Promise<Map<number, string>> {
     const rows = await this.db
       .select({ id: tmdb_genres.id, name: tmdb_genres.name })
       .from(tmdb_genres);
-    return new Map(rows.map((g) => [g.id, g.name]));
+    return new Map(rows.map((genre) => [genre.id, genre.name]));
   }
 
   public async loadStats(): Promise<CatalogStats> {

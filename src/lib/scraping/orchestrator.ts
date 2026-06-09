@@ -32,36 +32,36 @@ export class ScrapeOrchestrator {
    * @throws When the requested source slug isn't registered or isn't seeded.
    */
   public async run(opts: RunOptions): Promise<PageRunResult[]> {
-    const src = this.sources[opts.sourceSlug];
-    if (!src) {
+    const source = this.sources[opts.sourceSlug];
+    if (!source) {
       throw new Error(`unknown source: ${opts.sourceSlug}`);
     }
-    const srcRow = await this.repo.findSource(src.slug);
-    if (!srcRow) {
-      throw new Error(`source ${src.slug} not in db; run migrations`);
+    const sourceRow = await this.repo.findSource(source.slug);
+    if (!sourceRow) {
+      throw new Error(`source ${source.slug} not in db; run migrations`);
     }
 
     return opts.pageNumbers.reduce<Promise<PageRunResult[]>>(
       async (acc, pageNumber) => [
         ...(await acc),
-        await this.runOnePage(src, srcRow.id, pageNumber),
+        await this.runOnePage(source, sourceRow.id, pageNumber),
       ],
       Promise.resolve([]),
     );
   }
 
   private async runOnePage(
-    src: Source,
+    source: Source,
     sourceId: number,
     pageNumber: number,
   ): Promise<PageRunResult> {
-    const pageUrl = src.pageUrl(pageNumber);
+    const pageUrl = source.pageUrl(pageNumber);
     const attemptNumber = await this.repo.nextAttemptNumber(
       sourceId,
       pageNumber,
     );
     const startedAt = new Date().toISOString();
-    const result = await src.fetchPage(pageNumber);
+    const result = await source.fetchPage(pageNumber);
     const finishedAt = new Date().toISOString();
 
     if (!result.ok) {
@@ -91,7 +91,7 @@ export class ScrapeOrchestrator {
       pageNumber,
       pageUrl,
       fetchedAt: finishedAt,
-      fetcherLabel: src.fetcherLabel,
+      fetcherLabel: source.fetcherLabel,
       httpStatus: result.httpStatus,
       html,
       byteSize: result.byteSize,
@@ -108,7 +108,7 @@ export class ScrapeOrchestrator {
       snapshotId,
     });
 
-    const releases = src.extract(html);
+    const releases = source.extract(html);
     const now = new Date().toISOString();
     for (const release of releases) {
       await this.repo.upsertRelease(sourceId, release, now);

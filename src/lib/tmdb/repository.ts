@@ -63,7 +63,7 @@ export class TmdbRepository {
       .leftJoin(tmdb_movies, eq(tmdb_movies.imdb_id, movies.imdb_id))
       .where(or(isNull(tmdb_movies.imdb_id), eq(tmdb_movies.status, 'error')))
       .limit(limit);
-    return rows.map((r) => r.imdb_id);
+    return rows.map((row) => row.imdb_id);
   }
 
   /** Imdb ids already found but missing credit data. */
@@ -184,18 +184,18 @@ export class TmdbRepository {
     const crew = movie.credits?.crew ?? [];
     const cast = (movie.credits?.cast ?? []).slice(0, 5);
     const directorRows: readonly TmdbCrewEntry[] = crew.filter(
-      (c) => c.job === 'Director',
+      (member) => member.job === 'Director',
     );
-    const directors = directorRows.map((c) => c.name).filter(Boolean);
+    const directors = directorRows.map((member) => member.name).filter(Boolean);
     const directorIds = directorRows
-      .map((c) => c.id)
-      .filter((x): x is number => typeof x === 'number');
+      .map((member) => member.id)
+      .filter((id): id is number => typeof id === 'number');
     const castIds = cast
-      .map((c: TmdbCastEntry) => c.id)
-      .filter((x): x is number => typeof x === 'number');
+      .map((member: TmdbCastEntry) => member.id)
+      .filter((id): id is number => typeof id === 'number');
     const companies = (movie.production_companies ?? [])
-      .filter((c) => c.id !== undefined)
-      .map((c) => ({ id: c.id, name: c.name }));
+      .filter((company) => company.id !== undefined)
+      .map((company) => ({ id: company.id, name: company.name }));
 
     await this.db
       .update(tmdb_movies)
@@ -208,9 +208,9 @@ export class TmdbRepository {
         top_cast:
           cast.length > 0
             ? JSON.stringify(
-                cast.map((c: TmdbCastEntry) => ({
-                  name: c.name,
-                  character: c.character,
+                cast.map((member: TmdbCastEntry) => ({
+                  name: member.name,
+                  character: member.character,
                 })),
               )
             : null,
@@ -269,16 +269,16 @@ export class TmdbRepository {
         const json = JSON.parse(row.raw_credits) as TmdbMovieResponse;
         const crew = json.credits?.crew ?? [];
         const cast = (json.credits?.cast ?? []).slice(0, 5);
-        const dirIds = crew
-          .filter((c) => c.job === 'Director')
-          .map((c) => c.id)
-          .filter((x): x is number => typeof x === 'number');
+        const directorIds = crew
+          .filter((member) => member.job === 'Director')
+          .map((member) => member.id)
+          .filter((id): id is number => typeof id === 'number');
         const castIds = cast
-          .map((c: TmdbCastEntry) => c.id)
-          .filter((x): x is number => typeof x === 'number');
+          .map((member: TmdbCastEntry) => member.id)
+          .filter((id): id is number => typeof id === 'number');
         const companies = (json.production_companies ?? [])
-          .filter((c) => c.id !== undefined)
-          .map((c) => ({ id: c.id, name: c.name }));
+          .filter((company) => company.id !== undefined)
+          .map((company) => ({ id: company.id, name: company.name }));
         await this.db
           .update(tmdb_movies)
           .set({
@@ -286,7 +286,7 @@ export class TmdbRepository {
             revenue: json.revenue ?? null,
             original_language: sql`COALESCE(original_language, ${json.original_language ?? null})`,
             cast_ids: sql`COALESCE(cast_ids, ${castIds.length > 0 ? JSON.stringify(castIds) : null})`,
-            director_ids: sql`COALESCE(director_ids, ${dirIds.length > 0 ? JSON.stringify(dirIds) : null})`,
+            director_ids: sql`COALESCE(director_ids, ${directorIds.length > 0 ? JSON.stringify(directorIds) : null})`,
             production_companies: sql`COALESCE(production_companies, ${companies.length > 0 ? JSON.stringify(companies) : null})`,
           })
           .where(eq(tmdb_movies.imdb_id, row.imdb_id));
@@ -332,7 +332,7 @@ export class TmdbRepository {
   /** Ids in tmdb_people. */
   public async knownPeopleIds(): Promise<Set<number>> {
     const rows = await this.db.select({ id: tmdb_people.id }).from(tmdb_people);
-    return new Set<number>(rows.map((r) => r.id));
+    return new Set<number>(rows.map((row) => row.id));
   }
 
   /** People still missing a prestige_score — covers the migration backfill. */
@@ -341,7 +341,7 @@ export class TmdbRepository {
       .select({ id: tmdb_people.id })
       .from(tmdb_people)
       .where(isNull(tmdb_people.prestige_score));
-    return new Set<number>(rows.map((r) => r.id));
+    return new Set<number>(rows.map((row) => row.id));
   }
 
   /** Persist a person row with their computed prestige score. */
@@ -407,8 +407,8 @@ export class TmdbRepository {
       .from(tmdb_people);
     return new Map<number, number>(
       rows
-        .filter((r): r is { id: number; pop: number } => r.pop !== null)
-        .map((r) => [r.id, r.pop]),
+        .filter((row): row is { id: number; pop: number } => row.pop !== null)
+        .map((row) => [row.id, row.pop]),
     );
   }
 

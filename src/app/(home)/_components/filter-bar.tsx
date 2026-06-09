@@ -58,7 +58,7 @@ export function LanguageNav({
   sort: string;
   langs: readonly LangCount[];
 }) {
-  const unknown = langs.find((l) => l.code === '?');
+  const unknown = langs.find((langCount) => langCount.code === '?');
   return (
     <nav className="mb-4 flex flex-wrap items-center gap-2 text-xs">
       <span className="text-gray-500">Language:</span>
@@ -66,17 +66,19 @@ export function LanguageNav({
         code="en"
         active={lang}
         sort={sort}
-        count={langs.find((l) => l.code === 'en')?.count ?? 0}
+        count={langs.find((langCount) => langCount.code === 'en')?.count ?? 0}
       />
       {langs
-        .filter((l) => l.code !== 'en' && l.code !== '?')
-        .map((l) => (
+        .filter(
+          (langCount) => langCount.code !== 'en' && langCount.code !== '?',
+        )
+        .map((langCount) => (
           <LangChip
-            key={l.code}
-            code={l.code}
+            key={langCount.code}
+            code={langCount.code}
             active={lang}
             sort={sort}
-            count={l.count}
+            count={langCount.count}
           />
         ))}
       {unknown ? (
@@ -86,7 +88,7 @@ export function LanguageNav({
         code="all"
         active={lang}
         sort={sort}
-        count={langs.reduce((s, l) => s + l.count, 0)}
+        count={langs.reduce((sum, langCount) => sum + langCount.count, 0)}
       />
     </nav>
   );

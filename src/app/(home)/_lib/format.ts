@@ -8,9 +8,9 @@ export function formatRuntime(min: number | null): string | null {
   if (!min) {
     return null;
   }
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  const hours = Math.floor(min / 60);
+  const mins = min % 60;
+  return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -20,8 +20,8 @@ export function isFresh(at: string | null, nowMs: number): boolean {
   if (!at) {
     return false;
   }
-  const t = Date.parse(at);
-  return Number.isFinite(t) && nowMs - t < DAY_MS;
+  const ms = Date.parse(at);
+  return Number.isFinite(ms) && nowMs - ms < DAY_MS;
 }
 
 /** Coarse "x ago" label (`never` when missing/unparseable). */
@@ -29,24 +29,24 @@ export function timeAgo(at: string | null, nowMs: number): string {
   if (!at) {
     return 'never';
   }
-  const t = Date.parse(at);
-  if (!Number.isFinite(t)) {
+  const parsed = Date.parse(at);
+  if (!Number.isFinite(parsed)) {
     return 'never';
   }
-  const s = Math.max(0, Math.floor((nowMs - t) / 1000));
-  if (s < 60) {
-    return `${s}s ago`;
+  const seconds = Math.max(0, Math.floor((nowMs - parsed) / 1000));
+  if (seconds < 60) {
+    return `${seconds}s ago`;
   }
-  const m = Math.floor(s / 60);
-  if (m < 60) {
-    return `${m}m ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) {
+    return `${minutes}m ago`;
   }
-  const h = Math.floor(m / 60);
-  if (h < 48) {
-    return `${h}h ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) {
+    return `${hours}h ago`;
   }
-  const d = Math.floor(h / 24);
-  return `${d}d ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
 /** Compact money: `$200M` / `$1.2B` / `$500K`. Null for missing/zero. */
@@ -77,8 +77,8 @@ export function fmtSize(bytes: number | null): string | null {
 /** Build a `?lang=&sort=&view=` query string, dropping empty values. */
 export function buildQuery(params: Record<string, string>): string {
   const usp = new URLSearchParams(
-    Object.entries(params).filter(([, v]) => Boolean(v)),
+    Object.entries(params).filter(([, value]) => Boolean(value)),
   );
-  const s = usp.toString();
-  return s ? `?${s}` : '';
+  const query = usp.toString();
+  return query ? `?${query}` : '';
 }

@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
   // In plan view, only emit movies that actually fit.
   const eligible: readonly ScoredMovie[] =
-    view === 'plan' ? movies.filter((m) => m.fits) : movies;
+    view === 'plan' ? movies.filter((movie) => movie.fits) : movies;
 
   // `cumBytes` is the SQL-computed running total in the feed's sort order,
   // so keeping the sized rows whose total stays within budget is a simple
@@ -45,7 +45,9 @@ export async function GET(request: NextRequest) {
     budgetBytes === null
       ? eligible
       : eligible.filter(
-          (m) => (m.row.best_size_bytes ?? 0) > 0 && m.cumBytes <= budgetBytes,
+          (movie) =>
+            (movie.row.best_size_bytes ?? 0) > 0 &&
+            movie.cumBytes <= budgetBytes,
         );
 
   const qs = url.searchParams.toString();

@@ -55,7 +55,9 @@ export class TmdbClient {
     return this.callJson<{ genres: TmdbGenre[] }>(
       `${this.baseUrl}/genre/movie/list`,
       {},
-    ).then((r) => (r.ok ? { ...r, value: r.value.genres ?? [] } : r));
+    ).then((result) =>
+      result.ok ? { ...result, value: result.value.genres ?? [] } : result,
+    );
   }
 
   /** Look up a movie by IMDb id (returns the first movie match, if any). */
@@ -89,13 +91,13 @@ export class TmdbClient {
     url: string,
     query: Record<string, string>,
   ): Promise<TmdbResult<T>> {
-    const u = new URL(url);
-    u.search = new URLSearchParams({
+    const parsedUrl = new URL(url);
+    parsedUrl.search = new URLSearchParams({
       ...query,
       api_key: this.apiKey,
     }).toString();
     try {
-      const resp = await this.transport(u, {
+      const resp = await this.transport(parsedUrl, {
         headers: { Accept: 'application/json' },
       });
       const raw = await resp.text();

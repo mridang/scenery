@@ -20,44 +20,44 @@ function fmtSize(bytes: number | null): string {
 }
 
 /** The multi-line `<description>` body for one movie (labelled fields). */
-export function descriptionFor(s: ScoredMovie): string {
-  const { row: m, studios, genres: g, cast, score } = s;
+export function descriptionFor(movie: ScoredMovie): string {
+  const { row, studios, genres, cast, score } = movie;
   const runtime =
-    m.runtime != null && m.runtime
+    row.runtime != null && row.runtime
       ? (() => {
-          const h = Math.floor(m.runtime / 60);
-          const min = m.runtime % 60;
-          return h > 0 ? `${h}h ${min}m` : `${min}m`;
+          const hours = Math.floor(row.runtime / 60);
+          const mins = row.runtime % 60;
+          return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
         })()
       : null;
   const rating =
-    m.vote_average != null
-      ? `${m.vote_average.toFixed(1)}${
-          m.vote_count != null ? ` (${m.vote_count} votes)` : ''
+    row.vote_average != null
+      ? `${row.vote_average.toFixed(1)}${
+          row.vote_count != null ? ` (${row.vote_count} votes)` : ''
         }`
       : null;
-  const torrent = m.best_torrent_title
-    ? `${m.best_torrent_title} (${[
-        m.best_quality,
-        fmtSize(m.best_size_bytes),
-        m.best_source,
+  const torrent = row.best_torrent_title
+    ? `${row.best_torrent_title} (${[
+        row.best_quality,
+        fmtSize(row.best_size_bytes),
+        row.best_source,
       ]
         .filter(Boolean)
         .join(' · ')})`
     : null;
   const seeders =
-    m.best_torrent_title && m.best_seeders != null
-      ? String(m.best_seeders)
+    row.best_torrent_title && row.best_seeders != null
+      ? String(row.best_seeders)
       : null;
 
   const parts: readonly (readonly [string, string | null])[] = [
     ['Score', score.toFixed(1)],
-    ['Year', m.tmdb_year ? String(m.tmdb_year) : null],
-    ['Genres', g.length ? g.join(', ') : null],
+    ['Year', row.tmdb_year ? String(row.tmdb_year) : null],
+    ['Genres', genres.length ? genres.join(', ') : null],
     ['Runtime', runtime],
     ['Rating', rating],
     ['Studios', studios.length ? studios.join(', ') : null],
-    ['Director', m.director ?? null],
+    ['Director', row.director ?? null],
     ['Cast', cast.length ? cast.join(', ') : null],
     ['Torrent', torrent],
     ['Seeders', seeders],
@@ -70,10 +70,10 @@ export function descriptionFor(s: ScoredMovie): string {
 
 /** The channel `<title>` for a given view/lang/sort. */
 export function feedTitle(view: string, lang: string, sort: string): string {
-  const v = view === 'plan' ? '1 TB plan' : 'Catalog';
+  const viewLabel = view === 'plan' ? '1 TB plan' : 'Catalog';
   const langPart = lang === 'all' ? 'all languages' : lang.toUpperCase();
   const sortPart = sort === 'date' ? 'newest first' : 'best first';
-  return `scenery — ${v} (${langPart}, ${sortPart})`;
+  return `scenery — ${viewLabel} (${langPart}, ${sortPart})`;
 }
 
 /** Everything needed to render one feed document. */
@@ -92,40 +92,44 @@ export interface FeedChannel {
 }
 
 /** Render the full RSS 2.0 document for a feed channel via `feed`. */
-export function buildFeed(c: FeedChannel): string {
+export function buildFeed(channel: FeedChannel): string {
   const feed = new Feed({
-    id: c.altHref,
-    title: feedTitle(c.view, c.lang, c.sort),
-    link: c.altHref,
-    description: `Scored movie releases from scenery, sorted ${c.sort === 'date' ? 'by date' : 'by score'}.`,
+    id: channel.altHref,
+    title: feedTitle(channel.view, channel.lang, channel.sort),
+    link: channel.altHref,
+    description: `Scored movie releases from scenery, sorted ${channel.sort === 'date' ? 'by date' : 'by score'}.`,
     language: 'en-us',
     generator: 'scenery',
     copyright: 'scenery',
-    updated: c.updated,
-    feedLinks: { rss: c.selfHref },
+    updated: channel.updated,
+    feedLinks: { rss: channel.selfHref },
   });
 
-  for (const s of c.items) {
-    const m = s.row;
-    const title = m.tmdb_title ?? m.latest_release_title ?? m.imdb_id;
-    const year = m.tmdb_year ? ` (${m.tmdb_year})` : '';
-    const t = m.latest_release_at ? Date.parse(m.latest_release_at) : NaN;
+  for (const movie of channel.items) {
+    const row = movie.row;
+    const title = row.tmdb_title ?? row.latest_release_title ?? row.imdb_id;
+    const year = row.tmdb_year ? ` (${row.tmdb_year})` : '';
+    const releaseMs = row.latest_release_at
+      ? Date.parse(row.latest_release_at)
+      : NaN;
     feed.addItem({
-      title: `${title}${year} — ${s.score.toFixed(1)}`,
-      id: m.best_info_hash ? `${m.imdb_id}:${m.best_info_hash}` : m.imdb_id,
-      link: `https://www.imdb.com/title/${m.imdb_id}/`,
-      date: new Date(Number.isFinite(t) ? t : 0),
-      description: descriptionFor(s),
-      ...(m.best_info_hash
+      title: `${title}${year} — ${movie.score.toFixed(1)}`,
+      id: row.best_info_hash
+        ? `${row.imdb_id}:${row.best_info_hash}`
+        : row.imdb_id,
+      link: `https://www.imdb.com/title/${row.imdb_id}/`,
+      date: new Date(Number.isFinite(releaseMs) ? releaseMs : 0),
+      description: descriptionFor(movie),
+      ...(row.best_info_hash
         ? {
             enclosure: {
               url: buildMagnet(
-                m.best_info_hash,
-                m.best_torrent_title,
-                c.trackers,
+                row.best_info_hash,
+                row.best_torrent_title,
+                channel.trackers,
               ),
               type: 'application/x-bittorrent',
-              length: m.best_size_bytes ?? 0,
+              length: row.best_size_bytes ?? 0,
             },
           }
         : {}),

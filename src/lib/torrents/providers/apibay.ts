@@ -82,8 +82,8 @@ export class ApibayProvider implements TorrentProvider {
       }
 
       const torrents = streams
-        .map((s) => this.parseStream(s))
-        .filter((t): t is ParsedTorrent => t !== null);
+        .map((stream) => this.parseStream(stream))
+        .filter((torrent): torrent is ParsedTorrent => torrent !== null);
       return {
         status: torrents.length > 0 ? 'success' : 'empty',
         torrents,
@@ -100,22 +100,22 @@ export class ApibayProvider implements TorrentProvider {
     }
   }
 
-  private parseStream(s: ApibayStream): ParsedTorrent | null {
-    if (!s.info_hash || s.info_hash === EMPTY_HASH) {
+  private parseStream(stream: ApibayStream): ParsedTorrent | null {
+    if (!stream.info_hash || stream.info_hash === EMPTY_HASH) {
       return null;
     }
-    const sizeNum = Number(s.size);
-    const seeders = Number(s.seeders);
+    const sizeNum = Number(stream.size);
+    const seeders = Number(stream.seeders);
     return {
-      infoHash: s.info_hash.toLowerCase(),
-      title: s.name,
-      rawTitle: s.name,
+      infoHash: stream.info_hash.toLowerCase(),
+      title: stream.name,
+      rawTitle: stream.name,
       source: 'ThePirateBay',
       seeders: Number.isFinite(seeders) ? seeders : null,
       sizeBytes: Number.isFinite(sizeNum) && sizeNum > 0 ? sizeNum : null,
-      quality: detectQuality(s.name),
-      isHdr: detectHdr(s.name),
-      isRemux: detectRemux(s.name),
+      quality: detectQuality(stream.name),
+      isHdr: detectHdr(stream.name),
+      isRemux: detectRemux(stream.name),
     };
   }
 }

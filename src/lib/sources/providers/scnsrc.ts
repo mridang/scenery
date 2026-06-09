@@ -19,8 +19,8 @@ function parseScnsrcDate(raw: string | undefined): string | undefined {
   }
   // Format observed: "Jun 5th, 2026, at 5:25 am"
   const cleaned = raw.replace(/(\d+)(st|nd|rd|th)/, '$1').replace(' at ', ' ');
-  const d = new Date(cleaned);
-  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+  const parsed = new Date(cleaned);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
 }
 
 /**
@@ -49,8 +49,11 @@ export class ScnsrcSource implements Source {
 
   public extract(html: string): ExtractedRelease[] {
     const offsets = Array.from(html.matchAll(POST_RE))
-      .map((m) => ({ id: m[1], idx: m.index ?? 0 }))
-      .filter((o): o is { id: string; idx: number } => o.id !== undefined);
+      .map((match) => ({ id: match[1], idx: match.index ?? 0 }))
+      .filter(
+        (offset): offset is { id: string; idx: number } =>
+          offset.id !== undefined,
+      );
 
     return offsets.flatMap((offset, i) => {
       const start = offset.idx;
@@ -73,8 +76,8 @@ export class ScnsrcSource implements Source {
       const author = chunk.match(AUTHOR_RE)?.[1]?.trim();
       const dateRaw = chunk.match(DATE_RE)?.[1]?.trim();
       const categories = Array.from(chunk.matchAll(CATEGORY_RE))
-        .map((m) => m[1]?.trim())
-        .filter((s): s is string => s !== undefined);
+        .map((match) => match[1]?.trim())
+        .filter((category): category is string => category !== undefined);
       const imageUrl = chunk.match(IMG_RE)?.[1];
       const excerptRaw = chunk.match(EXCERPT_RE)?.[1];
       const excerpt = excerptRaw

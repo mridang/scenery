@@ -67,7 +67,7 @@ export class TorrentRepository {
       )
       .orderBy(asc(newestRelease))
       .limit(limit);
-    return rows.map((r) => r.imdb_id);
+    return rows.map((row) => row.imdb_id);
   }
 
   async tooFreshCount(): Promise<number> {
@@ -95,33 +95,33 @@ export class TorrentRepository {
     const now = new Date().toISOString();
     const { provider, result } = resolved;
     if (result.status === 'success') {
-      for (const t of result.torrents) {
+      for (const torrent of result.torrents) {
         await this.db
           .insert(torrents)
           .values({
             imdb_id: imdbId,
-            info_hash: t.infoHash,
-            title: t.title,
-            raw_title: t.rawTitle,
-            source: t.source,
-            seeders: t.seeders,
-            size_bytes: t.sizeBytes,
-            quality: t.quality,
-            is_hdr: t.isHdr ? 1 : 0,
-            is_remux: t.isRemux ? 1 : 0,
+            info_hash: torrent.infoHash,
+            title: torrent.title,
+            raw_title: torrent.rawTitle,
+            source: torrent.source,
+            seeders: torrent.seeders,
+            size_bytes: torrent.sizeBytes,
+            quality: torrent.quality,
+            is_hdr: torrent.isHdr ? 1 : 0,
+            is_remux: torrent.isRemux ? 1 : 0,
             fetched_at: now,
           })
           .onConflictDoUpdate({
             target: [torrents.imdb_id, torrents.info_hash],
             set: {
-              title: t.title,
-              raw_title: t.rawTitle,
-              source: t.source,
-              seeders: t.seeders,
-              size_bytes: t.sizeBytes,
-              quality: t.quality,
-              is_hdr: t.isHdr ? 1 : 0,
-              is_remux: t.isRemux ? 1 : 0,
+              title: torrent.title,
+              raw_title: torrent.rawTitle,
+              source: torrent.source,
+              seeders: torrent.seeders,
+              size_bytes: torrent.sizeBytes,
+              quality: torrent.quality,
+              is_hdr: torrent.isHdr ? 1 : 0,
+              is_remux: torrent.isRemux ? 1 : 0,
               fetched_at: now,
             },
           });
