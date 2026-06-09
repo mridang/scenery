@@ -65,11 +65,11 @@ export async function GET(request: NextRequest) {
   return new Response(xml, {
     headers: {
       'Content-Type': 'application/rss+xml; charset=utf-8',
-      // Browsers cache for 60s; Cloudflare's edge caches for 60s with
-      // 600s of stale-while-revalidate so a slow refresh never hits a
-      // user. Adjust if you change cron cadence.
+      // The catalog only changes once a day (the 06:00 UTC cron), so the
+      // edge caches the feed for 6h and serves it stale for up to a day
+      // while it revalidates. Browsers hold it briefly (5 min).
       'Cache-Control':
-        'public, max-age=60, s-maxage=60, stale-while-revalidate=600',
+        'public, max-age=300, s-maxage=21600, stale-while-revalidate=86400',
       Vary: 'Accept-Encoding',
     },
   });
