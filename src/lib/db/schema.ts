@@ -18,9 +18,18 @@ import {
   unique,
 } from 'drizzle-orm/sqlite-core';
 
+import {
+  FETCH_STATUSES,
+  LOOKUP_STATUSES,
+  QUALITIES,
+  SOURCE_SLUGS,
+  TMDB_STATUSES,
+  TORRENT_PROVIDERS,
+} from './enums';
+
 export const sources = sqliteTable('sources', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  slug: text('slug').notNull().unique(),
+  slug: text('slug', { enum: SOURCE_SLUGS }).notNull().unique(),
   base_url: text('base_url').notNull(),
 });
 
@@ -73,7 +82,7 @@ export const fetch_attempts = sqliteTable('fetch_attempts', {
   attempt_number: integer('attempt_number').notNull(),
   started_at: text('started_at').notNull(),
   finished_at: text('finished_at'),
-  status: text('status').notNull(),
+  status: text('status', { enum: FETCH_STATUSES }).notNull(),
   http_status: integer('http_status'),
   error: text('error'),
   response_body: text('response_body'),
@@ -88,7 +97,7 @@ export const tmdb_genres = sqliteTable('tmdb_genres', {
 export const tmdb_movies = sqliteTable('tmdb_movies', {
   imdb_id: text('imdb_id').primaryKey(),
   tmdb_id: integer('tmdb_id'),
-  status: text('status').notNull(),
+  status: text('status', { enum: TMDB_STATUSES }).notNull(),
   title: text('title'),
   original_title: text('original_title'),
   release_date: text('release_date'),
@@ -140,7 +149,7 @@ export const torrents = sqliteTable(
     source: text('source'),
     seeders: integer('seeders'),
     size_bytes: integer('size_bytes'),
-    quality: text('quality'),
+    quality: text('quality', { enum: QUALITIES }),
     is_hdr: integer('is_hdr').notNull().default(0),
     is_remux: integer('is_remux').notNull().default(0),
     fetched_at: text('fetched_at').notNull(),
@@ -150,11 +159,11 @@ export const torrents = sqliteTable(
 
 export const torrent_lookups = sqliteTable('torrent_lookups', {
   imdb_id: text('imdb_id').primaryKey(),
-  status: text('status').notNull(),
+  status: text('status', { enum: LOOKUP_STATUSES }).notNull(),
   searched_at: text('searched_at').notNull(),
   attempt_count: integer('attempt_count').notNull().default(1),
   result_count: integer('result_count').notNull().default(0),
   last_error: text('last_error'),
   raw_response: text('raw_response'),
-  provider: text('provider'),
+  provider: text('provider', { enum: TORRENT_PROVIDERS }),
 });

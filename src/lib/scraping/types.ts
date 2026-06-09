@@ -1,3 +1,5 @@
+import type { FetchStatus } from '@/lib/db';
+
 /**
  * Result of attempting to scrape a single listing page.
  *
@@ -9,7 +11,7 @@ export interface PageRunResult {
   /** Monotonic attempt counter per (source, page). First attempt = 1. */
   attemptNumber: number;
   /** Overall outcome. */
-  status: 'success' | 'failed';
+  status: FetchStatus;
   /** Upstream HTTP status code when available. */
   httpStatus?: number;
   /** Human-readable error message on failure. */

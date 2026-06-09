@@ -1,4 +1,9 @@
-import type { LookupResult, ResolvedLookup, TorrentProvider } from './types';
+import type {
+  LookupResult,
+  ResolvedLookup,
+  TorrentProvider,
+  TorrentProviderName,
+} from './types';
 
 // Walks providers in priority order. First success wins. If everyone
 // returns empty, persist that. If everyone errors, propagate the last
@@ -16,7 +21,10 @@ export class TorrentLookupManager {
     // the collected outcomes rather than mutated mid-loop.
     const outcomes = await this.providers.reduce<
       Promise<
-        readonly { readonly provider: string; readonly result: LookupResult }[]
+        readonly {
+          readonly provider: TorrentProviderName;
+          readonly result: LookupResult;
+        }[]
       >
     >(async (accP, provider) => {
       const acc = await accP;
@@ -55,15 +63,8 @@ export class TorrentLookupManager {
     if (lastError) {
       return { ...lastError, attempted };
     }
-    return {
-      provider: 'none',
-      result: {
-        status: 'error',
-        torrents: [],
-        rawResponse: '',
-        error: 'no provider returned',
-      },
-      attempted,
-    };
+    // Unreachable: the constructor guarantees ≥1 provider, so `outcomes`
+    // is non-empty and one of the status branches above always matches.
+    throw new Error('no provider outcome to resolve');
   }
 }

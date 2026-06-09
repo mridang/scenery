@@ -7,4 +7,5 @@
  */
 
 export * from './schema';
+export * from './enums';
 export { createDatabase, type Database } from './client';

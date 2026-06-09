@@ -1,3 +1,9 @@
+import type { LookupStatus, Quality, TorrentProviderName } from '@/lib/db';
+
+// The lookup/quality/provider value-sets are storage-constrained; re-export
+// so torrent consumers can keep importing them from this module.
+export type { LookupStatus, Quality, TorrentProviderName } from '@/lib/db';
+
 // Universal shape every provider must emit.
 export interface ParsedTorrent {
   readonly infoHash: string;
@@ -6,12 +12,10 @@ export interface ParsedTorrent {
   readonly source: string | null; // KAT / 1337x / TPB / etc. as labelled by the provider
   readonly seeders: number | null;
   readonly sizeBytes: number | null;
-  readonly quality: string | null; // 480p / 720p / 1080p / 2160p
+  readonly quality: Quality | null;
   readonly isHdr: boolean;
   readonly isRemux: boolean;
 }
-
-export type LookupStatus = 'success' | 'empty' | 'error';
 
 export interface LookupResult {
   readonly status: LookupStatus;
@@ -23,16 +27,16 @@ export interface LookupResult {
 
 // One concrete torrent source — Torrentio, apibay, etc.
 export interface TorrentProvider {
-  readonly name: string;
+  readonly name: TorrentProviderName;
   search(imdbId: string): Promise<LookupResult>;
 }
 
 // Chained-lookup outcome — which provider answered, what it returned.
 export interface ResolvedLookup {
-  readonly provider: string;
+  readonly provider: TorrentProviderName;
   readonly result: LookupResult;
   readonly attempted: readonly {
-    readonly provider: string;
+    readonly provider: TorrentProviderName;
     readonly status: LookupStatus;
     readonly error?: string;
   }[];

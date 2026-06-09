@@ -8,6 +8,7 @@ import {
   page_snapshots,
   releases,
   sources,
+  type SourceSlug,
 } from '../db';
 
 import type { ExtractedRelease } from '../sources/types';
@@ -44,10 +45,13 @@ export class ScrapingRepository {
    * @returns The row, or null if the slug is unknown.
    */
   public async findSource(slug: string): Promise<SourceRow | null> {
+    // `slug` is arbitrary input (e.g. a ?source= query param); the cast
+    // only satisfies the enum-typed column — an unknown slug simply
+    // matches no rows and returns null.
     const row = await this.db
       .select({ id: sources.id, slug: sources.slug })
       .from(sources)
-      .where(eq(sources.slug, slug))
+      .where(eq(sources.slug, slug as SourceSlug))
       .get();
     return row ?? null;
   }

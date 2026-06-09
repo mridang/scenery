@@ -1,3 +1,5 @@
+import type { LookupStatus, Quality, TmdbStatus } from '@/lib/db';
+
 /**
  * Storage budget for {@link CatalogService} plan view, in bytes (1 TB).
  *
@@ -14,7 +16,7 @@ export const BUDGET_BYTES = 1_000_000_000_000;
 export interface MovieRow {
   readonly imdb_id: string;
   readonly tmdb_id: number | null;
-  readonly tmdb_status: string | null;
+  readonly tmdb_status: TmdbStatus | null;
   readonly tmdb_title: string | null;
   readonly tmdb_year: number | null;
   readonly release_date: string | null;
@@ -36,14 +38,15 @@ export interface MovieRow {
   readonly latest_release_at: string | null;
   /** Earliest time this movie appeared on any source — its "actual" date. */
   readonly first_posted_at: string | null;
-  readonly torrent_status: string | null;
+  readonly torrent_status: LookupStatus | null;
   readonly torrent_count: number | null;
   readonly best_info_hash: string | null;
   readonly best_torrent_title: string | null;
+  /** Tracker the picked torrent came from — an open set, kept as a string. */
   readonly best_source: string | null;
   readonly best_size_bytes: number | null;
   readonly best_seeders: number | null;
-  readonly best_quality: string | null;
+  readonly best_quality: Quality | null;
 }
 
 /** Per-language tally. @public */

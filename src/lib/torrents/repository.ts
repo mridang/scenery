@@ -8,7 +8,11 @@ import {
   torrent_lookups,
   torrents,
 } from '@/lib/db';
-import type { LookupResult, ResolvedLookup } from './types';
+import type {
+  LookupResult,
+  ResolvedLookup,
+  TorrentProviderName,
+} from './types';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -128,7 +132,7 @@ export class TorrentRepository {
 
   private async upsertLookup(
     imdbId: string,
-    provider: string,
+    provider: TorrentProviderName,
     result: LookupResult,
     now: string,
   ): Promise<void> {

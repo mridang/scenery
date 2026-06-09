@@ -1,3 +1,5 @@
+import type { SourceSlug } from '@/lib/db';
+
 /**
  * Outcome of fetching one listing page from a release source.
  *
@@ -58,7 +60,7 @@ export interface ExtractedRelease {
  */
 export interface Source {
   /** Short identifier, persisted in the `sources` table (e.g. `scnsrc`). */
-  readonly slug: string;
+  readonly slug: SourceSlug;
   /** Canonical entry URL — typically the first listing page. */
   readonly baseUrl: string;
   /** Label persisted on each snapshot row to identify the fetch path used. */
