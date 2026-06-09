@@ -44,6 +44,24 @@ export async function createTestD1(): Promise<TestD1> {
   return { db, dispose: () => mf.dispose() };
 }
 
+/**
+ * Wipe every mutable table (keeping the migration seed, e.g. the `sources`
+ * rows) so each test starts from a clean catalog. Call in `beforeEach`.
+ */
+export async function wipe(db: D1Database): Promise<void> {
+  await db.batch([
+    db.prepare('DELETE FROM fetch_attempts'),
+    db.prepare('DELETE FROM page_snapshots'),
+    db.prepare('DELETE FROM releases'),
+    db.prepare('DELETE FROM tmdb_movies'),
+    db.prepare('DELETE FROM tmdb_people'),
+    db.prepare('DELETE FROM tmdb_genres'),
+    db.prepare('DELETE FROM torrents'),
+    db.prepare('DELETE FROM torrent_lookups'),
+    db.prepare('DELETE FROM movies'),
+  ]);
+}
+
 /** Read and execute every `*.sql` migration in filename order. */
 async function applyMigrations(db: D1Database): Promise<void> {
   const files = (await readdir(MIGRATIONS_DIR))

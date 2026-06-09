@@ -2,7 +2,6 @@ module.exports = {
   entry: [
     'src/app/**/{page,layout,route}.{ts,tsx}',
     'cypress/**/*.cy.{js,ts}',
-    'src/**/*.test.ts',
     'test/**/*.test.ts',
   ],
   project: ['src/**/*.{ts,tsx}', 'test/**/*.ts'],

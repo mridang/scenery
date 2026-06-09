@@ -1,13 +1,13 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { CatalogService } from './service';
+import { CatalogService } from '@/lib/catalog/service';
 import type {
   CatalogReader,
   CatalogStats,
   LangCount,
   LastUpdate,
   ScoredRow,
-} from './types';
+} from '@/lib/catalog/types';
 
 function scoredRow(overrides: Partial<ScoredRow> = {}): ScoredRow {
   return {

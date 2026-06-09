@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { parseViewOptions } from './options';
+import { parseViewOptions } from '@/lib/catalog/options';
 
 describe('parseViewOptions', () => {
   it('applies the defaults when nothing is supplied', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { languageLabel } from './language';
+import { languageLabel } from '@/lib/catalog/language';
 
 describe('languageLabel', () => {
   it('maps known ISO codes to names', () => {

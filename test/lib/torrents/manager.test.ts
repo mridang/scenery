@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { TorrentLookupManager } from './manager';
-import type { LookupResult, TorrentProvider } from './types';
+import { TorrentLookupManager } from '@/lib/torrents/manager';
+import type { LookupResult, TorrentProvider } from '@/lib/torrents/types';
 
 function fakeProvider(name: string, result: LookupResult): TorrentProvider {
   return { name, search: () => Promise.resolve(result) };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { TorrentioProvider } from './torrentio';
+import { TorrentioProvider } from '@/lib/torrents/providers/torrentio';
 
 const transportOf = (
   body: unknown,

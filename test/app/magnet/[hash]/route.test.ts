@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import type { NextRequest } from 'next/server';
 
-import { resetTrackerCache } from '../../src/lib/magnet/magnet';
+import { resetTrackerCache } from '@/lib/magnet/magnet';
 
 // The endpoint reaches the network via the transport layer; stub the
 // whole transport module so bestTrackers() reads a controlled body

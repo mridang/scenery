@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals';
 
-import { createTestD1, type TestD1 } from '../d1';
+import { createTestD1, type TestD1 } from '../../../d1';
 
 let harness: TestD1;
 
