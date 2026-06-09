@@ -125,32 +125,34 @@ async function handle(request: NextRequest) {
   const pages =
     backfill > 0 ? Array.from({ length: backfill }, (_, i) => i + 1) : [1];
 
-  // Diagnostic: ?viaWorkflow=enrich|scrape|torrents creates a workflow
-  // instance instead of running synchronously. Returns the instance id
-  // and status so we can see whether local wrangler actually simulates
-  // workflows.
+  // Diagnostic: ?viaWorkflow=scrape|movie creates a workflow instance
+  // instead of running synchronously. Returns the instance id and status
+  // so we can see whether local wrangler actually simulates workflows.
+  // For `movie`, pass ?imdbId=tt... to pick the movie to run.
   const viaWorkflow = url.searchParams.get('viaWorkflow');
   if (viaWorkflow) {
-    const wf =
-      viaWorkflow === 'enrich'
-        ? env.ENRICH_WORKFLOW
-        : viaWorkflow === 'scrape'
-          ? env.SCRAPE_WORKFLOW
-          : viaWorkflow === 'torrents'
-            ? env.TORRENT_WORKFLOW
-            : undefined;
-    if (!wf) {
+    // Each binding has a distinct param type, so branch on create() rather
+    // than unioning the bindings (which would intersect the param types).
+    const create =
+      viaWorkflow === 'scrape'
+        ? () => env.SCRAPE_WORKFLOW.create({ params: { pageNumbers: [1] } })
+        : viaWorkflow === 'movie'
+          ? () =>
+              env.MOVIE_WORKFLOW.create({
+                params: { imdbId: url.searchParams.get('imdbId') ?? '' },
+              })
+          : undefined;
+    if (!create) {
       return Response.json(
         {
           ok: false,
           error: `unknown or unbound workflow: ${viaWorkflow}`,
-          envHasBinding: Boolean(wf),
         },
         { status: 400 },
       );
     }
     try {
-      const instance = await wf.create({ params: { limit: 5 } });
+      const instance = await create();
       return Response.json({
         ok: true,
         viaWorkflow,

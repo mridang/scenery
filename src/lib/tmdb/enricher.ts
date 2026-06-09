@@ -145,6 +145,30 @@ export class TmdbEnricher {
     return true;
   }
 
+  /**
+   * Enrich the cast + director of ONE movie that we haven't fetched yet.
+   * Bounded by the movie's ~6 referenced ids (deduped against people we
+   * already have), so a single call is a handful of TMDB subrequests at
+   * most.
+   *
+   * @returns how many people were newly fetched.
+   * @public
+   */
+  public async enrichPeopleForMovie(imdbId: string): Promise<number> {
+    const referenced = await this.repo.peopleIdsForMovie(imdbId);
+    if (referenced.length === 0) {
+      return 0;
+    }
+    const have = await this.repo.knownPeopleIds();
+    const todo = referenced.filter((id) => !have.has(id));
+    // Sequential, immutable accumulation of the success count.
+    return todo.reduce<Promise<number>>(
+      async (accP, id) =>
+        (await accP) + ((await this.enrichPerson(id)) ? 1 : 0),
+      Promise.resolve(0),
+    );
+  }
+
   /** Recompute talent_score for every movie. Pure DB, no subrequests. @public */
   public async recomputeTalentScoresPublic(): Promise<number> {
     return this.recomputeTalentScores();

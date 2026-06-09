@@ -6,7 +6,12 @@ import {
 
 import { ScrapeOrchestrator, ScrapingRepository } from '../lib/scraping';
 import { buildSources } from '../lib/sources';
-import { browserTransport } from '../lib/transport';
+import { buildEnricher } from '../lib/tmdb';
+import {
+  browserTransport,
+  genericTransport,
+  withRetry,
+} from '../lib/transport';
 
 /**
  * Parameters accepted by {@link ScrapeWorkflow}.
@@ -72,6 +77,55 @@ export class ScrapeWorkflow extends WorkflowEntrypoint<
       );
       return [...acc, [`${slug}:${page}`, result] as const];
     }, Promise.resolve([]));
-    return Object.fromEntries(entries);
+    const scraped = Object.fromEntries(entries);
+
+    // Seed the genre dictionary once (idempotent, one TMDB call at most).
+    await step.do('ensure-genres', retry, async () => {
+      await buildEnricher(
+        this.env.DB,
+        this.env,
+        withRetry(genericTransport()),
+      ).ensureGenres();
+      return { ok: true };
+    });
+
+    // Find the movies that still need enrichment and hand each off to its
+    // own MovieWorkflow instance. The instance id is the imdb id, so a
+    // second dispatch for a movie already in flight is a harmless no-op.
+    const pending = await step.do('list-pending', retry, async () =>
+      buildEnricher(
+        this.env.DB,
+        this.env,
+        withRetry(genericTransport()),
+      ).listPendingMovieIds(40),
+    );
+
+    const dispatched = await pending.reduce<Promise<number>>(
+      async (accP, imdbId) => {
+        const acc = await accP;
+        const created = await step.do(`dispatch:${imdbId}`, async () => {
+          try {
+            await this.env.MOVIE_WORKFLOW.create({
+              id: imdbId,
+              params: { imdbId },
+            });
+            return true;
+          } catch (error) {
+            // An instance for this movie already exists — idempotent.
+            if (
+              error instanceof Error &&
+              error.message.includes('already exists')
+            ) {
+              return false;
+            }
+            throw error;
+          }
+        });
+        return acc + (created ? 1 : 0);
+      },
+      Promise.resolve(0),
+    );
+
+    return { scraped, pending: pending.length, dispatched };
   }
 }

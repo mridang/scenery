@@ -329,6 +329,31 @@ export class TmdbRepository {
     return new Set<number>(ids);
   }
 
+  /** Cast + director ids referenced by ONE movie (deduped). */
+  public async peopleIdsForMovie(imdbId: string): Promise<number[]> {
+    const row = await this.db
+      .select({
+        cast_ids: tmdb_movies.cast_ids,
+        director_ids: tmdb_movies.director_ids,
+      })
+      .from(tmdb_movies)
+      .where(eq(tmdb_movies.imdb_id, imdbId))
+      .get();
+    if (!row) {
+      return [];
+    }
+    const ids = [row.cast_ids, row.director_ids]
+      .filter((raw): raw is string => raw !== null)
+      .flatMap((raw) => {
+        try {
+          return JSON.parse(raw) as number[];
+        } catch {
+          return [];
+        }
+      });
+    return [...new Set<number>(ids)];
+  }
+
   /** Ids in tmdb_people. */
   public async knownPeopleIds(): Promise<Set<number>> {
     const rows = await this.db.select({ id: tmdb_people.id }).from(tmdb_people);

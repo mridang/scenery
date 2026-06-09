@@ -32,14 +32,9 @@
       "class_name": "ScrapeWorkflow",
     },
     {
-      "name": "scenery-enrich",
-      "binding": "ENRICH_WORKFLOW",
-      "class_name": "EnrichWorkflow",
-    },
-    {
-      "name": "scenery-torrents",
-      "binding": "TORRENT_WORKFLOW",
-      "class_name": "TorrentWorkflow",
+      "name": "scenery-movie",
+      "binding": "MOVIE_WORKFLOW",
+      "class_name": "MovieWorkflow",
     },
   ],
   // SCRAPINGANT_API_KEY, TMDB_API_KEY, CRON_SECRET are Worker secrets

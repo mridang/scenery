@@ -12,9 +12,7 @@
  *     Workflows runtime can find them.
  */
 
-export { EnrichWorkflow } from './enrich';
-export type { EnrichWorkflowParams } from './enrich';
 export { ScrapeWorkflow } from './scrape';
 export type { ScrapeWorkflowParams } from './scrape';
-export { TorrentWorkflow } from './torrents';
-export type { TorrentWorkflowParams } from './torrents';
+export { MovieWorkflow } from './movie';
+export type { MovieWorkflowParams } from './movie';

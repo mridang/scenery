@@ -26,11 +26,7 @@
 
 import openNextHandler from '../.open-next/worker.js';
 
-export {
-  EnrichWorkflow,
-  ScrapeWorkflow,
-  TorrentWorkflow,
-} from './workflows/index';
+export { ScrapeWorkflow, MovieWorkflow } from './workflows/index';
 
 const handler: ExportedHandler<CloudflareEnv> = {
   /** Forwarded straight to OpenNext's Next.js handler. */
@@ -43,8 +39,12 @@ const handler: ExportedHandler<CloudflareEnv> = {
   },
 
   /**
-   * Cron-trigger entrypoint. Fans out one workflow instance per
-   * pipeline stage; each runs independently with its own retry budget.
+   * Cron-trigger entrypoint. The daily tick kicks off a single
+   * ScrapeWorkflow, which scrapes the sources and then dispatches one
+   * MovieWorkflow per newly-seen movie. Each MovieWorkflow owns the
+   * whole lifecycle of its one movie (enrich → sleep 24h → torrent), so
+   * no single instance comes anywhere near the per-invocation subrequest
+   * cap regardless of how many movies arrive.
    */
   async scheduled(_event, env, ctx) {
     const safeCreate = async (
@@ -78,11 +78,7 @@ const handler: ExportedHandler<CloudflareEnv> = {
       }
     };
     ctx.waitUntil(
-      Promise.all([
-        safeCreate('scrape', env.SCRAPE_WORKFLOW, { pageNumbers: [1] }),
-        safeCreate('enrich', env.ENRICH_WORKFLOW, { limit: 50 }),
-        safeCreate('torrents', env.TORRENT_WORKFLOW, { limit: 50 }),
-      ]),
+      safeCreate('scrape', env.SCRAPE_WORKFLOW, { pageNumbers: [1] }),
     );
   },
 };
