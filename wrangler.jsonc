@@ -8,8 +8,24 @@
   // Cloudflare auto-routes the Worker to the colo closest to D1
   // (avoids the worst-case ~70 ms hop). Free on all plans.
   "placement": { "mode": "smart" },
-  // Structured Workers Logs (free for Workers Paid; trivial overhead on Free).
-  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  // Full Workers Observability: logs, metrics, invocation traces — all
+  // sampled at 100% (the volume is tiny, the data is gold for debugging
+  // an opaque background pipeline).
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+    },
+  },
+  // Custom domain — the workers.dev subdomain is disabled so the
+  // canonical URL is the one we control. The apps.mrida.ng zone must be
+  // attached to this Cloudflare account for the custom_domain bind to
+  // succeed.
+  "workers_dev": false,
+  "routes": [{ "pattern": "scenery.apps.mrida.ng", "custom_domain": true }],
   "assets": {
     "binding": "ASSETS",
     "directory": ".open-next/assets",

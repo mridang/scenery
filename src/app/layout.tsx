@@ -16,7 +16,7 @@ const TITLE = 'scenery';
 const DESCRIPTION =
   'A scored, ranked tracker of new movie releases — with TMDB enrichment, ' +
   'prestige/quality signals, torrents and a 1 TB download plan.';
-const SITE_URL = 'https://scenery.mridang-agarwalla.workers.dev';
+const SITE_URL = 'https://scenery.apps.mrida.ng';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
