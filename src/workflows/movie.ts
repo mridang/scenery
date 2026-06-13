@@ -65,12 +65,18 @@ export class MovieWorkflow extends WorkflowEntrypoint<
     await step.sleep('await-torrent-window', '24 hours');
 
     // 5. Look up the torrent for just this movie (~1–2 calls, fresh budget).
+    //    Many MovieWorkflow instances wake from their 24h sleep around the
+    //    same moment and stampede ScrapingAnt's 1-concurrent free-tier
+    //    limit (it returns 409 "Free user concurrency limit reached").
+    //    Wrap the transport with a generous retry (409 is now retryable in
+    //    `isRetryableStatus`) so each instance backs off long enough for
+    //    the queue to drain instead of recording a permanent error.
+    const torrentTransport = withRetry(
+      proxyTransport(this.env.SCRAPINGANT_API_KEY),
+      { attempts: 6, baseDelayMs: 2_000, jitterMs: 3_000 },
+    );
     const torrent = await step.do('torrent', retry, async () =>
-      lookupOneTorrent(
-        this.env.DB,
-        imdbId,
-        defaultProviders(proxyTransport(this.env.SCRAPINGANT_API_KEY)),
-      ),
+      lookupOneTorrent(this.env.DB, imdbId, defaultProviders(torrentTransport)),
     );
 
     return { imdbId, verdict, torrent: torrent.status };

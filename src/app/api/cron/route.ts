@@ -208,7 +208,14 @@ async function handle(request: NextRequest) {
 
   const enrich = skipEnrich || torrentsOnly ? null : await enrichBatch(db, env);
   const providerParam = url.searchParams.get('torrentProviders');
-  const torrentTransport = proxyTransport(env.SCRAPINGANT_API_KEY);
+  // Wrap with a generous retry so a transient 409 (ScrapingAnt
+  // "Free user concurrency limit reached") backs off instead of being
+  // recorded as a permanent lookup error.
+  const torrentTransport = withRetry(proxyTransport(env.SCRAPINGANT_API_KEY), {
+    attempts: 6,
+    baseDelayMs: 2_000,
+    jitterMs: 3_000,
+  });
   const torrents = skipTorrents
     ? null
     : await runTorrentLookups(db, {

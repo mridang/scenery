@@ -19,7 +19,12 @@ export interface RetryOptions {
 
 /** Whether an HTTP status code is worth retrying. @public */
 export function isRetryableStatus(status: number): boolean {
-  return status === 408 || status === 429 || (status >= 500 && status < 600);
+  return (
+    status === 408 ||
+    status === 409 ||
+    status === 429 ||
+    (status >= 500 && status < 600)
+  );
 }
 
 function backoffMs(attempt: number, base: number, jitter: number): number {
