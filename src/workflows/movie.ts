@@ -16,6 +16,13 @@ import { genericTransport, proxyTransport, withRetry } from '../lib/transport';
 export interface MovieWorkflowParams {
   /** IMDb id of the single movie this instance is responsible for. */
   imdbId: string;
+  /**
+   * Position in the dispatch batch (0, 1, 2, …). Drives the per-movie
+   * stagger so sibling instances don't stampede ScrapingAnt's one-
+   * concurrent free-tier limit when they all wake from the 24h sleep at
+   * once. Defaults to 0 when omitted (manual triggers).
+   */
+  slot?: number;
 }
 
 /**
@@ -39,7 +46,7 @@ export class MovieWorkflow extends WorkflowEntrypoint<
     event: WorkflowEvent<MovieWorkflowParams>,
     step: WorkflowStep,
   ) {
-    const { imdbId } = event.payload;
+    const { imdbId, slot = 0 } = event.payload;
     const retry = { retries: { limit: 3, delay: '10 seconds' } } as const;
     const enricher = () =>
       buildEnricher(this.env.DB, this.env, withRetry(genericTransport()));
@@ -64,19 +71,22 @@ export class MovieWorkflow extends WorkflowEntrypoint<
     // 4. Wait out the 24h torrent-maturity window — free and durable.
     await step.sleep('await-torrent-window', '24 hours');
 
-    // 5. Look up the torrent for just this movie (~1–2 calls, fresh budget).
-    //    Many MovieWorkflow instances wake from their 24h sleep around the
-    //    same moment and stampede ScrapingAnt's 1-concurrent free-tier
-    //    limit (it returns 409 "Free user concurrency limit reached").
-    //    Wrap the transport with a generous retry (409 is now retryable in
-    //    `isRetryableStatus`) so each instance backs off long enough for
-    //    the queue to drain instead of recording a permanent error.
-    const torrentTransport = withRetry(
-      proxyTransport(this.env.SCRAPINGANT_API_KEY),
-      { attempts: 6, baseDelayMs: 2_000, jitterMs: 3_000 },
-    );
+    // 5. Stagger sibling instances by `slot` × 5 minutes so they don't
+    //    stampede ScrapingAnt's one-concurrent free-tier limit when they
+    //    all wake from the 24h sleep together. Slot 0 goes immediately;
+    //    slot 7 waits 35 more minutes; etc. A 40-movie batch spreads
+    //    over ~3.3 hours, well within the 24h gate's tolerance.
+    if (slot > 0) {
+      await step.sleep('stagger-torrent', `${slot * 5} minutes`);
+    }
+
+    // 6. Look up the torrent for just this movie (~1–2 calls, fresh budget).
     const torrent = await step.do('torrent', retry, async () =>
-      lookupOneTorrent(this.env.DB, imdbId, defaultProviders(torrentTransport)),
+      lookupOneTorrent(
+        this.env.DB,
+        imdbId,
+        defaultProviders(proxyTransport(this.env.SCRAPINGANT_API_KEY)),
+      ),
     );
 
     return { imdbId, verdict, torrent: torrent.status };

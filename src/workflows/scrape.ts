@@ -101,13 +101,16 @@ export class ScrapeWorkflow extends WorkflowEntrypoint<
     );
 
     const dispatched = await pending.reduce<Promise<number>>(
-      async (accP, imdbId) => {
+      async (accP, imdbId, slot) => {
         const acc = await accP;
         const created = await step.do(`dispatch:${imdbId}`, async () => {
           try {
             await this.env.MOVIE_WORKFLOW.create({
               id: imdbId,
-              params: { imdbId },
+              // `slot` paces sibling instances by 5min/each after the
+              // 24h sleep so they don't stampede ScrapingAnt's one-
+              // concurrent free-tier limit.
+              params: { imdbId, slot },
             });
             return true;
           } catch (error) {
