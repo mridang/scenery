@@ -7,7 +7,7 @@ import {
   isValidInfoHash,
   magnetPath,
   resetTrackerCache,
-} from '@/lib/magnet/magnet';
+} from '../../../src/lib/magnet/magnet';
 
 describe('isValidInfoHash', () => {
   it('accepts 40-char hex (v1) hashes', () => {

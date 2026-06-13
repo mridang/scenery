@@ -1,4 +1,4 @@
-import type { LastUpdate } from '@/lib/catalog';
+import type { LastUpdate } from '../../../lib/catalog';
 
 import { timeAgo } from '../_lib/format';
 

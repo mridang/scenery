@@ -11,7 +11,7 @@ afterAll(async () => {
   await harness.dispose();
 });
 
-jest.unstable_mockModule('@/lib/util', () => ({
+jest.unstable_mockModule('../../../../src/lib/util', () => ({
   getDB: () => harness.db,
   getEnv: () => ({}),
   logInfo: () => undefined,
@@ -20,7 +20,7 @@ jest.unstable_mockModule('@/lib/util', () => ({
   safeJsonParse: () => ({ ok: false, error: 'stub' }),
 }));
 
-const { GET } = await import('@/app/api/health/route');
+const { GET } = await import('../../../../src/app/api/health/route');
 
 interface HealthBody {
   readonly ok: boolean;

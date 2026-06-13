@@ -1,4 +1,4 @@
-import type { FetchStatus } from '@/lib/db';
+import type { FetchStatus } from '../db';
 
 /**
  * Result of attempting to scrape a single listing page.

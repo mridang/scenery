@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server';
 // The auth + param-validation branches return before any DB / workflow
 // work, so a stubbed runtime is all that's needed.
 let mockEnv: Record<string, unknown> = {};
-jest.unstable_mockModule('@/lib/util', () => ({
+jest.unstable_mockModule('../../../../src/lib/util', () => ({
   getDB: () => ({}),
   getEnv: () => mockEnv,
   logInfo: () => undefined,
@@ -14,7 +14,7 @@ jest.unstable_mockModule('@/lib/util', () => ({
   safeJsonParse: () => ({ ok: false, error: 'stub' }),
 }));
 
-const { GET } = await import('@/app/api/cron/route');
+const { GET } = await import('../../../../src/app/api/cron/route');
 
 function req(url: string, headers: Record<string, string> = {}): NextRequest {
   return {

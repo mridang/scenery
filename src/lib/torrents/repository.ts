@@ -7,7 +7,7 @@ import {
   releases,
   torrent_lookups,
   torrents,
-} from '@/lib/db';
+} from '../db';
 import type {
   LookupResult,
   ResolvedLookup,

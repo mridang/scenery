@@ -8,13 +8,9 @@ export default [
       '.open-next/**',
       '.wrangler/**',
       'out/**',
-      'build/**',
-      'dist/**',
-      'node_modules/**',
       'next-env.d.ts',
       'worker-configuration.d.ts',
       'migrations/**',
-      'public/**',
       // JSONC config — comments/trailing commas trip the strict JSON
       // language the eslint-defaults preset registers for it.
       'wrangler.jsonc',

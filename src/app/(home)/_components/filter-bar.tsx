@@ -1,4 +1,4 @@
-import type { LangCount } from '@/lib/catalog';
+import type { LangCount } from '../../../lib/catalog';
 
 import { LangChip, SortChip, ViewChip } from './chips';
 

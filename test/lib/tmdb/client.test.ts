@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { TmdbClient } from '@/lib/tmdb/client';
-import type { TmdbFindResponse } from '@/lib/tmdb/types';
+import { TmdbClient } from '../../../src/lib/tmdb/client';
+import type { TmdbFindResponse } from '../../../src/lib/tmdb/types';
 
 /**
  * Build a `typeof fetch` stub that records the URL it was called with and

@@ -1,5 +1,9 @@
-import { getDB } from '@/lib/util';
-import { BUDGET_BYTES, CatalogService, parseViewOptions } from '@/lib/catalog';
+import { getDB } from '../../lib/util';
+import {
+  BUDGET_BYTES,
+  CatalogService,
+  parseViewOptions,
+} from '../../lib/catalog';
 
 import { Footer } from './_components/footer';
 import { Header } from './_components/header';

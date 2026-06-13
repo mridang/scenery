@@ -1,9 +1,9 @@
 import type { NextRequest } from 'next/server';
-import { getDB } from '@/lib/util';
-import { CatalogService, parseViewOptions } from '@/lib/catalog';
-import type { ScoredMovie } from '@/lib/catalog';
-import { bestTrackers } from '@/lib/magnet';
-import { genericTransport, withRetry } from '@/lib/transport';
+import { getDB } from '../../lib/util';
+import { CatalogService, parseViewOptions } from '../../lib/catalog';
+import type { ScoredMovie } from '../../lib/catalog';
+import { bestTrackers } from '../../lib/magnet';
+import { genericTransport, withRetry } from '../../lib/transport';
 
 import { buildFeed } from './_lib/rss';
 

@@ -1,8 +1,8 @@
 import { Fragment } from 'react';
 import Link from 'next/link';
 
-import type { ScoredMovie } from '@/lib/catalog';
-import { magnetPath } from '@/lib/magnet';
+import type { ScoredMovie } from '../../../lib/catalog';
+import { magnetPath } from '../../../lib/magnet';
 
 import {
   TIER_BADGE,

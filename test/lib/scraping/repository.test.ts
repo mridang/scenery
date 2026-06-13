@@ -7,8 +7,8 @@ import {
   it,
 } from '@jest/globals';
 
-import { ScrapingRepository } from '@/lib/scraping/repository';
-import type { ExtractedRelease } from '@/lib/sources/types';
+import { ScrapingRepository } from '../../../src/lib/scraping/repository';
+import type { ExtractedRelease } from '../../../src/lib/sources/types';
 import { createTestD1, wipe, type TestD1 } from '../../d1';
 
 /**

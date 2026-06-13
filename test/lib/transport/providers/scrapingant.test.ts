@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-import { scrapingAntTransport } from '@/lib/transport/providers/scrapingant';
+import { scrapingAntTransport } from '../../../../src/lib/transport/providers/scrapingant';
 
 const realFetch = globalThis.fetch;
 const ENDPOINT = 'https://api.scrapingant.com/v2/general';

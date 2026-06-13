@@ -1,4 +1,4 @@
-import type { SourceSlug } from '@/lib/db';
+import type { SourceSlug } from '../db';
 
 /**
  * Outcome of fetching one listing page from a release source.

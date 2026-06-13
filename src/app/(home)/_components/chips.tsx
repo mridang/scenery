@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { languageLabel } from '@/lib/catalog';
+import { languageLabel } from '../../../lib/catalog';
 
 import { buildQuery } from '../_lib/format';
 

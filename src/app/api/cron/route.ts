@@ -1,21 +1,21 @@
 import type { NextRequest } from 'next/server';
-import { getDB, getEnv, logError, logInfo } from '@/lib/util';
-import { ScrapeOrchestrator, ScrapingRepository } from '@/lib/scraping';
-import { buildSources } from '@/lib/sources';
-import { buildEnricher } from '@/lib/tmdb';
+import { getDB, getEnv, logError, logInfo } from '../../../lib/util';
+import { ScrapeOrchestrator, ScrapingRepository } from '../../../lib/scraping';
+import { buildSources } from '../../../lib/sources';
+import { buildEnricher } from '../../../lib/tmdb';
 import {
   browserTransport,
   genericTransport,
   proxyTransport,
   withRetry,
-} from '@/lib/transport';
+} from '../../../lib/transport';
 import {
   ApibayProvider,
   TorrentioProvider,
   defaultProviders,
   runTorrentLookups,
-} from '@/lib/torrents';
-import type { TorrentProvider } from '@/lib/torrents';
+} from '../../../lib/torrents';
+import type { TorrentProvider } from '../../../lib/torrents';
 
 export const dynamic = 'force-dynamic';
 
