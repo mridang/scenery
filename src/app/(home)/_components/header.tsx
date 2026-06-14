@@ -46,20 +46,20 @@ export function Header({
           <button
             type="submit"
             formAction="/api/cron?backfill=10"
-            className="rounded border px-2 py-1 text-xs hover:bg-gray-100 sm:px-3"
+            className="rounded border px-3 py-1.5 text-xs hover:bg-gray-100 sm:py-1"
           >
             Backfill 10
           </button>
           <button
             type="submit"
             formAction="/api/cron?enrichOnly=1"
-            className="rounded border px-2 py-1 text-xs hover:bg-gray-100 sm:px-3"
+            className="rounded border px-3 py-1.5 text-xs hover:bg-gray-100 sm:py-1"
           >
             TMDB enrich
           </button>
           <button
             type="submit"
-            className="rounded border px-2 py-1 text-xs hover:bg-gray-100 sm:px-3"
+            className="rounded border px-3 py-1.5 text-xs hover:bg-gray-100 sm:py-1"
           >
             Scrape p1
           </button>

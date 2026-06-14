@@ -72,18 +72,18 @@ export function MovieRow({
           ── 1 TB cutoff ── everything below won&apos;t fit
         </li>
       ) : null}
-      <li className={`flex items-start gap-2 px-2 py-3 sm:gap-3 ${freshClass}`}>
+      <li className={`flex items-start gap-3 px-2 py-3 ${freshClass}`}>
         {poster ? (
           <img
             src={poster}
             alt=""
-            className="h-16 w-11 flex-none bg-gray-100 object-cover sm:h-20 sm:w-14"
+            className="h-20 w-14 flex-none bg-gray-100 object-cover sm:h-20 sm:w-14"
           />
         ) : (
-          <div className="h-16 w-11 flex-none bg-gray-100 sm:h-20 sm:w-14" />
+          <div className="h-20 w-14 flex-none bg-gray-100" />
         )}
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-2">
+          <div className="flex flex-wrap items-baseline gap-1.5 sm:gap-2">
             <span
               className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${TIER_BADGE[tier]}`}
             >
@@ -102,7 +102,7 @@ export function MovieRow({
             <Link
               href={`https://www.imdb.com/title/${row.imdb_id}/`}
               target="_blank"
-              className="truncate font-semibold hover:underline"
+              className="break-words text-base font-semibold hover:underline sm:text-sm"
             >
               {title}
             </Link>
@@ -133,7 +133,7 @@ export function MovieRow({
               </span>
             ) : null}
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="mt-1 text-[13px] leading-snug text-gray-500 sm:text-xs">
             {names.length ? names.join(', ') : '—'}
             {runtime ? ` · ${runtime}` : ''}
             {row.vote_average != null
@@ -155,7 +155,7 @@ export function MovieRow({
             {row.release_count} release{row.release_count === 1 ? '' : 's'}
           </div>
           {row.director || cast.length ? (
-            <div className="text-xs text-gray-700">
+            <div className="text-[13px] leading-snug text-gray-700 sm:text-xs">
               {row.director ? (
                 <span>
                   <span className="text-gray-500">Dir:</span> {row.director}
@@ -177,7 +177,7 @@ export function MovieRow({
             </div>
           ) : null}
           {row.best_info_hash ? (
-            <div className="text-xs text-emerald-700">
+            <div className="mt-1 text-[13px] leading-snug text-emerald-700 sm:text-xs">
               <a
                 href={magnetPath(row.best_info_hash, row.best_torrent_title)}
                 className="font-medium hover:underline"
@@ -194,7 +194,7 @@ export function MovieRow({
             </div>
           ) : null}
           {row.latest_release_title ? (
-            <div className="truncate text-xs text-gray-400">
+            <div className="mt-1 truncate text-[12px] text-gray-400 sm:text-xs">
               {row.latest_release_title}
             </div>
           ) : null}

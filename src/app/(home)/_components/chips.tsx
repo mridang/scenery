@@ -22,7 +22,7 @@ export function LangChip({
   return (
     <Link
       href={`/${buildQuery({ lang: code, sort, view: view ?? '' })}`}
-      className={`rounded border px-2 py-0.5 ${
+      className={`rounded border px-2.5 py-1 sm:px-2 sm:py-0.5 ${
         isActive
           ? 'border-emerald-500 bg-emerald-500 text-white'
           : 'border-gray-300 text-gray-700 hover:bg-gray-100'
@@ -52,7 +52,7 @@ export function SortChip({
   return (
     <Link
       href={`/${buildQuery({ lang, sort, view })}`}
-      className={`rounded border px-2 py-0.5 ${
+      className={`rounded border px-2.5 py-1 sm:px-2 sm:py-0.5 ${
         isActive
           ? 'border-indigo-500 bg-indigo-500 text-white'
           : 'border-gray-300 text-gray-700 hover:bg-gray-100'
@@ -81,7 +81,7 @@ export function ViewChip({
   return (
     <Link
       href={`/${buildQuery({ lang, sort, view })}`}
-      className={`rounded border px-2 py-0.5 ${
+      className={`rounded border px-2.5 py-1 sm:px-2 sm:py-0.5 ${
         isActive
           ? 'border-purple-500 bg-purple-500 text-white'
           : 'border-gray-300 text-gray-700 hover:bg-gray-100'
