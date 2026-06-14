@@ -166,8 +166,7 @@ export function MovieRow({
               <div className="mt-1.5 text-[13px] leading-snug text-slate-600">
                 {row.director ? (
                   <div>
-                    <span className="text-slate-400">Dir</span>{' '}
-                    {row.director}
+                    <span className="text-slate-400">Dir</span> {row.director}
                   </div>
                 ) : null}
                 {cast.length ? (
@@ -197,7 +196,9 @@ export function MovieRow({
                 </a>
                 <span className="text-slate-500">
                   {row.best_quality ? row.best_quality : ''}
-                  {row.best_size_bytes ? ` · ${fmtSize(row.best_size_bytes)}` : ''}
+                  {row.best_size_bytes
+                    ? ` · ${fmtSize(row.best_size_bytes)}`
+                    : ''}
                   {row.best_seeders != null ? ` · 👤 ${row.best_seeders}` : ''}
                   {row.best_source ? ` · ${row.best_source}` : ''}
                   {(row.torrent_count ?? 0) > 1

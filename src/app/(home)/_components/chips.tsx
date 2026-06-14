@@ -6,7 +6,8 @@ import { buildQuery } from '../_lib/format';
 
 const PILL_BASE =
   'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs whitespace-nowrap transition';
-const PILL_IDLE = 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50';
+const PILL_IDLE =
+  'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50';
 
 /** A language filter pill (shows the language name + movie count). */
 export function LangChip({
