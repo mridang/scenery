@@ -19,23 +19,29 @@ export function Footer({
   lang: string;
 }) {
   return (
-    <footer className="mt-10 border-t border-gray-200 pt-4 text-[11px] text-gray-500">
-      <div className="grid grid-cols-1 gap-1 sm:grid-cols-3">
+    <footer className="mt-12 border-t border-slate-200 pt-5 text-[12px] text-slate-500">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <div>
-          <span className="font-semibold uppercase">Scrape</span>{' '}
+          <span className="font-semibold tracking-wider text-slate-600 uppercase">
+            Scrape
+          </span>{' '}
           <span title={lastUpdate.scrapeAt ?? ''}>
             {timeAgo(lastUpdate.scrapeAt, nowMs)}
           </span>
           {lastUpdate.scrapeSource ? ` (${lastUpdate.scrapeSource})` : ''}
         </div>
         <div>
-          <span className="font-semibold uppercase">TMDB</span>{' '}
+          <span className="font-semibold tracking-wider text-slate-600 uppercase">
+            TMDB
+          </span>{' '}
           <span title={lastUpdate.enrichAt ?? ''}>
             {timeAgo(lastUpdate.enrichAt, nowMs)}
           </span>
         </div>
         <div>
-          <span className="font-semibold uppercase">Torrents</span>{' '}
+          <span className="font-semibold tracking-wider text-slate-600 uppercase">
+            Torrents
+          </span>{' '}
           <span title={lastUpdate.torrentsAt ?? ''}>
             {timeAgo(lastUpdate.torrentsAt, nowMs)}
           </span>
@@ -44,7 +50,7 @@ export function Footer({
             : ''}
         </div>
       </div>
-      <div className="mt-2 text-gray-400">
+      <div className="mt-3 text-slate-400">
         scenery · {count} movies shown · view={view} · sort={sort} · lang={lang}
       </div>
     </footer>

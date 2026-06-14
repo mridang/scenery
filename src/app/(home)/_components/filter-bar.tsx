@@ -13,8 +13,8 @@ export function ViewSortNav({
   lang: string;
 }) {
   return (
-    <nav className="mb-2 flex flex-wrap items-center gap-2 text-xs">
-      <span className="text-gray-500">View:</span>
+    <nav className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+      <span className="font-medium text-slate-500">View</span>
       <ViewChip
         view="catalog"
         active={view}
@@ -29,8 +29,8 @@ export function ViewSortNav({
         lang={lang}
         label="1 TB plan"
       />
-      <span className="basis-full sm:basis-auto sm:ml-4 text-gray-500">
-        Sort:
+      <span className="font-medium basis-full text-slate-500 sm:basis-auto sm:ml-4">
+        Sort
       </span>
       <SortChip
         sort="score"
@@ -62,8 +62,8 @@ export function LanguageNav({
 }) {
   const unknown = langs.find((langCount) => langCount.code === '?');
   return (
-    <nav className="mb-4 flex flex-wrap items-center gap-2 text-xs">
-      <span className="text-gray-500">Language:</span>
+    <nav className="mb-5 flex flex-wrap items-center gap-2 text-xs">
+      <span className="font-medium text-slate-500">Language</span>
       <LangChip
         code="en"
         active={lang}

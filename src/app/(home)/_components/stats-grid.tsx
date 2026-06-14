@@ -13,10 +13,14 @@ function Stat({
 }) {
   return (
     <div
-      className={`rounded border px-2 py-2 ${hideOnMobile ? 'hidden sm:block' : ''} ${highlight ? 'border-red-500 text-red-600' : ''}`}
+      className={`rounded-lg border border-slate-200 bg-white px-3 py-2 ${
+        hideOnMobile ? 'hidden sm:block' : ''
+      } ${highlight ? 'border-red-300 text-red-600' : ''}`}
     >
-      <div className="text-base font-semibold sm:text-base">{value}</div>
-      <div className="text-[10px] text-gray-500 uppercase">{label}</div>
+      <div className="text-lg font-semibold tabular-nums">{value}</div>
+      <div className="mt-0.5 text-[10px] font-medium tracking-wider text-slate-400 uppercase">
+        {label}
+      </div>
     </div>
   );
 }
@@ -29,7 +33,7 @@ function Stat({
  */
 export function StatsGrid({ stats }: { stats: CatalogStats }) {
   return (
-    <section className="mb-6 grid grid-cols-4 gap-2 text-center sm:grid-cols-7">
+    <section className="mb-5 grid grid-cols-4 gap-2 text-center sm:mb-6 sm:grid-cols-7">
       <Stat label="releases" value={stats.releases} />
       <Stat label="movies" value={stats.movies} />
       <Stat label="snapshots" value={stats.snapshots} />

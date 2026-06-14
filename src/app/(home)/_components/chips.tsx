@@ -4,6 +4,10 @@ import { languageLabel } from '@/lib/catalog';
 
 import { buildQuery } from '../_lib/format';
 
+const PILL_BASE =
+  'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs whitespace-nowrap transition';
+const PILL_IDLE = 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50';
+
 /** A language filter pill (shows the language name + movie count). */
 export function LangChip({
   code,
@@ -22,14 +26,18 @@ export function LangChip({
   return (
     <Link
       href={`/${buildQuery({ lang: code, sort, view: view ?? '' })}`}
-      className={`rounded border px-2.5 py-1 sm:px-2 sm:py-0.5 ${
+      className={`${PILL_BASE} ${
         isActive
-          ? 'border-emerald-500 bg-emerald-500 text-white'
-          : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+          ? 'border border-emerald-500 bg-emerald-500 text-white shadow-sm'
+          : PILL_IDLE
       }`}
     >
-      {languageLabel(code)}{' '}
-      <span className={isActive ? 'opacity-80' : 'text-gray-400'}>{count}</span>
+      {languageLabel(code)}
+      <span
+        className={`tabular-nums ${isActive ? 'text-white/80' : 'text-slate-400'}`}
+      >
+        {count}
+      </span>
     </Link>
   );
 }
@@ -52,10 +60,10 @@ export function SortChip({
   return (
     <Link
       href={`/${buildQuery({ lang, sort, view })}`}
-      className={`rounded border px-2.5 py-1 sm:px-2 sm:py-0.5 ${
+      className={`${PILL_BASE} ${
         isActive
-          ? 'border-indigo-500 bg-indigo-500 text-white'
-          : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+          ? 'border border-indigo-500 bg-indigo-500 text-white shadow-sm'
+          : PILL_IDLE
       }`}
     >
       {label}
@@ -81,10 +89,10 @@ export function ViewChip({
   return (
     <Link
       href={`/${buildQuery({ lang, sort, view })}`}
-      className={`rounded border px-2.5 py-1 sm:px-2 sm:py-0.5 ${
+      className={`${PILL_BASE} ${
         isActive
-          ? 'border-purple-500 bg-purple-500 text-white'
-          : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+          ? 'border border-purple-500 bg-purple-500 text-white shadow-sm'
+          : PILL_IDLE
       }`}
     >
       {label}
