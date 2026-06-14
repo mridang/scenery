@@ -16,7 +16,7 @@ export function PlanSummary({
   const freeGb = Math.max(0, budgetGb - usedGb);
   return (
     <section className="mb-4 rounded border border-purple-200 bg-purple-50/50 p-3">
-      <div className="mb-2 flex items-baseline justify-between text-xs">
+      <div className="mb-2 flex flex-col gap-1 text-xs sm:flex-row sm:items-baseline sm:justify-between">
         <div>
           <span className="font-semibold">{fits.toLocaleString()}</span> movies
           fit in 1 TB ·{' '}

@@ -80,7 +80,7 @@ export function MovieRow({
             className="h-16 w-11 flex-none bg-gray-100 object-cover sm:h-20 sm:w-14"
           />
         ) : (
-          <div className="h-20 w-14 flex-none bg-gray-100" />
+          <div className="h-16 w-11 flex-none bg-gray-100 sm:h-20 sm:w-14" />
         )}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-2">
@@ -166,7 +166,12 @@ export function MovieRow({
               ) : null}
               {cast.length ? (
                 <span>
-                  <span className="text-gray-500">With:</span> {cast.join(', ')}
+                  <span className="text-gray-500">With:</span>{' '}
+                  <span className="sm:hidden">
+                    {cast.slice(0, 3).join(', ')}
+                    {cast.length > 3 ? `, +${cast.length - 3}` : ''}
+                  </span>
+                  <span className="hidden sm:inline">{cast.join(', ')}</span>
                 </span>
               ) : null}
             </div>
