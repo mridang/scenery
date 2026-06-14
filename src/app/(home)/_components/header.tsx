@@ -47,7 +47,7 @@ export function Header({
         <form
           action="/api/cron"
           method="post"
-          className="flex flex-wrap items-center gap-1.5"
+          className="hidden flex-wrap items-center gap-1.5 sm:flex"
         >
           <button
             type="submit"

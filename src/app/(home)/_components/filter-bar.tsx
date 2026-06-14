@@ -62,8 +62,8 @@ export function LanguageNav({
 }) {
   const unknown = langs.find((langCount) => langCount.code === '?');
   return (
-    <nav className="mb-5 flex flex-wrap items-center gap-2 text-xs">
-      <span className="font-medium text-slate-500">Language</span>
+    <nav className="-mx-3 mb-5 flex items-center gap-2 overflow-x-auto px-3 text-xs sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+      <span className="flex-none font-medium text-slate-500">Language</span>
       <LangChip
         code="en"
         active={lang}

@@ -33,7 +33,7 @@ function Stat({
  */
 export function StatsGrid({ stats }: { stats: CatalogStats }) {
   return (
-    <section className="mb-5 grid grid-cols-4 gap-2 text-center sm:mb-6 sm:grid-cols-7">
+    <section className="mb-5 hidden grid-cols-4 gap-2 text-center sm:mb-6 sm:grid sm:grid-cols-7">
       <Stat label="releases" value={stats.releases} />
       <Stat label="movies" value={stats.movies} />
       <Stat label="snapshots" value={stats.snapshots} />

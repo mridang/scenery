@@ -83,7 +83,7 @@ export function MovieRow({
               src={poster}
               alt=""
               loading="lazy"
-              className="h-32 w-22 flex-none rounded bg-slate-100 object-cover sm:h-36 sm:w-24"
+              className="h-28 w-20 flex-none rounded bg-slate-100 object-cover sm:h-36 sm:w-24"
             />
           ) : (
             <div className="h-32 w-22 flex-none rounded bg-slate-100 sm:h-36 sm:w-24" />
