@@ -82,12 +82,17 @@ export class MovieWorkflow extends WorkflowEntrypoint<
       await step.sleep('stagger-torrent', `${slot * 5} minutes`);
     }
 
-    // 6. Look up the torrent for just this movie (~1–2 calls, fresh budget).
+    // 6. Look up the torrent for just this movie. Torrentio takes the
+    //    direct egress (works fine from a Worker); apibay needs the
+    //    proxied transport (blocks Worker IPs).
     const torrent = await step.do('torrent', retry, async () =>
       lookupOneTorrent(
         this.env.DB,
         imdbId,
-        defaultProviders(proxyTransport(this.env.SCRAPINGANT_API_KEY)),
+        defaultProviders(
+          withRetry(proxyTransport(this.env.SCRAPINGANT_API_KEY)),
+          withRetry(genericTransport()),
+        ),
       ),
     );
 

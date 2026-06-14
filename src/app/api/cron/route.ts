@@ -208,20 +208,23 @@ async function handle(request: NextRequest) {
 
   const enrich = skipEnrich || torrentsOnly ? null : await enrichBatch(db, env);
   const providerParam = url.searchParams.get('torrentProviders');
-  // Wrap with a generous retry so a transient 409 (ScrapingAnt
-  // "Free user concurrency limit reached") backs off instead of being
-  // recorded as a permanent lookup error.
-  const torrentTransport = withRetry(proxyTransport(env.SCRAPINGANT_API_KEY), {
+  // apibay needs the ScrapingAnt proxy (it blocks Worker egress IPs).
+  // Torrentio is happy with a direct fetch from the Worker, which keeps
+  // the common-case torrent lookup off the ScrapingAnt 1-concurrent
+  // free-tier budget entirely. The retry wrap absorbs a transient 409
+  // ("Free user concurrency limit reached").
+  const proxiedTransport = withRetry(proxyTransport(env.SCRAPINGANT_API_KEY), {
     attempts: 6,
     baseDelayMs: 2_000,
     jitterMs: 3_000,
   });
+  const directTransport = withRetry(genericTransport());
   const torrents = skipTorrents
     ? null
     : await runTorrentLookups(db, {
         providers: providerParam
-          ? resolveProviders(providerParam, torrentTransport)
-          : defaultProviders(torrentTransport),
+          ? resolveProviders(providerParam, proxiedTransport)
+          : defaultProviders(proxiedTransport, directTransport),
       });
   const finishedAt = new Date().toISOString();
   logInfo({
