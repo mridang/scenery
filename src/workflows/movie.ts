@@ -68,8 +68,10 @@ export class MovieWorkflow extends WorkflowEntrypoint<
       }));
     }
 
-    // 4. Wait out the 24h torrent-maturity window — free and durable.
-    await step.sleep('await-torrent-window', '24 hours');
+    // 4. Wait out the torrent-maturity window. 26h (not 24) so this step
+    //    lands ~2h AFTER the daily 06:00 UTC scrape, instead of racing
+    //    it for ScrapingAnt's one-concurrent free-tier budget.
+    await step.sleep('await-torrent-window', '26 hours');
 
     // 5. Stagger sibling instances by `slot` × 5 minutes so they don't
     //    stampede ScrapingAnt's one-concurrent free-tier limit when they
