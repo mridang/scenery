@@ -62,36 +62,38 @@ export function LanguageNav({
 }) {
   const unknown = langs.find((langCount) => langCount.code === '?');
   return (
-    <nav className="-mx-3 mb-5 flex items-center gap-2 overflow-x-auto px-3 text-xs sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-      <span className="flex-none font-medium text-slate-500">Language</span>
-      <LangChip
-        code="en"
-        active={lang}
-        sort={sort}
-        count={langs.find((langCount) => langCount.code === 'en')?.count ?? 0}
-      />
-      {langs
-        .filter(
-          (langCount) => langCount.code !== 'en' && langCount.code !== '?',
-        )
-        .map((langCount) => (
-          <LangChip
-            key={langCount.code}
-            code={langCount.code}
-            active={lang}
-            sort={sort}
-            count={langCount.count}
-          />
-        ))}
-      {unknown ? (
-        <LangChip code="?" active={lang} sort={sort} count={unknown.count} />
-      ) : null}
-      <LangChip
-        code="all"
-        active={lang}
-        sort={sort}
-        count={langs.reduce((sum, langCount) => sum + langCount.count, 0)}
-      />
-    </nav>
+    <div className="-mx-3 mb-5 max-w-full overflow-x-auto px-3 sm:mx-0 sm:overflow-visible sm:px-0">
+      <nav className="flex items-center gap-2 text-xs whitespace-nowrap sm:flex-wrap">
+        <span className="flex-none font-medium text-slate-500">Language</span>
+        <LangChip
+          code="en"
+          active={lang}
+          sort={sort}
+          count={langs.find((langCount) => langCount.code === 'en')?.count ?? 0}
+        />
+        {langs
+          .filter(
+            (langCount) => langCount.code !== 'en' && langCount.code !== '?',
+          )
+          .map((langCount) => (
+            <LangChip
+              key={langCount.code}
+              code={langCount.code}
+              active={lang}
+              sort={sort}
+              count={langCount.count}
+            />
+          ))}
+        {unknown ? (
+          <LangChip code="?" active={lang} sort={sort} count={unknown.count} />
+        ) : null}
+        <LangChip
+          code="all"
+          active={lang}
+          sort={sort}
+          count={langs.reduce((sum, langCount) => sum + langCount.count, 0)}
+        />
+      </nav>
+    </div>
   );
 }

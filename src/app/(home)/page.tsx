@@ -34,7 +34,7 @@ export default async function Home({
   const feedHref = `/feed.xml?${new URLSearchParams({ lang, sort, view }).toString()}`;
 
   return (
-    <main className="mx-auto max-w-5xl px-3 py-4 text-sm text-slate-800 sm:px-6 sm:py-8">
+    <main className="mx-auto w-full max-w-5xl min-w-0 px-3 py-4 text-sm text-slate-800 sm:px-6 sm:py-8">
       <link
         rel="alternate"
         type="application/rss+xml"
