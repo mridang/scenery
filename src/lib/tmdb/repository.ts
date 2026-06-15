@@ -7,7 +7,7 @@ import {
   tmdb_genres,
   tmdb_movies,
   tmdb_people,
-} from '@/lib/db';
+} from '../db';
 import type {
   TmdbCastEntry,
   TmdbCrewEntry,

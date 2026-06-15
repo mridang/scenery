@@ -13,7 +13,7 @@ afterAll(async () => {
   await harness.dispose();
 });
 
-jest.unstable_mockModule('@/lib/util', () => ({
+jest.unstable_mockModule('../../../src/lib/util', () => ({
   getDB: () => harness.db,
   getEnv: () => ({}),
   logInfo: () => undefined,
@@ -24,7 +24,7 @@ jest.unstable_mockModule('@/lib/util', () => ({
 
 // Keep the feed hermetic: bestTrackers is handed a stub transport that
 // never touches the network, so it falls back to the static tracker list.
-jest.unstable_mockModule('@/lib/transport', () => {
+jest.unstable_mockModule('../../../src/lib/transport', () => {
   const stubFetch = (async () =>
     new Response('', { status: 500 })) as unknown as typeof fetch;
   return {
@@ -37,8 +37,9 @@ jest.unstable_mockModule('@/lib/transport', () => {
   };
 });
 
-const { ScrapingRepository } = await import('@/lib/scraping/repository');
-const { GET } = await import('@/app/feed.xml/route');
+const { ScrapingRepository } =
+  await import('../../../src/lib/scraping/repository');
+const { GET } = await import('../../../src/app/feed.xml/route');
 
 function req(url: string): NextRequest {
   return { nextUrl: new URL(url) } as unknown as NextRequest;

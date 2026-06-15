@@ -1,6 +1,7 @@
 {
   "name": "scenery",
   "version": "0.1.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,7 +13,7 @@
     "format:check": "prettier --check .",
     "lint": "npx eslint .",
     "lint:fix": "npx eslint . --fix",
-    "test": "jest --verbose --config=jest.config.mjs --runInBand",
+    "test": "jest --verbose --config=jest.config.mjs",
     "test:watch": "npm run test -- --watch",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run --browser chrome"
@@ -38,7 +39,6 @@
     "@types/react-dom": "^19",
     "cypress": "^14.5.4",
     "eslint": "^9",
-    "eslint-config-next": "16.2.7",
     "eslint-plugin-drizzle": "^0.2.3",
     "jest": "^30.0.3",
     "jest-junit": "^17.0.0",

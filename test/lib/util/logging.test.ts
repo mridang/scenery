@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-import { logError, logInfo, logWarn } from '@/lib/util/logging';
+import { logError, logInfo, logWarn } from '../../../src/lib/util/logging';
 
 afterEach(() => {
   jest.restoreAllMocks();

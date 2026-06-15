@@ -2,7 +2,7 @@
 // Used by every provider so the rest of the code can rely on a consistent
 // representation.
 
-import type { Quality } from '@/lib/db';
+import type { Quality } from '../db';
 
 export function detectQuality(haystack: string): Quality | null {
   if (/(?:^|\W)(?:2160p|4K|UHD)(?:\W|$)/i.test(haystack)) {

@@ -7,9 +7,9 @@ import {
   it,
 } from '@jest/globals';
 
-import { ScrapingRepository } from '@/lib/scraping/repository';
-import { TorrentRepository } from '@/lib/torrents/repository';
-import type { ResolvedLookup } from '@/lib/torrents/types';
+import { ScrapingRepository } from '../../../src/lib/scraping/repository';
+import { TorrentRepository } from '../../../src/lib/torrents/repository';
+import type { ResolvedLookup } from '../../../src/lib/torrents/types';
 import { createTestD1, wipe, type TestD1 } from '../../d1';
 
 /**

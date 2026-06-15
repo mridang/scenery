@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { ApibayProvider } from '@/lib/torrents/providers/apibay';
+import { ApibayProvider } from '../../../../src/lib/torrents/providers/apibay';
 
 const transportOf = (
   body: unknown,

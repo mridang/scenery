@@ -6,8 +6,8 @@
  */
 import { Feed } from 'feed';
 
-import type { ScoredMovie } from '@/lib/catalog';
-import { buildMagnet } from '@/lib/magnet';
+import type { ScoredMovie } from '../../../lib/catalog';
+import { buildMagnet } from '../../../lib/magnet';
 
 function fmtSize(bytes: number | null): string {
   if (bytes == null || bytes <= 0) {

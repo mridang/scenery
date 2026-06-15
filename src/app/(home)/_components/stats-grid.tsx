@@ -1,4 +1,4 @@
-import type { CatalogStats } from '@/lib/catalog';
+import type { CatalogStats } from '../../../lib/catalog';
 
 function Stat({
   label,

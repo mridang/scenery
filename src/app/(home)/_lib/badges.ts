@@ -3,7 +3,7 @@
  * and prestige studio, and the torrent-status badge state machine. Pure
  * lookups/logic — no components.
  */
-import type { Tier } from '@/lib/catalog';
+import type { Tier } from '../../../lib/catalog';
 
 /** Beyond this, the top-of-page staleness banner shows. */
 export const STALE_THRESHOLD_MS = 48 * 60 * 60 * 1000;

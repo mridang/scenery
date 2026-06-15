@@ -1,5 +1,5 @@
-import { CatalogService } from '@/lib/catalog';
-import { getDB } from '@/lib/util';
+import { CatalogService } from '../../../lib/catalog';
+import { getDB } from '../../../lib/util';
 
 export const dynamic = 'force-dynamic';
 

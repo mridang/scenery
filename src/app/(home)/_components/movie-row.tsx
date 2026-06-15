@@ -1,8 +1,8 @@
 import { Fragment } from 'react';
 import Link from 'next/link';
 
-import type { ScoredMovie } from '@/lib/catalog';
-import { magnetPath } from '@/lib/magnet';
+import type { ScoredMovie } from '../../../lib/catalog';
+import { magnetPath } from '../../../lib/magnet';
 
 import { TIER_BADGE, prestigeCls, torrentBadge } from '../_lib/badges';
 import { fmtMoney, fmtSize, formatRuntime, isFresh } from '../_lib/format';

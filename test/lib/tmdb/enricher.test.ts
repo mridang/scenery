@@ -1,13 +1,13 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { TmdbEnricher } from '@/lib/tmdb/enricher';
-import type { TmdbClient, TmdbResult } from '@/lib/tmdb/client';
-import type { TmdbRepository } from '@/lib/tmdb/repository';
+import { TmdbEnricher } from '../../../src/lib/tmdb/enricher';
+import type { TmdbClient, TmdbResult } from '../../../src/lib/tmdb/client';
+import type { TmdbRepository } from '../../../src/lib/tmdb/repository';
 import type {
   TmdbFindResponse,
   TmdbMovieResponse,
   TmdbPersonResponse,
-} from '@/lib/tmdb/types';
+} from '../../../src/lib/tmdb/types';
 
 /** A recorded call: the repo method name plus its arguments. */
 type Call = { method: string; args: readonly unknown[] };

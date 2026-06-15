@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { requestPage } from '@/lib/sources/request-page';
+import { requestPage } from '../../../src/lib/sources/request-page';
 
 describe('requestPage', () => {
   it('returns ok with the body and headers on a 200', async () => {
