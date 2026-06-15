@@ -38,7 +38,7 @@ export default async function Home({
   const feedHref = `/feed.xml?${new URLSearchParams({ lang, sort, view }).toString()}`;
 
   return (
-    <main className="mx-auto max-w-5xl p-3 font-mono text-sm sm:p-6">
+    <main className="mx-auto w-full max-w-5xl min-w-0 px-3 py-4 text-sm text-slate-800 sm:px-6 sm:py-8">
       <link
         rel="alternate"
         type="application/rss+xml"
@@ -61,11 +61,11 @@ export default async function Home({
       <StatsGrid stats={stats} />
 
       {rows.length === 0 ? (
-        <p className="text-gray-500">
+        <p className="text-slate-500">
           No movies yet. Click <em>Backfill 10 pages</em> to seed.
         </p>
       ) : (
-        <ul className="divide-y">
+        <ul className="flex flex-col gap-3 sm:gap-4">
           {rows.map((movie, idx) => (
             <MovieRow
               key={movie.row.imdb_id}

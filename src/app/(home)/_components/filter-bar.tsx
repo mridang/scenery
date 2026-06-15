@@ -13,8 +13,8 @@ export function ViewSortNav({
   lang: string;
 }) {
   return (
-    <nav className="mb-2 flex flex-wrap items-center gap-2 text-xs">
-      <span className="text-gray-500">View:</span>
+    <nav className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+      <span className="font-medium text-slate-500">View</span>
       <ViewChip
         view="catalog"
         active={view}
@@ -29,7 +29,9 @@ export function ViewSortNav({
         lang={lang}
         label="1 TB plan"
       />
-      <span className="ml-4 text-gray-500">Sort:</span>
+      <span className="font-medium basis-full text-slate-500 sm:basis-auto sm:ml-4">
+        Sort
+      </span>
       <SortChip
         sort="score"
         active={sort}
@@ -60,36 +62,38 @@ export function LanguageNav({
 }) {
   const unknown = langs.find((langCount) => langCount.code === '?');
   return (
-    <nav className="mb-4 flex flex-wrap items-center gap-2 text-xs">
-      <span className="text-gray-500">Language:</span>
-      <LangChip
-        code="en"
-        active={lang}
-        sort={sort}
-        count={langs.find((langCount) => langCount.code === 'en')?.count ?? 0}
-      />
-      {langs
-        .filter(
-          (langCount) => langCount.code !== 'en' && langCount.code !== '?',
-        )
-        .map((langCount) => (
-          <LangChip
-            key={langCount.code}
-            code={langCount.code}
-            active={lang}
-            sort={sort}
-            count={langCount.count}
-          />
-        ))}
-      {unknown ? (
-        <LangChip code="?" active={lang} sort={sort} count={unknown.count} />
-      ) : null}
-      <LangChip
-        code="all"
-        active={lang}
-        sort={sort}
-        count={langs.reduce((sum, langCount) => sum + langCount.count, 0)}
-      />
-    </nav>
+    <div className="-mx-3 mb-5 max-w-full overflow-x-auto px-3 sm:mx-0 sm:overflow-visible sm:px-0">
+      <nav className="flex items-center gap-2 text-xs whitespace-nowrap sm:flex-wrap">
+        <span className="flex-none font-medium text-slate-500">Language</span>
+        <LangChip
+          code="en"
+          active={lang}
+          sort={sort}
+          count={langs.find((langCount) => langCount.code === 'en')?.count ?? 0}
+        />
+        {langs
+          .filter(
+            (langCount) => langCount.code !== 'en' && langCount.code !== '?',
+          )
+          .map((langCount) => (
+            <LangChip
+              key={langCount.code}
+              code={langCount.code}
+              active={lang}
+              sort={sort}
+              count={langCount.count}
+            />
+          ))}
+        {unknown ? (
+          <LangChip code="?" active={lang} sort={sort} count={unknown.count} />
+        ) : null}
+        <LangChip
+          code="all"
+          active={lang}
+          sort={sort}
+          count={langs.reduce((sum, langCount) => sum + langCount.count, 0)}
+        />
+      </nav>
+    </div>
   );
 }

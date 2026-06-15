@@ -68,8 +68,10 @@ export class MovieWorkflow extends WorkflowEntrypoint<
       }));
     }
 
-    // 4. Wait out the 24h torrent-maturity window — free and durable.
-    await step.sleep('await-torrent-window', '24 hours');
+    // 4. Wait out the torrent-maturity window. 26h (not 24) so this step
+    //    lands ~2h AFTER the daily 06:00 UTC scrape, instead of racing
+    //    it for ScrapingAnt's one-concurrent free-tier budget.
+    await step.sleep('await-torrent-window', '26 hours');
 
     // 5. Stagger sibling instances by `slot` × 5 minutes so they don't
     //    stampede ScrapingAnt's one-concurrent free-tier limit when they
@@ -80,12 +82,17 @@ export class MovieWorkflow extends WorkflowEntrypoint<
       await step.sleep('stagger-torrent', `${slot * 5} minutes`);
     }
 
-    // 6. Look up the torrent for just this movie (~1–2 calls, fresh budget).
+    // 6. Look up the torrent for just this movie. Torrentio takes the
+    //    direct egress (works fine from a Worker); apibay needs the
+    //    proxied transport (blocks Worker IPs).
     const torrent = await step.do('torrent', retry, async () =>
       lookupOneTorrent(
         this.env.DB,
         imdbId,
-        defaultProviders(proxyTransport(this.env.SCRAPINGANT_API_KEY)),
+        defaultProviders(
+          withRetry(proxyTransport(this.env.SCRAPINGANT_API_KEY)),
+          withRetry(genericTransport()),
+        ),
       ),
     );
 

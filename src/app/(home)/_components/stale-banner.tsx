@@ -15,7 +15,7 @@ export function StaleBanner({
     return null;
   }
   return (
-    <div className="mb-4 rounded border border-red-300 bg-red-50 p-3 text-xs text-red-800 sm:text-sm">
+    <div className="mb-4 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-800 sm:text-sm">
       <span className="font-bold uppercase">⚠ stale</span> — last scrape{' '}
       <span title={scrapeAt ?? ''}>{timeAgo(scrapeAt, nowMs)}</span>. The
       workflow may be failing. Trigger a manual scrape, or check the cron logs.
