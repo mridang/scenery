@@ -26,11 +26,11 @@ export function PlanSummary({
             {usedGb.toFixed(1)} GB
           </span>{' '}
           used ·{' '}
-          <span className="tabular-nums text-slate-500">
+          <span className="text-slate-500 tabular-nums">
             {freeGb.toFixed(1)} GB headroom
           </span>
         </div>
-        <div className="tabular-nums text-slate-500">
+        <div className="text-slate-500 tabular-nums">
           {skipped.toLocaleString()} won&apos;t fit · budget{' '}
           {budgetGb.toFixed(0)} GB
         </div>

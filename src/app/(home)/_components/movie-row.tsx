@@ -190,7 +190,7 @@ export function MovieRow({
               <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] sm:text-[13px]">
                 <a
                   href={magnetPath(row.best_info_hash, row.best_torrent_title)}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700 ring-1 ring-emerald-200 ring-inset transition hover:bg-emerald-100"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700 ring-1 ring-emerald-200 transition ring-inset hover:bg-emerald-100"
                 >
                   <span aria-hidden>↓</span> Magnet
                 </a>

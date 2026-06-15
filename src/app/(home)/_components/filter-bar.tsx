@@ -29,7 +29,7 @@ export function ViewSortNav({
         lang={lang}
         label="1 TB plan"
       />
-      <span className="font-medium basis-full text-slate-500 sm:basis-auto sm:ml-4">
+      <span className="basis-full font-medium text-slate-500 sm:ml-4 sm:basis-auto">
         Sort
       </span>
       <SortChip
