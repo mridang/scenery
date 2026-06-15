@@ -41,9 +41,13 @@ export default [
     // @custom-variant, …) that the css plugin's at-rule validator doesn't
     // know about. Tailwind owns this syntax, so disable just that check
     // for CSS while keeping the rest of the css ruleset active.
+    // Next.js font loaders inject custom properties (e.g. --font-geist-sans,
+    // --font-geist-mono) at runtime that the property validator can't see,
+    // so disable no-invalid-properties for the same reason.
     files: ['**/*.css'],
     rules: {
       'css/no-invalid-at-rules': 'off',
+      'css/no-invalid-properties': 'off',
     },
   },
   {
