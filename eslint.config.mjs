@@ -1,14 +1,12 @@
+import { includeIgnoreFile } from '@eslint/compat';
+import { fileURLToPath } from 'node:url';
 import mridang from '@mridang/eslint-defaults';
 import drizzle from 'eslint-plugin-drizzle';
 
 export default [
+  includeIgnoreFile(fileURLToPath(new URL('.gitignore', import.meta.url))),
   {
     ignores: [
-      '.next/**',
-      '.open-next/**',
-      '.wrangler/**',
-      'out/**',
-      'next-env.d.ts',
       'worker-configuration.d.ts',
       'migrations/**',
       // JSONC config — comments/trailing commas trip the strict JSON
