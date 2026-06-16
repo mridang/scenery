@@ -7,11 +7,9 @@ import {
 import { ScrapeOrchestrator, ScrapingRepository } from '../lib/scraping';
 import { buildSources } from '../lib/sources';
 import { buildEnricher } from '../lib/tmdb';
-import { defaultProviders, runTorrentLookups } from '../lib/torrents';
 import {
   browserTransport,
   genericTransport,
-  proxyTransport,
   withRetry,
 } from '../lib/transport';
 
@@ -131,32 +129,6 @@ export class ScrapeWorkflow extends WorkflowEntrypoint<
       Promise.resolve(0),
     );
 
-    // Sweep any previously-errored torrent lookups. The new per-movie
-    // workflow only fires a torrent step ONCE per movie, so a transient
-    // failure (ScrapingAnt 409, network blip) would otherwise stamp the
-    // row as `status='error'` forever — the daily scrape never visits
-    // it again. The candidates() query treats errored-only rows as
-    // eligible, so a sequential pass here picks them up. Torrentio runs
-    // direct (no ScrapingAnt budget), apibay only for the fallback.
-    const retried = await step.do('retry-errored-torrents', retry, async () =>
-      runTorrentLookups(this.env.DB, {
-        providers: defaultProviders(
-          withRetry(proxyTransport(this.env.SCRAPINGANT_API_KEY), {
-            attempts: 6,
-            baseDelayMs: 2_000,
-            jitterMs: 3_000,
-          }),
-          withRetry(genericTransport()),
-        ),
-        limit: 20,
-      }),
-    );
-
-    return {
-      scraped,
-      pending: pending.length,
-      dispatched,
-      retried,
-    };
+    return { scraped, pending: pending.length, dispatched };
   }
 }
