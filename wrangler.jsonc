@@ -39,7 +39,9 @@
     },
   ],
   "triggers": {
-    "crons": ["0 6 * * *"],
+    // 06:00 UTC — daily scrape + per-movie dispatch.
+    // 17:00 UTC — daily push notification (top-5 new movies).
+    "crons": ["0 6 * * *", "0 17 * * *"],
   },
   "workflows": [
     {
@@ -52,7 +54,17 @@
       "binding": "MOVIE_WORKFLOW",
       "class_name": "MovieWorkflow",
     },
+    {
+      "name": "scenery-notify",
+      "binding": "NOTIFY_WORKFLOW",
+      "class_name": "NotifyWorkflow",
+    },
   ],
-  // SCRAPINGANT_API_KEY, TMDB_API_KEY, CRON_SECRET are Worker secrets
-  // (set via `wrangler secret put`), not plaintext vars.
+  "vars": {
+    // VAPID public key — not a secret; the browser needs it to subscribe.
+    "VAPID_PUBLIC_KEY": "BCr55yfhMisowNEJX1YOvwc6yTeVi5iv8D-zmMleYMby0nz0nDHsfo5h5EVN4UfZGl60dzr2pWfOWgf-dU5xgVQ",
+    "VAPID_SUBJECT": "mailto:mridang.agarwalla@gmail.com",
+  },
+  // SCRAPINGANT_API_KEY, TMDB_API_KEY, CRON_SECRET, VAPID_PRIVATE_KEY are
+  // Worker secrets (set via `wrangler secret put`), not plaintext vars.
 }

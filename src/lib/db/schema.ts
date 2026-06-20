@@ -167,3 +167,11 @@ export const torrent_lookups = sqliteTable('torrent_lookups', {
   raw_response: text('raw_response'),
   provider: text('provider', { enum: TORRENT_PROVIDERS }),
 });
+
+export const push_subscriptions = sqliteTable('push_subscriptions', {
+  endpoint: text('endpoint').primaryKey(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  created_at: text('created_at').notNull(),
+  last_sent_at: text('last_sent_at'),
+});

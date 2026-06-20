@@ -1,6 +1,7 @@
 import type { LastUpdate } from '../../../lib/catalog';
 
 import { timeAgo } from '../_lib/format';
+import { PushToggle } from './push-toggle';
 
 /** Page title, the scrape/tmdb/torrent freshness line, RSS + manual triggers. */
 export function Header({
@@ -38,6 +39,7 @@ export function Header({
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
+        <PushToggle />
         <a
           href={feedHref}
           className="rounded-md border border-orange-300 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 transition hover:bg-orange-100"

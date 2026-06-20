@@ -26,7 +26,11 @@
 
 import openNextHandler from '../.open-next/worker.js';
 
-export { ScrapeWorkflow, MovieWorkflow } from './workflows/index';
+export {
+  ScrapeWorkflow,
+  MovieWorkflow,
+  NotifyWorkflow,
+} from './workflows/index';
 
 const handler: ExportedHandler<CloudflareEnv> = {
   /** Forwarded straight to OpenNext's Next.js handler. */
@@ -39,14 +43,14 @@ const handler: ExportedHandler<CloudflareEnv> = {
   },
 
   /**
-   * Cron-trigger entrypoint. The daily tick kicks off a single
-   * ScrapeWorkflow, which scrapes the sources and then dispatches one
-   * MovieWorkflow per newly-seen movie. Each MovieWorkflow owns the
-   * whole lifecycle of its one movie (enrich → sleep 24h → torrent), so
-   * no single instance comes anywhere near the per-invocation subrequest
-   * cap regardless of how many movies arrive.
+   * Cron-trigger entrypoint. Routes by the firing cron expression:
+   *   - 06:00 UTC → ScrapeWorkflow (scrape sources, dispatch MovieWorkflows)
+   *   - 17:00 UTC → NotifyWorkflow (push top-5 new movies to subscribers)
+   *
+   * Anything else logs and no-ops so a future cron addition isn't a
+   * silent crash.
    */
-  async scheduled(_event, env, ctx) {
+  async scheduled(event, env, ctx) {
     const safeCreate = async (
       label: string,
       workflow: Workflow | undefined,
@@ -77,9 +81,23 @@ const handler: ExportedHandler<CloudflareEnv> = {
         console.error(JSON.stringify(payload));
       }
     };
-    ctx.waitUntil(
-      safeCreate('scrape', env.SCRAPE_WORKFLOW, { pageNumbers: [1] }),
-    );
+    const stages = {
+      '0 6 * * *': () =>
+        safeCreate('scrape', env.SCRAPE_WORKFLOW, { pageNumbers: [1] }),
+      '0 17 * * *': () => safeCreate('notify', env.NOTIFY_WORKFLOW, {}),
+    };
+    const run = stages[event.cron];
+    if (run) {
+      ctx.waitUntil(run());
+    } else {
+      console.log(
+        JSON.stringify({
+          event: 'cron.unknown',
+          cron: event.cron,
+          ts: new Date().toISOString(),
+        }),
+      );
+    }
   },
 };
 

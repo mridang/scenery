@@ -16,3 +16,5 @@ export { ScrapeWorkflow } from './scrape';
 export type { ScrapeWorkflowParams } from './scrape';
 export { MovieWorkflow } from './movie';
 export type { MovieWorkflowParams } from './movie';
+export { NotifyWorkflow } from './notify';
+export type { NotifyWorkflowParams } from './notify';
