@@ -22,6 +22,8 @@ type SubscriptionState = 'unknown' | 'unsupported' | 'idle' | 'subscribed';
 export function PushToggle() {
   const [state, setState] = useState<SubscriptionState>(detectInitial);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [testStatus, setTestStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (state !== 'unknown') {
@@ -36,12 +38,13 @@ export function PushToggle() {
 
   const onSubscribe = useCallback(async () => {
     setBusy(true);
+    setError(null);
     try {
       const reg = await navigator.serviceWorker.register('/sw.js');
       await navigator.serviceWorker.ready;
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        setBusy(false);
+        setError(`Permission ${permission}`);
         return;
       }
       const keyResponse = await fetch('/api/push/key');
@@ -57,12 +60,45 @@ export function PushToggle() {
         userVisibleOnly: true,
         applicationServerKey: keyBytes as unknown as BufferSource,
       });
-      await fetch('/api/push/subscribe', {
+      const postResponse = await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(subscription.toJSON()),
       });
+      if (!postResponse.ok) {
+        setError(`Server returned ${postResponse.status}`);
+        return;
+      }
       setState('subscribed');
+    } catch (err) {
+      setError(
+        err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  const onSendTest = useCallback(async () => {
+    setBusy(true);
+    setTestStatus(null);
+    setError(null);
+    try {
+      const response = await fetch('/api/push/trigger', { method: 'POST' });
+      const json = (await response.json()) as {
+        ok: boolean;
+        instanceId?: string;
+        error?: string;
+      };
+      if (json.ok) {
+        setTestStatus(`Sent (workflow ${json.instanceId?.slice(0, 8)})`);
+      } else {
+        setError(json.error ?? 'Trigger failed');
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+      );
     } finally {
       setBusy(false);
     }
@@ -102,25 +138,50 @@ export function PushToggle() {
   }
   if (state === 'subscribed') {
     return (
-      <button
-        type="button"
-        onClick={onUnsubscribe}
-        disabled={busy}
-        className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-60"
-      >
-        🔔 Subscribed
-      </button>
+      <span className="flex flex-wrap items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onUnsubscribe}
+          disabled={busy}
+          className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-60"
+        >
+          🔔 Subscribed
+        </button>
+        <button
+          type="button"
+          onClick={onSendTest}
+          disabled={busy}
+          className="rounded-md border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-60"
+        >
+          🚀 Send test
+        </button>
+        {testStatus ? (
+          <span className="text-[11px] text-slate-500">{testStatus}</span>
+        ) : null}
+        {error ? (
+          <span className="text-[11px] text-red-600" title={error}>
+            ✗ {error.slice(0, 40)}
+          </span>
+        ) : null}
+      </span>
     );
   }
   return (
-    <button
-      type="button"
-      onClick={onSubscribe}
-      disabled={busy}
-      className="rounded-md border border-orange-300 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 transition hover:bg-orange-100 disabled:opacity-60"
-    >
-      🔔 Notify
-    </button>
+    <span className="flex flex-wrap items-center gap-1.5">
+      <button
+        type="button"
+        onClick={onSubscribe}
+        disabled={busy}
+        className="rounded-md border border-orange-300 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 transition hover:bg-orange-100 disabled:opacity-60"
+      >
+        🔔 Notify
+      </button>
+      {error ? (
+        <span className="text-[11px] text-red-600" title={error}>
+          ✗ {error.slice(0, 40)}
+        </span>
+      ) : null}
+    </span>
   );
 }
 
