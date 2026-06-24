@@ -46,7 +46,8 @@ export class NotifyWorkflow extends WorkflowEntrypoint<
       pickTopFiveNew(this.env.DB),
     );
     if (picks.length === 0) {
-      return { skipped: 'no new movies', sent: 0 };
+      // Empty catalog (nothing to ever send).
+      return { skipped: 'empty catalog', sent: 0 };
     }
 
     const payload = buildPayload(picks);
@@ -107,17 +108,25 @@ async function pickTopFiveNew(db: D1Database): Promise<readonly ScoredMovie[]> {
     sort: 'score',
     view: 'catalog',
   });
+  // "new in the last 24 h" means we discovered it within the window —
+  // movies.first_seen_at, not releases.first_posted_at. The latter is
+  // the source's original post date which can be days old even for
+  // movies we just scraped, and missing that distinction was hiding
+  // every legitimate pick.
   const cutoff = Date.now() - ONE_DAY_MS;
-  return view.movies
-    .filter((movie) => {
-      const firstSeen = movie.row.first_posted_at;
-      return (
-        firstSeen !== null &&
-        firstSeen !== undefined &&
-        Date.parse(firstSeen) >= cutoff
-      );
-    })
-    .slice(0, 5);
+  const fresh = view.movies.filter((movie) => {
+    const firstSeen = movie.row.first_seen_at;
+    return (
+      firstSeen !== null &&
+      firstSeen !== undefined &&
+      Date.parse(firstSeen) >= cutoff
+    );
+  });
+  // Fallback for low-traffic days and the manual /api/push/trigger
+  // smoke test: if nothing fresh, still surface the top 5 overall so
+  // the notification path itself stays verifiable.
+  const picks = fresh.length > 0 ? fresh : view.movies;
+  return picks.slice(0, 5);
 }
 
 function buildPayload(picks: readonly ScoredMovie[]): PushPayload {
