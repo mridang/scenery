@@ -154,23 +154,55 @@ export function MovieRow({
               ) : null}
             </h3>
 
-            {/* Meta line: genres · runtime · rating · budget · talent */}
-            <div className="mt-1 text-[13px] leading-snug text-slate-500">
-              {names.length ? names.join(', ') : '—'}
-              {runtime ? ` · ${runtime}` : ''}
-              {row.imdb_rating != null
-                ? ` · ★ ${row.imdb_rating.toFixed(1)}${row.imdb_votes != null ? ` (${formatVoteCount(row.imdb_votes)})` : ''}`
-                : row.vote_average != null
-                  ? ` · ★ ${row.vote_average.toFixed(1)}${row.vote_count != null ? ` (${row.vote_count})` : ''}`
-                  : ''}
-              {row.metacritic_score != null
-                ? ` · MC ${row.metacritic_score}`
-                : ''}
-              {row.rt_score != null ? ` · RT ${row.rt_score}%` : ''}
-              {budget ? ` · ${budget} budget` : ''}
-              {row.talent_score != null && row.talent_score > 0
-                ? ` · talent ${row.talent_score.toFixed(1)}`
-                : ''}
+            {/* Meta line: genres · runtime · ratings · budget · talent */}
+            <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[13px] leading-snug text-slate-500">
+              <span>{names.length ? names.join(', ') : '—'}</span>
+              {runtime ? <span>· {runtime}</span> : null}
+              {row.imdb_rating != null ? (
+                <span className="inline-flex items-center gap-1">
+                  ·
+                  <img
+                    src="/icons/imdb.svg"
+                    alt="IMDb"
+                    className="inline-block h-3.5 w-auto"
+                  />
+                  {row.imdb_rating.toFixed(1)}
+                  {row.imdb_votes != null
+                    ? ` (${formatVoteCount(row.imdb_votes)})`
+                    : ''}
+                </span>
+              ) : row.vote_average != null ? (
+                <span>
+                  · ★ {row.vote_average.toFixed(1)}
+                  {row.vote_count != null ? ` (${row.vote_count})` : ''}
+                </span>
+              ) : null}
+              {row.metacritic_score != null ? (
+                <span className="inline-flex items-center gap-1">
+                  ·
+                  <img
+                    src="/icons/metacritic.svg"
+                    alt="Metacritic"
+                    className="inline-block h-3.5 w-3.5"
+                  />
+                  {row.metacritic_score}
+                </span>
+              ) : null}
+              {row.rt_score != null ? (
+                <span className="inline-flex items-center gap-1">
+                  ·
+                  <img
+                    src="/icons/rotten-tomatoes.svg"
+                    alt="Rotten Tomatoes"
+                    className="inline-block h-3.5 w-3.5"
+                  />
+                  {row.rt_score}%
+                </span>
+              ) : null}
+              {budget ? <span>· {budget} budget</span> : null}
+              {row.talent_score != null && row.talent_score > 0 ? (
+                <span>· talent {row.talent_score.toFixed(1)}</span>
+              ) : null}
             </div>
 
             {/* People line */}
