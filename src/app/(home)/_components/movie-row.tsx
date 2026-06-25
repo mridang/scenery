@@ -43,7 +43,7 @@ export function MovieRow({
   const cutoffHere = planMode && prev !== null && prev.fits && !fits;
   const runtime = formatRuntime(row.runtime);
   const poster = row.poster_path
-    ? `https://image.tmdb.org/t/p/w185${row.poster_path}`
+    ? `/api/img?src=${encodeURIComponent(`https://image.tmdb.org/t/p/original${row.poster_path}`)}&w=185`
     : null;
   const title = row.tmdb_title ?? row.latest_release_title ?? row.imdb_id;
   const fresh = isFresh(row.first_posted_at, nowMs);
