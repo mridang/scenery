@@ -16,12 +16,15 @@ export const TIER_STYLE: Record<Tier, string> = {
   '?': 'border-sky-400 bg-sky-50/40',
 };
 
-/** Pill colour per tier (the little A/B/C/? badge). */
+/**
+ * Pill colour per tier (the little A/B/C/? badge). Shades are chosen so
+ * white/dark text clears WCAG AA contrast on the small uppercase label.
+ */
 export const TIER_BADGE: Record<Tier, string> = {
-  A: 'bg-emerald-500 text-white',
-  B: 'bg-gray-300 text-gray-700',
-  C: 'bg-gray-400 text-white',
-  '?': 'bg-sky-400 text-white',
+  A: 'bg-emerald-700 text-white',
+  B: 'bg-gray-200 text-gray-800',
+  C: 'bg-gray-600 text-white',
+  '?': 'bg-sky-700 text-white',
 };
 
 // Brand colour per prestige studio label (the labels come from
@@ -69,7 +72,7 @@ export function torrentBadge(
   count: number | null,
 ): TorrentBadge {
   if (status === 'success' && (count ?? 0) > 0) {
-    return { cls: 'bg-emerald-600 text-white', label: '✓ torrent' };
+    return { cls: 'bg-emerald-700 text-white', label: '✓ torrent' };
   }
   if (status === 'empty') {
     return { cls: 'bg-gray-300 text-gray-700', label: 'no torrents' };

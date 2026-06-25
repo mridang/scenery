@@ -29,7 +29,7 @@ export function LangChip({
       href={`/${buildQuery({ lang: code, sort, view: view ?? '' })}`}
       className={`${PILL_BASE} ${
         isActive
-          ? 'border border-emerald-500 bg-emerald-500 text-white shadow-sm'
+          ? 'border border-emerald-700 bg-emerald-700 text-white shadow-sm'
           : PILL_IDLE
       }`}
     >
@@ -63,7 +63,7 @@ export function SortChip({
       href={`/${buildQuery({ lang, sort, view })}`}
       className={`${PILL_BASE} ${
         isActive
-          ? 'border border-indigo-500 bg-indigo-500 text-white shadow-sm'
+          ? 'border border-indigo-600 bg-indigo-600 text-white shadow-sm'
           : PILL_IDLE
       }`}
     >
@@ -92,7 +92,7 @@ export function ViewChip({
       href={`/${buildQuery({ lang, sort, view })}`}
       className={`${PILL_BASE} ${
         isActive
-          ? 'border border-purple-500 bg-purple-500 text-white shadow-sm'
+          ? 'border border-purple-700 bg-purple-700 text-white shadow-sm'
           : PILL_IDLE
       }`}
     >
