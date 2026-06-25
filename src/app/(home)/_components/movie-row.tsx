@@ -5,7 +5,13 @@ import type { ScoredMovie } from '../../../lib/catalog';
 import { magnetPath } from '../../../lib/magnet';
 
 import { TIER_BADGE, prestigeCls, torrentBadge } from '../_lib/badges';
-import { fmtMoney, fmtSize, formatRuntime, isFresh } from '../_lib/format';
+import {
+  fmtMoney,
+  fmtSize,
+  formatRuntime,
+  formatVoteCount,
+  isFresh,
+} from '../_lib/format';
 
 /**
  * One movie card in the list. In plan view, when this card is the first
@@ -152,9 +158,15 @@ export function MovieRow({
             <div className="mt-1 text-[13px] leading-snug text-slate-500">
               {names.length ? names.join(', ') : '—'}
               {runtime ? ` · ${runtime}` : ''}
-              {row.vote_average != null
-                ? ` · ★ ${row.vote_average.toFixed(1)}${row.vote_count != null ? ` (${row.vote_count})` : ''}`
+              {row.imdb_rating != null
+                ? ` · ★ ${row.imdb_rating.toFixed(1)}${row.imdb_votes != null ? ` (${formatVoteCount(row.imdb_votes)})` : ''}`
+                : row.vote_average != null
+                  ? ` · ★ ${row.vote_average.toFixed(1)}${row.vote_count != null ? ` (${row.vote_count})` : ''}`
+                  : ''}
+              {row.metacritic_score != null
+                ? ` · MC ${row.metacritic_score}`
                 : ''}
+              {row.rt_score != null ? ` · RT ${row.rt_score}%` : ''}
               {budget ? ` · ${budget} budget` : ''}
               {row.talent_score != null && row.talent_score > 0
                 ? ` · talent ${row.talent_score.toFixed(1)}`

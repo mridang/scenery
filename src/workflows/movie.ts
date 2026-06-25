@@ -4,6 +4,7 @@ import {
   type WorkflowStep,
 } from 'cloudflare:workers';
 
+import { OmdbEnricher } from '../lib/omdb';
 import { defaultProviders, lookupOneTorrent } from '../lib/torrents';
 import { buildEnricher } from '../lib/tmdb';
 import { genericTransport, proxyTransport, withRetry } from '../lib/transport';
@@ -65,6 +66,16 @@ export class MovieWorkflow extends WorkflowEntrypoint<
       //    Pure DB, no subrequests.
       await step.do('talent-scores', async () => ({
         updated: await enricher().recomputeTalentScoresPublic(),
+      }));
+
+      // 4. Pull OMDB ratings (IMDb / Metacritic / Rotten Tomatoes) for
+      //    this single movie. One OMDB call, direct fetch — Worker IPs
+      //    aren't blocked there.
+      await step.do('enrich-omdb', retry, async () => ({
+        status: await new OmdbEnricher(this.env.DB, {
+          apiKey: this.env.OMDB_API_KEY,
+          transport: withRetry(genericTransport()),
+        }).enrichOne(imdbId),
       }));
     }
 

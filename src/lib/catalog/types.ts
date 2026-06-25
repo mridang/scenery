@@ -27,6 +27,10 @@ export interface MovieRow {
   readonly popularity: number | null;
   readonly runtime: number | null;
   readonly budget: number | null;
+  readonly imdb_rating: number | null;
+  readonly imdb_votes: number | null;
+  readonly metacritic_score: number | null;
+  readonly rt_score: number | null;
   readonly talent_score: number | null;
   readonly original_language: string | null;
   readonly director: string | null;

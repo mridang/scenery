@@ -63,6 +63,17 @@ export function fmtMoney(n: number | null): string | null {
   return `$${Math.round(n / 1000)}K`;
 }
 
+/** Compact vote count: `828k`, `1.2M`, `4.7`. */
+export function formatVoteCount(n: number): string {
+  if (n >= 1_000_000) {
+    return `${(n / 1_000_000).toFixed(1)}M`;
+  }
+  if (n >= 1000) {
+    return `${Math.round(n / 1000)}k`;
+  }
+  return String(n);
+}
+
 /** Compact size: `4.3 GB` / `700 MB`. Null for missing/zero. */
 export function fmtSize(bytes: number | null): string | null {
   if (bytes == null || bytes <= 0) {

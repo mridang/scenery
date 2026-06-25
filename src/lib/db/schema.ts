@@ -124,6 +124,13 @@ export const tmdb_movies = sqliteTable('tmdb_movies', {
   revenue: integer('revenue'),
   production_companies: text('production_companies'),
   original_language: text('original_language'),
+  omdb_status: text('omdb_status'),
+  omdb_fetched_at: text('omdb_fetched_at'),
+  omdb_raw: text('omdb_raw'),
+  imdb_rating: real('imdb_rating'),
+  imdb_votes: integer('imdb_votes'),
+  metacritic_score: integer('metacritic_score'),
+  rt_score: integer('rt_score'),
 });
 
 export const tmdb_people = sqliteTable('tmdb_people', {

@@ -9,4 +9,5 @@ interface CloudflareEnv extends Cloudflare.Env {
   SCRAPINGANT_API_KEY: string;
   TMDB_API_KEY: string;
   VAPID_PRIVATE_KEY: string;
+  OMDB_API_KEY: string;
 }
