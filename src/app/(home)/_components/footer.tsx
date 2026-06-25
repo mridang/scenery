@@ -50,7 +50,7 @@ export function Footer({
             : ''}
         </div>
       </div>
-      <div className="mt-3 text-slate-400">
+      <div className="mt-3 text-slate-500">
         scenery · {count} movies shown · view={view} · sort={sort} · lang={lang}
       </div>
     </footer>

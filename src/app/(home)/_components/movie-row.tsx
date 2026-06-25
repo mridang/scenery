@@ -89,10 +89,12 @@ export function MovieRow({
               src={poster}
               alt=""
               loading="lazy"
+              width={96}
+              height={144}
               className="h-28 w-20 flex-none rounded bg-slate-100 object-cover sm:h-36 sm:w-24"
             />
           ) : (
-            <div className="h-32 w-22 flex-none rounded bg-slate-100 sm:h-36 sm:w-24" />
+            <div className="h-28 w-20 flex-none rounded bg-slate-100 sm:h-36 sm:w-24" />
           )}
 
           <div className="flex min-w-0 flex-1 flex-col">
@@ -138,8 +140,9 @@ export function MovieRow({
               ) : null}
             </div>
 
-            {/* Title */}
-            <h3 className="mt-1.5 text-base leading-snug font-semibold text-slate-900 sm:text-[17px]">
+            {/* Title — uses h2 to keep the document heading order
+                 sequential beneath the page's single h1. */}
+            <h2 className="mt-1.5 text-base leading-snug font-semibold text-slate-900 sm:text-[17px]">
               <Link
                 href={`https://www.imdb.com/title/${row.imdb_id}/`}
                 target="_blank"
@@ -148,11 +151,11 @@ export function MovieRow({
                 {title}
               </Link>
               {row.tmdb_year ? (
-                <span className="ml-1.5 font-normal text-slate-400">
+                <span className="ml-1.5 font-normal text-slate-500">
                   ({row.tmdb_year})
                 </span>
               ) : null}
-            </h3>
+            </h2>
 
             {/* Meta line: genres · runtime · ratings · budget · talent */}
             <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[13px] leading-snug text-slate-500">
@@ -164,6 +167,8 @@ export function MovieRow({
                   <img
                     src="/icons/imdb.svg"
                     alt="IMDb"
+                    width={28}
+                    height={14}
                     className="inline-block h-3.5 w-auto"
                   />
                   {row.imdb_rating.toFixed(1)}
@@ -183,6 +188,8 @@ export function MovieRow({
                   <img
                     src="/icons/metacritic.svg"
                     alt="Metacritic"
+                    width={14}
+                    height={14}
                     className="inline-block h-3.5 w-3.5"
                   />
                   {row.metacritic_score}
@@ -194,6 +201,8 @@ export function MovieRow({
                   <img
                     src="/icons/rotten-tomatoes.svg"
                     alt="Rotten Tomatoes"
+                    width={14}
+                    height={14}
                     className="inline-block h-3.5 w-3.5"
                   />
                   {row.rt_score}%
@@ -210,12 +219,12 @@ export function MovieRow({
               <div className="mt-1.5 text-[13px] leading-snug text-slate-600">
                 {row.director ? (
                   <div>
-                    <span className="text-slate-400">Dir</span> {row.director}
+                    <span className="text-slate-500">Dir</span> {row.director}
                   </div>
                 ) : null}
                 {cast.length ? (
                   <div>
-                    <span className="text-slate-400">With</span>{' '}
+                    <span className="text-slate-500">With</span>{' '}
                     <span className="sm:hidden">
                       {cast.slice(0, 3).join(', ')}
                       {cast.length > 3 ? `, +${cast.length - 3}` : ''}
@@ -253,7 +262,7 @@ export function MovieRow({
             ) : null}
 
             {/* Tiny footer line: imdb id · release count · raw filename */}
-            <div className="mt-2 truncate text-[11px] text-slate-400">
+            <div className="mt-2 truncate text-[11px] text-slate-500">
               <Link
                 href={`https://www.imdb.com/title/${row.imdb_id}/`}
                 target="_blank"

@@ -18,7 +18,7 @@ function Stat({
       } ${highlight ? 'border-red-300 text-red-600' : ''}`}
     >
       <div className="text-lg font-semibold tabular-nums">{value}</div>
-      <div className="mt-0.5 text-[10px] font-medium tracking-wider text-slate-400 uppercase">
+      <div className="mt-0.5 text-[10px] font-medium tracking-wider text-slate-500 uppercase">
         {label}
       </div>
     </div>

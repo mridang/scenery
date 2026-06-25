@@ -35,7 +35,7 @@ export function LangChip({
     >
       {languageLabel(code)}
       <span
-        className={`tabular-nums ${isActive ? 'text-white/80' : 'text-slate-400'}`}
+        className={`tabular-nums ${isActive ? 'text-white' : 'text-slate-500'}`}
       >
         {count}
       </span>

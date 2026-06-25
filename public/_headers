@@ -9,5 +9,8 @@
 # Un-hashed public files — cache for a day; they change rarely.
 /favicon.ico
   Cache-Control: public, max-age=86400
-/*.svg
-  Cache-Control: public, max-age=86400
+
+# Brand icons under /icons/* are fixed bytes for the life of the
+# build; tag them as immutable so repeat visits skip the network.
+/icons/*
+  Cache-Control: public, max-age=31536000, immutable
