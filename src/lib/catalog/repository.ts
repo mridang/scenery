@@ -139,6 +139,7 @@ export class CatalogRepository {
      t.release_date                             AS release_date,
      t.genre_ids                                AS tmdb_genre_ids,
      t.poster_path                              AS poster_path,
+     t.backdrop_path                            AS backdrop_path,
      t.vote_average                             AS vote_average,
      t.vote_count                               AS vote_count,
      t.popularity                               AS popularity,

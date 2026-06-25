@@ -22,6 +22,7 @@ export interface MovieRow {
   readonly release_date: string | null;
   readonly tmdb_genre_ids: string | null;
   readonly poster_path: string | null;
+  readonly backdrop_path: string | null;
   readonly vote_average: number | null;
   readonly vote_count: number | null;
   readonly popularity: number | null;

@@ -2,7 +2,6 @@ import type { ScoredMovie } from '../../../lib/catalog';
 
 import { formatRuntime } from '../_lib/format';
 import {
-  fmtVotes,
   gradeLabel,
   scoreColor,
   statusColor,
@@ -10,6 +9,8 @@ import {
   torrentState,
 } from '../_lib/movie-style';
 import { posterUrl } from '../_lib/tmdb-image';
+
+import { RatingsRow } from './ratings';
 
 /** Compact "1.2 GB" / "640 MB"; null when the torrent has no measured size. */
 function fmtSizeShort(bytes: number | null): string | null {
@@ -134,18 +135,13 @@ export function MovieCardUniform({ movie }: CardProps) {
         {castLine ? (
           <div className="truncate text-[11px] text-[#8a8a94]">{castLine}</div>
         ) : null}
-        {row.vote_average !== null && (row.vote_count ?? 0) > 0 ? (
-          <div className="mt-[1px] flex flex-wrap items-center gap-x-[9px] gap-y-[3px] font-mono text-[10px] leading-[1.5] text-[#c3c3cc]">
-            <span className="inline-flex items-center gap-1 whitespace-nowrap">
-              <span className="rounded-[2px] bg-[#e6c84f] px-[3px] py-[1px] text-[7.5px] leading-none font-bold text-black">
-                IMDb
-              </span>
-              <span className="font-semibold">
-                {row.vote_average.toFixed(1)} ({fmtVotes(row.vote_count!)})
-              </span>
-            </span>
-          </div>
-        ) : null}
+        <RatingsRow
+          imdbRating={row.imdb_rating ?? row.vote_average}
+          imdbVotes={row.imdb_votes ?? row.vote_count}
+          mcScore={row.metacritic_score}
+          rtScore={row.rt_score}
+          size="sm"
+        />
         {torrentBits ? (
           <div className="mt-[1px] truncate font-mono text-[10px] text-[#6e6e78]">
             {torrentBits}
@@ -245,18 +241,13 @@ export function MovieCardMosaic({ movie, big = false }: CardProps) {
             {credit}
           </div>
         ) : null}
-        {row.vote_average !== null && (row.vote_count ?? 0) > 0 ? (
-          <div className="mt-[2px] flex flex-wrap items-center gap-x-[9px] gap-y-[3px] font-mono text-[10px] leading-[1.5]">
-            <span className="inline-flex items-center gap-1 whitespace-nowrap">
-              <span className="rounded-[2px] bg-[#e6c84f] px-[3px] py-[1px] text-[7.5px] leading-none font-bold text-black">
-                IMDb
-              </span>
-              <span className="font-semibold text-[#e8e8ec]">
-                {row.vote_average.toFixed(1)} ({fmtVotes(row.vote_count!)})
-              </span>
-            </span>
-          </div>
-        ) : null}
+        <RatingsRow
+          imdbRating={row.imdb_rating ?? row.vote_average}
+          imdbVotes={row.imdb_votes ?? row.vote_count}
+          mcScore={row.metacritic_score}
+          rtScore={row.rt_score}
+          size="sm"
+        />
       </div>
     </a>
   );

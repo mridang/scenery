@@ -9,7 +9,7 @@ import { getDB } from '../../lib/util';
 import { ComingSoon } from './_components/coming-soon';
 import { FilterBar } from './_components/filter-bar';
 import { Footer } from './_components/footer';
-import { Hero } from './_components/hero';
+import { HeroCarousel } from './_components/hero-carousel';
 import { MovieGrid } from './_components/movie-grid';
 import { PlanView } from './_components/plan-view';
 import { SiteHeader } from './_components/site-header';
@@ -84,7 +84,7 @@ export default async function Home({
   // cards render, so the filter labels and the dot indicators agree.
   const filtered = applyPageFilters(viewResult.movies, opts);
 
-  const heroSource = pickHero(viewResult.movies, nowMs);
+  const heroSlate = pickHeroSlate(viewResult.movies, nowMs);
   const comingSoon = pickComingSoon(viewResult.movies, nowMs);
   const comingSoonHref = `/${buildQuery({
     ...hiddenParams,
@@ -107,7 +107,7 @@ export default async function Home({
       <main className="mx-auto w-full px-4 pt-[34px] pb-11 sm:px-7 2xl:px-12">
         <div className="mb-[34px] flex flex-col gap-6 lg:flex-row lg:items-stretch">
           <div className="min-w-0 flex-1">
-            <Hero movie={heroSource} />
+            <HeroCarousel movies={heroSlate} />
           </div>
           <ComingSoon movies={comingSoon} seeMoreHref={comingSoonHref} />
         </div>
@@ -192,30 +192,47 @@ function wasScrapedRecently(movie: ScoredMovie, nowMs: number): boolean {
   return Number.isFinite(seen) && nowMs - seen <= RECENT_WINDOW_MS;
 }
 
+/** How many slides the hero carousel rotates through. */
+const HERO_SLATE_SIZE = 5;
+
 /**
- * Hero = the latest movie scraped in the last 24h that already has a
- * torrent. Falls back to the freshest torrent we know of (regardless of
- * scrape age) and finally any movie with a poster — so a quiet day doesn't
- * leave an empty hero.
+ * Hero slate = up to {@link HERO_SLATE_SIZE} movies that were scraped in
+ * the last 24h AND already have a torrent, newest scrape first. Falls
+ * back to the most-recent torrent movies overall (so a quiet day still
+ * fills the carousel) and finally to any poster-bearing movie — the
+ * carousel never paints empty.
  */
-function pickHero(
+function pickHeroSlate(
   movies: readonly ScoredMovie[],
   nowMs: number,
-): ScoredMovie | null {
-  const withPoster = movies.filter((movie) => movie.row.poster_path);
+): readonly ScoredMovie[] {
+  const withPoster = movies.filter(
+    (movie) => movie.row.poster_path || movie.row.backdrop_path,
+  );
   const byNewest = [...withPoster].sort(
     (a, b) =>
       Date.parse(b.row.first_seen_at) - Date.parse(a.row.first_seen_at),
   );
-  return (
-    byNewest.find(
-      (movie) =>
-        wasScrapedRecently(movie, nowMs) && torrentState(movie) === 'torrent',
-    ) ??
-    byNewest.find((movie) => torrentState(movie) === 'torrent') ??
-    byNewest[0] ??
-    null
+  const recentWithTorrent = byNewest.filter(
+    (movie) =>
+      wasScrapedRecently(movie, nowMs) && torrentState(movie) === 'torrent',
   );
+  if (recentWithTorrent.length >= HERO_SLATE_SIZE) {
+    return recentWithTorrent.slice(0, HERO_SLATE_SIZE);
+  }
+  // Top up with the freshest torrents overall, skipping anything already in
+  // the slate so the carousel never shows the same movie twice in a row.
+  const seen = new Set(recentWithTorrent.map((movie) => movie.row.imdb_id));
+  const fallback = byNewest.filter(
+    (movie) =>
+      !seen.has(movie.row.imdb_id) && torrentState(movie) === 'torrent',
+  );
+  const slate = [...recentWithTorrent, ...fallback].slice(0, HERO_SLATE_SIZE);
+  if (slate.length > 0) {
+    return slate;
+  }
+  // Last resort: a non-torrent movie is still better than an empty hero.
+  return byNewest.slice(0, HERO_SLATE_SIZE);
 }
 
 /**

@@ -1,25 +1,36 @@
 import type { ScoredMovie } from '../../../lib/catalog';
 
 import { formatRuntime } from '../_lib/format';
-import { posterUrl } from '../_lib/tmdb-image';
+import { backdropUrl } from '../_lib/tmdb-image';
+
+import { RatingsRow } from './ratings';
 
 /**
  * Big editorial card sitting above the catalog grid. The "what to watch
- * next" anchor of the page: a backdrop poster, the title at hero size,
- * and the same metadata signals (genres · runtime · rating · size) the
- * cards below carry, so the eye doesn't have to relearn the vocabulary.
+ * next" anchor of the page: a 16:9 TMDB backdrop, the title at hero
+ * size, and the same rating/availability signals (IMDb · Metacritic ·
+ * Rotten Tomatoes · quality · size · language) the cards below carry,
+ * so the eye doesn't have to relearn the vocabulary.
  *
- * Renders `null` when the movie is absent or has no poster — there's no
- * sensible placeholder for a card whose visual centerpiece is the art.
+ * Renders `null` when the movie is absent or has no image at all —
+ * there's no sensible placeholder for a card whose visual centerpiece
+ * is the art.
  */
 export function Hero({ movie }: { movie: ScoredMovie | null }) {
-  if (!movie || !movie.row.poster_path) {
+  if (!movie) {
+    return null;
+  }
+  const backdrop = backdropUrl(
+    movie.row.backdrop_path,
+    movie.row.poster_path,
+    'w1280',
+  );
+  if (!backdrop) {
     return null;
   }
 
   const { row, genres, cast } = movie;
   const title = row.tmdb_title ?? row.latest_release_title ?? row.imdb_id;
-  const backdrop = posterUrl(row.poster_path, 'w780')!;
   const runtime = formatRuntime(row.runtime);
   const metaLine = [...genres, runtime].filter(Boolean).join('  ·  ');
   const credit = [
@@ -69,26 +80,17 @@ export function Hero({ movie }: { movie: ScoredMovie | null }) {
             {credit}
           </div>
         ) : null}
-        {row.vote_average !== null && (row.vote_count ?? 0) > 0 ? (
-          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[12px] text-[#e8e8ec]">
-            <span className="inline-flex items-center gap-[5px] whitespace-nowrap">
-              <span className="rounded-[3px] bg-[#e6c84f] px-1 py-[2px] text-[9px] leading-none font-bold text-black">
-                IMDb
-              </span>
-              <span className="font-semibold">
-                {row.vote_average.toFixed(1)} ({fmtVotes(row.vote_count!)})
-              </span>
-            </span>
-          </div>
-        ) : null}
+        <RatingsRow
+          imdbRating={row.imdb_rating ?? row.vote_average}
+          imdbVotes={row.imdb_votes ?? row.vote_count}
+          mcScore={row.metacritic_score}
+          rtScore={row.rt_score}
+          size="md"
+        />
         <div className="mt-2 font-mono text-[12px] text-[#d4d4da]">
           {footerBits}
         </div>
       </div>
     </a>
   );
-}
-
-function fmtVotes(n: number): string {
-  return n >= 1000 ? `${Math.round(n / 1000)}k` : `${n}`;
 }
