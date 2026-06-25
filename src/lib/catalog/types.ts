@@ -142,10 +142,29 @@ export interface ScoredRow extends MovieRow {
 export interface ViewOptions {
   /** ISO 639-1 code or 'all'. */
   readonly lang: string;
-  /** 'score' (default) or 'date'. */
+  /** 'score' (default) or 'date' — the SQL-supported sort axes. */
   readonly sort: string;
   /** 'catalog' (default) or 'plan'. */
   readonly view: string;
+}
+
+/**
+ * The full parsed catalog query string for the home page. Extends the
+ * SQL-relevant {@link ViewOptions} with the page-level filters/state
+ * (status / layout / sort='rating' / free-text search) that are applied
+ * after the SQL has returned its rows.
+ *
+ * @public
+ */
+export interface PageViewOptions extends ViewOptions {
+  /** 'score', 'date' or 'rating'. The first two are SQL-supported; 'rating' is applied on the page. */
+  readonly pageSort: string;
+  /** 'all' (default), 'available', 'pending', or 'none'. */
+  readonly status: string;
+  /** 'mosaic' (default) or 'uniform'. */
+  readonly layout: string;
+  /** Free-text search, trimmed; empty string disables. */
+  readonly q: string;
 }
 
 /**

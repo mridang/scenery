@@ -13,17 +13,6 @@ export function formatRuntime(min: number | null): string | null {
   return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** True when `at` is within the last 24h of `nowMs`. */
-export function isFresh(at: string | null, nowMs: number): boolean {
-  if (!at) {
-    return false;
-  }
-  const ms = Date.parse(at);
-  return Number.isFinite(ms) && nowMs - ms < DAY_MS;
-}
-
 /** Coarse "x ago" label (`never` when missing/unparseable). */
 export function timeAgo(at: string | null, nowMs: number): string {
   if (!at) {
@@ -49,43 +38,7 @@ export function timeAgo(at: string | null, nowMs: number): string {
   return `${days}d ago`;
 }
 
-/** Compact money: `$200M` / `$1.2B` / `$500K`. Null for missing/zero. */
-export function fmtMoney(n: number | null): string | null {
-  if (n == null || n <= 0) {
-    return null;
-  }
-  if (n >= 1_000_000_000) {
-    return `$${(n / 1_000_000_000).toFixed(1)}B`;
-  }
-  if (n >= 1_000_000) {
-    return `$${Math.round(n / 1_000_000)}M`;
-  }
-  return `$${Math.round(n / 1000)}K`;
-}
-
-/** Compact vote count: `828k`, `1.2M`, `4.7`. */
-export function formatVoteCount(n: number): string {
-  if (n >= 1_000_000) {
-    return `${(n / 1_000_000).toFixed(1)}M`;
-  }
-  if (n >= 1000) {
-    return `${Math.round(n / 1000)}k`;
-  }
-  return String(n);
-}
-
-/** Compact size: `4.3 GB` / `700 MB`. Null for missing/zero. */
-export function fmtSize(bytes: number | null): string | null {
-  if (bytes == null || bytes <= 0) {
-    return null;
-  }
-  const gb = bytes / 1_000_000_000;
-  return gb >= 1
-    ? `${gb.toFixed(1)} GB`
-    : `${Math.round(bytes / 1_000_000)} MB`;
-}
-
-/** Build a `?lang=&sort=&view=` query string, dropping empty values. */
+/** Build a `?key=value` query string, dropping empty values. */
 export function buildQuery(params: Record<string, string>): string {
   const usp = new URLSearchParams(
     Object.entries(params).filter(([, value]) => Boolean(value)),

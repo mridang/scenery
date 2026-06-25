@@ -1,18 +1,87 @@
 @import 'tailwindcss';
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #1f1f22;
+  --foreground: #f3f3f6;
+  --surface: #2a2a2e;
+  --surface-2: #2c2c31;
+  --muted: #9a9aa4;
+  --muted-2: #71717a;
+  --line: rgba(255, 255, 255, 0.07);
+  --accent: #3b5bff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-plus-jakarta-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(124, 58, 237, 0.32);
+}
+
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input::placeholder {
+  color: #6e6e78;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2a31;
+  border-radius: 6px;
+  border: 3px solid #1f1f22;
+}
+
+/* Mosaic: dense packed grid everywhere; upgrades to true masonry where supported. */
+.scn-mosaic {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 16px;
+  grid-auto-rows: 236px;
+  grid-auto-flow: dense;
+}
+
+.scn-tile {
+  position: relative;
+}
+
+.scn-big {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+@supports (grid-template-rows: masonry) {
+  .scn-mosaic {
+    grid-template-rows: masonry;
+    grid-auto-rows: auto;
+    grid-auto-flow: row;
+    align-items: start;
+  }
+  .scn-tile {
+    aspect-ratio: 2 / 3;
+  }
+  .scn-big {
+    grid-row: auto;
+  }
 }
