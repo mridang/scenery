@@ -84,8 +84,8 @@ export default async function Home({
   // cards render, so the filter labels and the dot indicators agree.
   const filtered = applyPageFilters(viewResult.movies, opts);
 
-  const heroSource = pickHero(viewResult.movies);
-  const comingSoon = pickComingSoon(viewResult.movies);
+  const heroSource = pickHero(viewResult.movies, nowMs);
+  const comingSoon = pickComingSoon(viewResult.movies, nowMs);
   const comingSoonHref = `/${buildQuery({
     ...hiddenParams,
     status: 'pending',
@@ -104,7 +104,7 @@ export default async function Home({
         q={opts.q}
         hiddenParams={hiddenParams}
       />
-      <main className="mx-auto max-w-[1480px] px-4 pt-[34px] pb-11 sm:px-7">
+      <main className="mx-auto w-full px-4 pt-[34px] pb-11 sm:px-7 2xl:px-12">
         <div className="mb-[34px] flex flex-col gap-6 lg:flex-row lg:items-stretch">
           <div className="min-w-0 flex-1">
             <Hero movie={heroSource} />
@@ -183,30 +183,59 @@ function applyPageFilters(
   return filtered;
 }
 
-/** Highest TMDB vote count with a usable poster — the hero centerpiece. */
-function pickHero(movies: readonly ScoredMovie[]): ScoredMovie | null {
-  let best: ScoredMovie | null = null;
-  let bestVotes = -1;
-  for (const movie of movies) {
-    if (!movie.row.poster_path) {
-      continue;
-    }
-    const votes = movie.row.vote_count ?? 0;
-    if (votes > bestVotes) {
-      best = movie;
-      bestVotes = votes;
-    }
-  }
-  return best;
+/** Movies first observed within this window count as "recently scraped". */
+const RECENT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/** True if the catalog first observed this row inside the recent window. */
+function wasScrapedRecently(movie: ScoredMovie, nowMs: number): boolean {
+  const seen = Date.parse(movie.row.first_seen_at);
+  return Number.isFinite(seen) && nowMs - seen <= RECENT_WINDOW_MS;
 }
 
-/** Top three pending/no-torrent rows by score for the "Coming Soon" rail. */
+/**
+ * Hero = the latest movie scraped in the last 24h that already has a
+ * torrent. Falls back to the freshest torrent we know of (regardless of
+ * scrape age) and finally any movie with a poster — so a quiet day doesn't
+ * leave an empty hero.
+ */
+function pickHero(
+  movies: readonly ScoredMovie[],
+  nowMs: number,
+): ScoredMovie | null {
+  const withPoster = movies.filter((movie) => movie.row.poster_path);
+  const byNewest = [...withPoster].sort(
+    (a, b) =>
+      Date.parse(b.row.first_seen_at) - Date.parse(a.row.first_seen_at),
+  );
+  return (
+    byNewest.find(
+      (movie) =>
+        wasScrapedRecently(movie, nowMs) && torrentState(movie) === 'torrent',
+    ) ??
+    byNewest.find((movie) => torrentState(movie) === 'torrent') ??
+    byNewest[0] ??
+    null
+  );
+}
+
+/**
+ * Coming Soon = movies scraped in the last 24h that don't have a torrent
+ * yet — the "we just noticed these, downloads pending" rail. Ordered by
+ * scrape time, newest first, capped at 3.
+ */
 function pickComingSoon(
   movies: readonly ScoredMovie[],
+  nowMs: number,
 ): readonly ScoredMovie[] {
-  return [...movies]
-    .filter((movie) => torrentState(movie) !== 'torrent')
-    .sort((a, b) => b.score - a.score)
+  return movies
+    .filter(
+      (movie) =>
+        wasScrapedRecently(movie, nowMs) && torrentState(movie) !== 'torrent',
+    )
+    .toSorted(
+      (a, b) =>
+        Date.parse(b.row.first_seen_at) - Date.parse(a.row.first_seen_at),
+    )
     .slice(0, 3);
 }
 

@@ -53,12 +53,16 @@ input::placeholder {
   border: 3px solid #1f1f22;
 }
 
-/* Mosaic: dense packed grid everywhere; upgrades to true masonry where supported. */
+/* Mosaic: dense packed poster grid. Fixed `grid-auto-rows: 252px` makes a
+ * tile at the minimum column width (168px) land on a clean 2:3 poster
+ * aspect; columns wider than the minimum gain a little crop, never any
+ * stretch (the image is `object-cover`). Big tiles span 2×2 and inherit
+ * two row heights + the gap, so they stay 2:3-ish too. */
 .scn-mosaic {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
   gap: 16px;
-  grid-auto-rows: 236px;
+  grid-auto-rows: 252px;
   grid-auto-flow: dense;
 }
 
@@ -69,19 +73,4 @@ input::placeholder {
 .scn-big {
   grid-column: span 2;
   grid-row: span 2;
-}
-
-@supports (grid-template-rows: masonry) {
-  .scn-mosaic {
-    grid-template-rows: masonry;
-    grid-auto-rows: auto;
-    grid-auto-flow: row;
-    align-items: start;
-  }
-  .scn-tile {
-    aspect-ratio: 2 / 3;
-  }
-  .scn-big {
-    grid-row: auto;
-  }
 }
