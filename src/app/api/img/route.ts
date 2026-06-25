@@ -1,7 +1,4 @@
-import {
-  buildOptimizedUrl,
-  DEFAULT_WIDTH,
-} from '../../../lib/img';
+import { buildOptimizedUrl, DEFAULT_WIDTH } from '../../../lib/img';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +30,9 @@ export async function GET(request: Request) {
   if (src === null) {
     return Response.json({ ok: false, error: 'missing src' }, { status: 400 });
   }
-  const requestedWidth = widthParam ? Number.parseInt(widthParam, 10) : DEFAULT_WIDTH;
+  const requestedWidth = widthParam
+    ? Number.parseInt(widthParam, 10)
+    : DEFAULT_WIDTH;
   const target = buildOptimizedUrl({ src, width: requestedWidth });
   if (target === null) {
     return Response.json(
