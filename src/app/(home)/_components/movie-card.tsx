@@ -1,4 +1,5 @@
 import type { ScoredMovie } from '../../../lib/catalog';
+import { magnetPath } from '../../../lib/magnet';
 
 import { formatRuntime } from '../_lib/format';
 import {
@@ -66,14 +67,24 @@ export function MovieCardUniform({ movie }: CardProps) {
       : '';
   const grayscale = state !== 'torrent';
   const qualityIcon = qualityIconPath(row.best_quality);
+  const imdbHref = `https://www.imdb.com/title/${row.imdb_id}/`;
+  const magnetHref = row.best_info_hash
+    ? magnetPath(row.best_info_hash, row.best_torrent_title)
+    : null;
 
   return (
-    <a
-      href={`https://www.imdb.com/title/${row.imdb_id}/`}
-      target="_blank"
-      rel="noreferrer"
-      className="flex flex-col gap-[11px] rounded-[14px] border border-transparent bg-[#2a2a2e] p-[10px] text-inherit no-underline shadow-[0_1px_3px_rgba(0,0,0,0.2)] transition-[box-shadow,transform] duration-200 hover:translate-y-[-4px] hover:shadow-[0_14px_30px_-14px_rgba(0,0,0,0.6)]"
-    >
+    <article className="relative flex flex-col gap-[11px] rounded-[14px] border border-transparent bg-[#2a2a2e] p-[10px] shadow-[0_1px_3px_rgba(0,0,0,0.2)] transition-[box-shadow,transform] duration-200 hover:translate-y-[-4px] hover:shadow-[0_14px_30px_-14px_rgba(0,0,0,0.6)]">
+      {/* Stretched IMDb link: covers the whole card so any non-anchor
+          element (title, ratings, etc.) routes there. The magnet badge
+          below sits on a higher z-index and intercepts its own clicks. */}
+      <a
+        href={imdbHref}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={title}
+        className="absolute inset-0 z-10 rounded-[14px]"
+      />
+
       <div className="relative aspect-[2/3] overflow-hidden rounded bg-[#1c1c22]">
         {poster ? (
           <img
@@ -95,13 +106,30 @@ export function MovieCardUniform({ movie }: CardProps) {
         </div>
 
         {qualityIcon ? (
-          <img
-            src={qualityIcon}
-            alt={row.best_quality ?? ''}
-            width={48}
-            height={35}
-            className="absolute top-[10px] right-[10px] block h-[26px] w-auto rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,0.5)]"
-          />
+          magnetHref ? (
+            <a
+              href={magnetHref}
+              aria-label={`Download ${row.best_quality ?? ''} magnet`}
+              title="Download magnet"
+              className="absolute top-[10px] right-[10px] z-20 block rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,0.5)] transition-transform hover:scale-105"
+            >
+              <img
+                src={qualityIcon}
+                alt={row.best_quality ?? ''}
+                width={48}
+                height={35}
+                className="block h-[26px] w-auto"
+              />
+            </a>
+          ) : (
+            <img
+              src={qualityIcon}
+              alt={row.best_quality ?? ''}
+              width={48}
+              height={35}
+              className="absolute top-[10px] right-[10px] block h-[26px] w-auto rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,0.5)]"
+            />
+          )
         ) : (
           <div className="absolute top-[10px] right-[10px] flex items-center gap-[6px] rounded-[8px] border border-transparent bg-[rgba(9,9,11,0.66)] px-[9px] py-[5px] font-mono text-[10px] font-medium text-[#d4d4d8] backdrop-blur">
             <span
@@ -163,7 +191,7 @@ export function MovieCardUniform({ movie }: CardProps) {
           </div>
         ) : null}
       </div>
-    </a>
+    </article>
   );
 }
 
@@ -194,15 +222,25 @@ export function MovieCardMosaic({ movie, big = false }: CardProps) {
     .join('  ·  ');
   const grayscale = state !== 'torrent';
   const qualityIcon = qualityIconPath(row.best_quality);
+  const imdbHref = `https://www.imdb.com/title/${row.imdb_id}/`;
+  const magnetHref = row.best_info_hash
+    ? magnetPath(row.best_info_hash, row.best_torrent_title)
+    : null;
 
   return (
-    <a
-      href={`https://www.imdb.com/title/${row.imdb_id}/`}
-      target="_blank"
-      rel="noreferrer"
-      className={`scn-tile ${big ? 'scn-big' : ''} block overflow-hidden rounded text-[#f4f4f5] no-underline shadow-[0_6px_18px_-10px_rgba(0,0,0,0.45)] transition-transform duration-200 hover:scale-[1.012]`}
+    <div
+      className={`scn-tile ${big ? 'scn-big' : ''} block overflow-hidden rounded text-[#f4f4f5] shadow-[0_6px_18px_-10px_rgba(0,0,0,0.45)] transition-transform duration-200 hover:scale-[1.012]`}
       style={{ background: '#2a2a2e' }}
     >
+      {/* Stretched IMDb link covers the whole tile; the magnet badge
+          sits on a higher z-index and intercepts its own clicks. */}
+      <a
+        href={imdbHref}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={title}
+        className="absolute inset-0 z-10"
+      />
       {poster ? (
         <img
           src={poster}
@@ -223,13 +261,30 @@ export function MovieCardMosaic({ movie, big = false }: CardProps) {
       </div>
 
       {qualityIcon ? (
-        <img
-          src={qualityIcon}
-          alt={row.best_quality ?? ''}
-          width={big ? 60 : 44}
-          height={big ? 44 : 32}
-          className={`absolute top-[9px] right-[9px] block w-auto rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,0.5)] ${big ? 'h-[32px]' : 'h-[24px]'}`}
-        />
+        magnetHref ? (
+          <a
+            href={magnetHref}
+            aria-label={`Download ${row.best_quality ?? ''} magnet`}
+            title="Download magnet"
+            className="absolute top-[9px] right-[9px] z-20 block rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,0.5)] transition-transform hover:scale-105"
+          >
+            <img
+              src={qualityIcon}
+              alt={row.best_quality ?? ''}
+              width={big ? 60 : 44}
+              height={big ? 44 : 32}
+              className={`block w-auto ${big ? 'h-[32px]' : 'h-[24px]'}`}
+            />
+          </a>
+        ) : (
+          <img
+            src={qualityIcon}
+            alt={row.best_quality ?? ''}
+            width={big ? 60 : 44}
+            height={big ? 44 : 32}
+            className={`absolute top-[9px] right-[9px] block w-auto rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,0.5)] ${big ? 'h-[32px]' : 'h-[24px]'}`}
+          />
+        )
       ) : (
         <div className="absolute top-[9px] right-[9px] flex items-center gap-[5px] rounded-[8px] bg-[rgba(9,9,11,0.6)] px-2 py-1 font-mono text-[9.5px] text-[#d4d4d8] backdrop-blur">
           <span
@@ -277,6 +332,6 @@ export function MovieCardMosaic({ movie, big = false }: CardProps) {
           size="sm"
         />
       </div>
-    </a>
+    </div>
   );
 }
