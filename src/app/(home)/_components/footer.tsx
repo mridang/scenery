@@ -41,7 +41,7 @@ export function Footer({
   const scrapeAgo = timeAgo(lastUpdate.scrapeAt, nowMs);
   return (
     <footer className="mt-7 border-t border-white/[0.07]">
-      <div className="mx-auto flex max-w-[1480px] flex-wrap justify-between gap-10 px-4 pt-[34px] pb-10 sm:px-7">
+      <div className="flex w-full flex-wrap justify-between gap-10 px-4 pt-[34px] pb-10 sm:px-7 2xl:px-12">
         <div className="max-w-[300px]">
           <div className="mb-3 flex items-center gap-[10px]">
             <svg
@@ -84,7 +84,7 @@ export function Footer({
         </div>
       </div>
       <div className="border-t border-white/[0.06]">
-        <div className="mx-auto flex max-w-[1480px] flex-wrap justify-between gap-4 px-4 pt-4 pb-9 font-mono text-[11px] text-[#6e6e78] sm:px-7">
+        <div className="flex w-full flex-wrap justify-between gap-4 px-4 pt-4 pb-9 font-mono text-[11px] text-[#6e6e78] sm:px-7 2xl:px-12">
           <span>© 2026 scenery</span>
           <span>
             <span className="font-semibold text-[#cfcfd4]">{count}</span> of{' '}

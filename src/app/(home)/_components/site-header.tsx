@@ -51,7 +51,7 @@ export function SiteHeader({
 
   return (
     <header className="sticky top-0 z-30 border-b border-transparent bg-[rgba(31,31,34,0.86)] backdrop-blur-xl">
-      <div className="relative mx-auto flex max-w-[1480px] items-center justify-between gap-6 px-4 py-4 sm:px-[30px]">
+      <div className="relative flex w-full items-center justify-between gap-6 px-4 py-4 sm:px-7 2xl:px-12">
         {/* Left: brand + nav */}
         <div className="flex items-center gap-6 sm:gap-[38px]">
           <a
