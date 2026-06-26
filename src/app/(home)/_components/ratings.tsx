@@ -22,11 +22,6 @@ interface SizeProps {
   size?: 'sm' | 'md';
 }
 
-/** Compact "1.2k" / "24k" votes formatter. */
-function fmtVotes(n: number): string {
-  return n >= 1000 ? `${Math.round(n / 1000)}k` : `${n}`;
-}
-
 export function RatingsRow({
   imdbRating,
   imdbVotes,
@@ -34,6 +29,8 @@ export function RatingsRow({
   rtScore,
   size = 'sm',
 }: RatingsInput & SizeProps) {
+  // Vote count still gates IMDb visibility (a 9.5 with 3 votes is noise),
+  // but we no longer render the number to keep the chip tidy.
   const showImdb = imdbRating !== null && (imdbVotes ?? 0) > 0;
   const hasAny = showImdb || mcScore !== null || rtScore !== null;
   if (!hasAny) {
@@ -56,9 +53,7 @@ export function RatingsRow({
             width={big ? 28 : 22}
             height={big ? 16 : 12}
           />
-          <span className="font-semibold">
-            {imdbRating!.toFixed(1)} ({fmtVotes(imdbVotes!)})
-          </span>
+          <span className="font-semibold">{imdbRating!.toFixed(1)}</span>
         </span>
       ) : null}
       {mcScore !== null ? (
