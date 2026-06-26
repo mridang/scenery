@@ -87,9 +87,7 @@ function CarouselButton({
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
   const sideCls =
-    direction === 'prev'
-      ? 'left-3 sm:left-5'
-      : 'right-3 sm:right-5';
+    direction === 'prev' ? 'left-3 sm:left-5' : 'right-3 sm:right-5';
   const path =
     direction === 'prev' ? 'M14 6 L8 12 L14 18' : 'M10 6 L16 12 L10 18';
   return (
