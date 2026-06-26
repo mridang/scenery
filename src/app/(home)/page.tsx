@@ -210,8 +210,7 @@ function pickHeroSlate(
     (movie) => movie.row.poster_path || movie.row.backdrop_path,
   );
   const byNewest = [...withPoster].sort(
-    (a, b) =>
-      Date.parse(b.row.first_seen_at) - Date.parse(a.row.first_seen_at),
+    (a, b) => Date.parse(b.row.first_seen_at) - Date.parse(a.row.first_seen_at),
   );
   const recentWithTorrent = byNewest.filter(
     (movie) =>
