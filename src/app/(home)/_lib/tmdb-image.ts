@@ -49,12 +49,13 @@ export function posterUrl(
  *
  * @public
  */
-export type BackdropSize = 'w300' | 'w780' | 'w1280';
+export type BackdropSize = 'w300' | 'w780' | 'w1280' | 'w1920';
 
 const BACKDROP_WIDTHS: Record<BackdropSize, number> = {
   w300: 342, // closest poster width — also one the proxy permits
   w780: 780,
   w1280: 1280,
+  w1920: 1920, // covers 1× on ultra-wide; gives 2× headroom on most laptops
 };
 
 /**

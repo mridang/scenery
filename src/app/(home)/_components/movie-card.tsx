@@ -42,7 +42,10 @@ export function MovieCardUniform({ movie }: CardProps) {
   const { row, genres, cast, score, tier, studios } = movie;
   const title = row.tmdb_title ?? row.latest_release_title ?? row.imdb_id;
   const state = torrentState(movie);
-  const poster = posterUrl(row.poster_path, 'w342');
+  // Uniform cards render at ~200 CSS px wide; w500 keeps them sharp on
+  // 2× displays (~400 device px) with headroom for the wider columns that
+  // appear at large viewports.
+  const poster = posterUrl(row.poster_path, 'w500');
   const sColor = scoreColor(score, tier);
   const stColor = statusColor(state);
   const topRight = topRightLabel(state, row.best_quality);
@@ -175,7 +178,9 @@ export function MovieCardMosaic({ movie, big = false }: CardProps) {
   const { row, genres, cast, score, tier, studios } = movie;
   const title = row.tmdb_title ?? row.latest_release_title ?? row.imdb_id;
   const state = torrentState(movie);
-  const poster = posterUrl(row.poster_path, big ? 'w500' : 'w342');
+  // Mosaic tiles are ~168 CSS px (small) and ~336 CSS px (big). Pick the
+  // next-larger TMDB step so 2× / 3× displays don't have to upscale.
+  const poster = posterUrl(row.poster_path, big ? 'w780' : 'w500');
   const sColor = scoreColor(score, tier);
   const stColor = statusColor(state);
   const topRight = topRightLabel(state, row.best_quality);

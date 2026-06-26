@@ -44,7 +44,9 @@ export function ComingSoon({
 function ComingSoonRow({ movie }: { movie: ScoredMovie }) {
   const { row, genres, cast } = movie;
   const title = row.tmdb_title ?? row.latest_release_title ?? row.imdb_id;
-  const poster = posterUrl(row.poster_path, 'w185');
+  // Sidebar thumb is 58 CSS px → ~174 device px at 3×; w185 was right at
+  // the edge, w342 leaves a margin and stays crisp on retina laptops.
+  const poster = posterUrl(row.poster_path, 'w342');
   const genreLine = genres.slice(0, 2).join(', ');
   const credit = [
     row.director ? `Dir. ${row.director}` : null,

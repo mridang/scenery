@@ -91,7 +91,9 @@ function PlanRow({
 }) {
   const { row, score, tier } = movie;
   const title = row.tmdb_title ?? row.latest_release_title ?? row.imdb_id;
-  const poster = posterUrl(row.poster_path, 'w92');
+  // Plan rows have a 34 CSS-px thumb — w185 keeps it sharp on 3× phones
+  // and 2× desktops (the next step up from the previous w92).
+  const poster = posterUrl(row.poster_path, 'w185');
   const sColor = scoreColor(score, tier);
   const torrentLine = [
     row.best_quality,

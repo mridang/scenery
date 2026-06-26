@@ -20,10 +20,14 @@ export function Hero({ movie }: { movie: ScoredMovie | null }) {
   if (!movie) {
     return null;
   }
+  // Hero spans the full content width (up to ~1900 CSS px on wide
+  // viewports) and lives behind a dark gradient, so detail still reads at
+  // 2×. Request 1920 so retina laptops get a 1:1 mapping instead of
+  // upscaling the old 1280-wide variant.
   const backdrop = backdropUrl(
     movie.row.backdrop_path,
     movie.row.poster_path,
-    'w1280',
+    'w1920',
   );
   if (!backdrop) {
     return null;
