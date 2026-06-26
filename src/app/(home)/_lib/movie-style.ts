@@ -70,3 +70,27 @@ export function topRightLabel(
   }
   return state === 'pending' ? 'Pending' : 'No torrent';
 }
+
+/**
+ * SVG path under `/icons/` for the resolution badge of a given quality,
+ * or `null` if we don't have a matching badge. The text fallback in
+ * {@link topRightLabel} still covers anything missing here.
+ */
+export function qualityIconPath(quality: string | null): string | null {
+  if (quality === null) {
+    return null;
+  }
+  if (quality === '2160p') {
+    return '/icons/4k-ultra-hd.svg';
+  }
+  if (quality === '1440p') {
+    return '/icons/2k-quad-hd.svg';
+  }
+  if (quality === '1080p') {
+    return '/icons/1080p-full-hd.svg';
+  }
+  if (quality === '720p') {
+    return '/icons/720p-hd.svg';
+  }
+  return null;
+}

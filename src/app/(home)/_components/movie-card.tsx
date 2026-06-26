@@ -3,6 +3,7 @@ import type { ScoredMovie } from '../../../lib/catalog';
 import { formatRuntime } from '../_lib/format';
 import {
   gradeLabel,
+  qualityIconPath,
   scoreColor,
   statusColor,
   topRightLabel,
@@ -61,6 +62,7 @@ export function MovieCardUniform({ movie }: CardProps) {
           .join('  ·  ')
       : '';
   const grayscale = state !== 'torrent';
+  const qualityIcon = qualityIconPath(row.best_quality);
 
   return (
     <a
@@ -89,13 +91,23 @@ export function MovieCardUniform({ movie }: CardProps) {
           </span>
         </div>
 
-        <div className="absolute top-[10px] right-[10px] flex items-center gap-[6px] rounded-[8px] border border-transparent bg-[rgba(9,9,11,0.66)] px-[9px] py-[5px] font-mono text-[10px] font-medium text-[#d4d4d8] backdrop-blur">
-          <span
-            className="inline-block h-[6px] w-[6px] rounded-full"
-            style={{ background: stColor }}
+        {qualityIcon ? (
+          <img
+            src={qualityIcon}
+            alt={row.best_quality ?? ''}
+            width={48}
+            height={35}
+            className="absolute top-[10px] right-[10px] block h-[26px] w-auto rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,0.5)]"
           />
-          {topRight}
-        </div>
+        ) : (
+          <div className="absolute top-[10px] right-[10px] flex items-center gap-[6px] rounded-[8px] border border-transparent bg-[rgba(9,9,11,0.66)] px-[9px] py-[5px] font-mono text-[10px] font-medium text-[#d4d4d8] backdrop-blur">
+            <span
+              className="inline-block h-[6px] w-[6px] rounded-full"
+              style={{ background: stColor }}
+            />
+            {topRight}
+          </div>
+        )}
 
         {studios.length > 0 ? (
           <div className="absolute right-[10px] bottom-[10px] left-[10px] flex flex-wrap gap-[5px]">
@@ -176,6 +188,7 @@ export function MovieCardMosaic({ movie, big = false }: CardProps) {
     .filter(Boolean)
     .join('  ·  ');
   const grayscale = state !== 'torrent';
+  const qualityIcon = qualityIconPath(row.best_quality);
 
   return (
     <a
@@ -204,13 +217,23 @@ export function MovieCardMosaic({ movie, big = false }: CardProps) {
         </span>
       </div>
 
-      <div className="absolute top-[9px] right-[9px] flex items-center gap-[5px] rounded-[8px] bg-[rgba(9,9,11,0.6)] px-2 py-1 font-mono text-[9.5px] text-[#d4d4d8] backdrop-blur">
-        <span
-          className="inline-block h-[6px] w-[6px] rounded-full"
-          style={{ background: stColor }}
+      {qualityIcon ? (
+        <img
+          src={qualityIcon}
+          alt={row.best_quality ?? ''}
+          width={big ? 60 : 44}
+          height={big ? 44 : 32}
+          className={`absolute top-[9px] right-[9px] block w-auto rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,0.5)] ${big ? 'h-[32px]' : 'h-[24px]'}`}
         />
-        {topRight}
-      </div>
+      ) : (
+        <div className="absolute top-[9px] right-[9px] flex items-center gap-[5px] rounded-[8px] bg-[rgba(9,9,11,0.6)] px-2 py-1 font-mono text-[9.5px] text-[#d4d4d8] backdrop-blur">
+          <span
+            className="inline-block h-[6px] w-[6px] rounded-full"
+            style={{ background: stColor }}
+          />
+          {topRight}
+        </div>
+      )}
 
       <div className="absolute right-0 bottom-0 left-0 flex flex-col gap-[4px] p-[13px]">
         {studios.length > 0 ? (
