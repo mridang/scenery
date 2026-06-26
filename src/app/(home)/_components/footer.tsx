@@ -75,15 +75,8 @@ export function Footer({
             {DATA_SOURCES.map((source) => (
               <span
                 key={source.domain}
-                className="inline-flex items-center gap-[7px] rounded-[8px] bg-white/5 px-[11px] py-[6px] font-mono text-[11.5px] text-[#c4c4cc]"
+                className="inline-flex items-center rounded-[8px] bg-white/5 px-[11px] py-[6px] font-mono text-[11.5px] text-[#c4c4cc]"
               >
-                <img
-                  src={`https://www.google.com/s2/favicons?domain=${source.domain}&sz=64`}
-                  alt=""
-                  width={15}
-                  height={15}
-                  className="block flex-none rounded-[3px]"
-                />
                 {source.label}
               </span>
             ))}

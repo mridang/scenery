@@ -20,7 +20,9 @@ export const ALLOWED_HOSTS: ReadonlySet<string> = new Set(['image.tmdb.org']);
  * integer to inflate Cloudflare's variant cache.
  * @public
  */
-export const ALLOWED_WIDTHS: readonly number[] = [92, 154, 185, 342, 500, 780];
+export const ALLOWED_WIDTHS: readonly number[] = [
+  92, 154, 185, 342, 500, 780, 1280,
+];
 
 /** Default width when a caller omits it. @public */
 export const DEFAULT_WIDTH = 185;
