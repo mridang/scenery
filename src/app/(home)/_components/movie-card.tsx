@@ -5,7 +5,6 @@ import { formatRuntime } from '../_lib/format';
 import {
   gradeLabel,
   qualityIconPath,
-  scoreColor,
   statusColor,
   topRightLabel,
   torrentState,
@@ -47,7 +46,6 @@ export function MovieCardUniform({ movie }: CardProps) {
   // 2× displays (~400 device px) with headroom for the wider columns that
   // appear at large viewports.
   const poster = posterUrl(row.poster_path, 'w500');
-  const sColor = scoreColor(score, tier);
   const stColor = statusColor(state);
   const topRight = topRightLabel(state, row.best_quality);
   const runtime = formatRuntime(row.runtime);
@@ -95,15 +93,6 @@ export function MovieCardUniform({ movie }: CardProps) {
           />
         ) : null}
         <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(9,9,11,0.88)_0%,rgba(9,9,11,0.12)_32%,rgba(9,9,11,0)_54%)]" />
-
-        <div className="absolute top-[10px] left-[10px] flex items-center gap-[6px] rounded-[9px] border border-transparent bg-[rgba(9,9,11,0.66)] py-[5px] pr-2 pl-[6px] font-mono leading-none backdrop-blur">
-          <span className="text-[15px] font-semibold" style={{ color: sColor }}>
-            {Math.round(score)}
-          </span>
-          <span className="text-[9px] font-medium tracking-[0.06em] text-[#a1a1aa]">
-            {gradeLabel(tier)}
-          </span>
-        </div>
 
         {qualityIcon ? (
           magnetHref ? (
@@ -179,6 +168,8 @@ export function MovieCardUniform({ movie }: CardProps) {
           <div className="truncate text-[11px] text-[#8a8a94]">{castLine}</div>
         ) : null}
         <RatingsRow
+          sceneryScore={score}
+          sceneryTier={tier}
           imdbRating={row.imdb_rating ?? row.vote_average}
           imdbVotes={row.imdb_votes ?? row.vote_count}
           mcScore={row.metacritic_score}
@@ -209,7 +200,6 @@ export function MovieCardMosaic({ movie, big = false }: CardProps) {
   // Mosaic tiles are ~168 CSS px (small) and ~336 CSS px (big). Pick the
   // next-larger TMDB step so 2× / 3× displays don't have to upscale.
   const poster = posterUrl(row.poster_path, big ? 'w780' : 'w500');
-  const sColor = scoreColor(score, tier);
   const stColor = statusColor(state);
   const topRight = topRightLabel(state, row.best_quality);
   const runtime = formatRuntime(row.runtime);
@@ -250,15 +240,6 @@ export function MovieCardMosaic({ movie, big = false }: CardProps) {
         />
       ) : null}
       <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(9,9,11,0.97)_0%,rgba(9,9,11,0.88)_30%,rgba(9,9,11,0.5)_56%,rgba(9,9,11,0)_82%)]" />
-
-      <div className="absolute top-[9px] left-[9px] flex items-center gap-[5px] rounded-[8px] bg-[rgba(9,9,11,0.6)] px-2 py-1 font-mono leading-none backdrop-blur">
-        <span className="text-[14px] font-semibold" style={{ color: sColor }}>
-          {Math.round(score)}
-        </span>
-        <span className="text-[8.5px] font-medium tracking-[0.06em] text-[#a1a1aa]">
-          {gradeLabel(tier)}
-        </span>
-      </div>
 
       {qualityIcon ? (
         magnetHref ? (
@@ -325,6 +306,8 @@ export function MovieCardMosaic({ movie, big = false }: CardProps) {
           </div>
         ) : null}
         <RatingsRow
+          sceneryScore={score}
+          sceneryTier={tier}
           imdbRating={row.imdb_rating ?? row.vote_average}
           imdbVotes={row.imdb_votes ?? row.vote_count}
           mcScore={row.metacritic_score}

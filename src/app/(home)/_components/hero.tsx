@@ -34,7 +34,7 @@ export function Hero({ movie }: { movie: ScoredMovie | null }) {
     return null;
   }
 
-  const { row, genres, cast } = movie;
+  const { row, genres, cast, score, tier } = movie;
   const title = row.tmdb_title ?? row.latest_release_title ?? row.imdb_id;
   const runtime = formatRuntime(row.runtime);
   const metaLine = [...genres, runtime].filter(Boolean).join('  ·  ');
@@ -86,6 +86,8 @@ export function Hero({ movie }: { movie: ScoredMovie | null }) {
           </div>
         ) : null}
         <RatingsRow
+          sceneryScore={score}
+          sceneryTier={tier}
           imdbRating={row.imdb_rating ?? row.vote_average}
           imdbVotes={row.imdb_votes ?? row.vote_count}
           mcScore={row.metacritic_score}
