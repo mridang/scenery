@@ -21,13 +21,14 @@ export function Hero({ movie }: { movie: ScoredMovie | null }) {
     return null;
   }
   // Hero spans the full content width (up to ~1900 CSS px on wide
-  // viewports) and lives behind a dark gradient, so detail still reads at
-  // 2×. Request 1920 so retina laptops get a 1:1 mapping instead of
-  // upscaling the old 1280-wide variant.
+  // viewports) so a 2× Retina laptop needs ~3800 device pixels. Asking
+  // for 3840 keeps it razor-sharp; the dark gradient hides the bandwidth
+  // cost. Cloudflare's resizer caps at the source size, so a smaller
+  // TMDB backdrop just comes back at its native max.
   const backdrop = backdropUrl(
     movie.row.backdrop_path,
     movie.row.poster_path,
-    'w1920',
+    'w3840',
   );
   if (!backdrop) {
     return null;

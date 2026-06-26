@@ -21,7 +21,7 @@ export const ALLOWED_HOSTS: ReadonlySet<string> = new Set(['image.tmdb.org']);
  * @public
  */
 export const ALLOWED_WIDTHS: readonly number[] = [
-  92, 154, 185, 342, 500, 780, 1280, 1920,
+  92, 154, 185, 342, 500, 780, 1280, 1920, 2560, 3840,
 ];
 
 /** Default width when a caller omits it. @public */
