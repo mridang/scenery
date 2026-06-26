@@ -6,7 +6,7 @@
       <stop offset="1" stop-color="#E5A100"/>
     </linearGradient>
   </defs>
-  <rect x="6" y="6" width="348" height="248" rx="10" fill="url(#goldPlate)"/>
+  <rect x="0" y="0" width="360" height="260" rx="10" fill="url(#goldPlate)"/>
   <path d="M26,174 L26,36 Q26,26 36,26 L324,26 Q334,26 334,36 L334,174 Z" fill="#2B2A28"/>
   <text x="180" y="137" text-anchor="middle" fill="#F2B705" font-family="'Montserrat', Arial, sans-serif" font-weight="800" font-size="104" letter-spacing="-2">720p</text>
   <text x="180" y="228" text-anchor="middle" fill="#1A1A1A" font-family="Arial, 'Archivo', sans-serif" font-size="46" letter-spacing="1" font-weight="800">HD</text>
