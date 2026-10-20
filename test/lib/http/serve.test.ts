@@ -49,14 +49,12 @@ describe('serve', () => {
     expect(seen[0]?.headers.get('x-nonce')).not.toBe('EVIL');
   });
 
-  it('sends a page with the policy of its nonce, the report-only policy and the security headers', async () => {
+  it('sends a page with the policy of its nonce and the security headers', async () => {
     const { app, seen } = appAnswering(html);
     const out = await serve(get(), {}, ctx, { app });
     const csp = out.headers.get('content-security-policy') ?? '';
     expect(nonceOf(csp)).toBe(seen[0]?.headers.get('x-nonce'));
-    expect(out.headers.get('content-security-policy-report-only')).toContain(
-      "require-trusted-types-for 'script'",
-    );
+    expect(out.headers.has('content-security-policy-report-only')).toBe(false);
     expect(out.headers.get('x-content-type-options')).toBe('nosniff');
     expect(out.headers.get('cross-origin-opener-policy')).toBe('same-origin');
   });

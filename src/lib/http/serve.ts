@@ -13,14 +13,8 @@
  *  4. whatever goes back carries the site's security and cache headers.
  */
 
-import {
-  buildCsp,
-  buildReportOnlyCsp,
-  forwardedHeaders,
-  newNonce,
-} from './csp';
+import { buildCsp, forwardedHeaders, newNonce } from './csp';
 import { applyResponseHeaders, replacingHeaders } from './headers';
-import { REPORT_ONLY_HEADER } from './reporting';
 
 /** The app that answers requests: the generated OpenNext handler. */
 export interface ServeApp {
@@ -63,11 +57,7 @@ export async function serve(
   );
   const response =
     isHtml && !fetched.headers.has('content-security-policy')
-      ? withHeader(
-          withHeader(fetched, 'Content-Security-Policy', csp),
-          REPORT_ONLY_HEADER,
-          buildReportOnlyCsp(),
-        )
+      ? withHeader(fetched, 'Content-Security-Policy', csp)
       : fetched;
   return applyResponseHeaders(request, response);
 }
