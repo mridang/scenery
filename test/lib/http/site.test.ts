@@ -14,15 +14,19 @@ describe('site settings', () => {
   });
 
   it.each([
-    '/favicon.ico',
-    '/favicon-32x32.png',
-    '/android-chrome-192x192.png',
-    '/apple-touch-icon.png',
-    '/icon.png',
+    '/opengraph-image.png',
+    '/twitter-image.png',
     '/icon.svg',
-    '/site.webmanifest',
+    '/apple-icon.png',
+    '/favicon.ico',
+    '/manifest.webmanifest',
+    '/robots.txt',
+    '/sitemap.xml',
     '/feed.xml',
+    '/llms.txt',
+    '/security-policy.txt',
     '/icons/icon-192.png',
+    '/.well-known/security.txt',
   ])('opens %s to other sites', (path) => {
     expect(OPEN_FILES.test(path)).toBe(true);
   });
@@ -34,17 +38,14 @@ describe('site settings', () => {
     },
   );
 
-  it('lets every icon and the manifest be cached for a day', () => {
+  it('lets the social cards, the icons and the manifest be cached for a day', () => {
     expect([...RARELY_CHANGING].sort()).toEqual([
-      '/android-chrome-192x192.png',
-      '/android-chrome-512x512.png',
-      '/apple-touch-icon.png',
-      '/favicon-16x16.png',
-      '/favicon-32x32.png',
+      '/apple-icon.png',
       '/favicon.ico',
-      '/icon.png',
       '/icon.svg',
-      '/site.webmanifest',
+      '/manifest.webmanifest',
+      '/opengraph-image.png',
+      '/twitter-image.png',
     ]);
   });
 

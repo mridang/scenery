@@ -13,23 +13,21 @@
 export const PUBLIC_PAGES: ReadonlySet<string> = new Set();
 
 /**
- * The files other sites and browsers fetch on purpose (icons, the manifest,
- * the feed), which any site may load.
+ * The files other sites and browsers fetch on purpose (the social cards, the
+ * icons, the manifest, the feed and the plain-text files at the root), which
+ * any site may load and which are not marked noindex.
  */
 export const OPEN_FILES =
-  /^\/(favicon\.ico|favicon-\d+x\d+\.png|android-chrome-\d+x\d+\.png|apple-touch-icon\.png|icon\.png|icon\.svg|site\.webmanifest|feed\.xml|icons\/.*)$/;
+  /^\/(opengraph-image\.png|twitter-image\.png|icon\.svg|apple-icon\.png|favicon\.ico|manifest\.webmanifest|robots\.txt|sitemap\.xml|feed\.xml|llms\.txt|security-policy\.txt|\.well-known\/.*|icons\/.*)$/;
 
 /** The small files that rarely change, and for which a stale copy is harmless. */
 export const RARELY_CHANGING: ReadonlySet<string> = new Set([
-  '/site.webmanifest',
+  '/manifest.webmanifest',
   '/icon.svg',
-  '/icon.png',
-  '/apple-touch-icon.png',
+  '/apple-icon.png',
   '/favicon.ico',
-  '/favicon-16x16.png',
-  '/favicon-32x32.png',
-  '/android-chrome-192x192.png',
-  '/android-chrome-512x512.png',
+  '/opengraph-image.png',
+  '/twitter-image.png',
 ]);
 
 /**
