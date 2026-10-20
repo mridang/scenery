@@ -1,0 +1,15 @@
+# scenery
+
+> scenery is a scored, ranked tracker of new movie releases. It enriches each release from TMDB and OMDb, scores it on prestige and quality signals, finds the best torrent for it and plans a 1 TB download.
+
+scenery is a private, single-page web app at https://scenery.apps.mrida.ng. It is not meant to be indexed, so only the pages below are meant to be read by crawlers.
+
+## Public pages
+
+- [Home](https://scenery.apps.mrida.ng/): the ranked list of new movie releases.
+- [Feed](https://scenery.apps.mrida.ng/feed.xml): the same list as an RSS feed.
+
+## Optional
+
+- [Security contact](https://scenery.apps.mrida.ng/.well-known/security.txt): how to report a vulnerability.
+- [Security policy](https://scenery.apps.mrida.ng/security-policy.txt): what to expect when you do.
