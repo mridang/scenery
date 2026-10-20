@@ -34,10 +34,10 @@ export const RARELY_CHANGING: ReadonlySet<string> = new Set([
 /**
  * The outside places pages may load pictures from, besides this site (`'self'`)
  * and inline `data:` pictures.
- * Posters come through this site's own `/api/img` and the pages draw their
- * icons inline; only `blob:` pictures (made in the browser) are added.
+ * None: posters come through this site's own `/api/img` and the pages draw
+ * their icons inline.
  */
-export const EXTRA_IMG_SOURCES: readonly string[] = ['blob:'];
+export const EXTRA_IMG_SOURCES: readonly string[] = [];
 
 /**
  * Directives only this app adds to its policy.

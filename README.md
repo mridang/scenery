@@ -45,7 +45,7 @@ The home page ranks everything top to bottom by score as a download queue, with 
 | `/api/cron`          | Manual pipeline trigger, gated by `CRON_SECRET` as a bearer token                     |
 | `/api/push/*`        | Web Push: `key`, `subscribe`, `unsubscribe`, and `trigger` (runs the notify workflow) |
 | `/api/omdb/backfill` | `POST`: fills in OMDB ratings for movies that lack them (`?limit=N`, at most 200)     |
-| `/api/img`           | Image proxy redirect, TMDB images only                                                |
+| `/api/img`           | Image proxy: scales and caches TMDB images (`?url=&w=`)                               |
 | `/api/csp-reports`   | Receives Content Security Policy violation reports                                    |
 
 The security headers and the nonce-based Content Security Policy are added by the Worker itself (`src/lib/http`), not by Next.js.

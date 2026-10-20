@@ -48,8 +48,8 @@ describe('site settings', () => {
     ]);
   });
 
-  it('adds only blob: pictures to the ones from this site', () => {
-    expect(EXTRA_IMG_SOURCES).toEqual(['blob:']);
+  it('adds no outside picture sources: every picture comes through this site', () => {
+    expect(EXTRA_IMG_SOURCES).toEqual([]);
   });
 
   it('lets style attributes, and only attributes, be inline', () => {

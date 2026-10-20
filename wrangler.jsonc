@@ -50,6 +50,12 @@
       "migrations_dir": "migrations",
     },
   ],
+  // Scales remote pictures down (and re-encodes them as WebP) in the Worker, for
+  // the /api/img proxy. Needs no zone setting. Free monthly allowance; see
+  // src/lib/images/proxy.ts.
+  "images": {
+    "binding": "IMAGES",
+  },
   "triggers": {
     // 06:00 UTC — daily scrape + per-movie dispatch.
     // 17:00 UTC — daily push notification (top-5 new movies).

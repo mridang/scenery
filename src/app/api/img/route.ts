@@ -1,53 +1,35 @@
-import { buildOptimizedUrl, DEFAULT_WIDTH } from '../../../lib/img';
+/**
+ * Pictures from other websites, served from our own address (see
+ * `lib/images/address.ts` for why).
+ *
+ *   GET /api/img?url=<picture address>&w=<width>
+ *
+ * Who may ask, and for what, is each app's own rule (`lib/images/access.ts`),
+ * so it can't become a free image proxy for the web. Answers come from the
+ * edge cache when they can, and a browser keeps them for a month.
+ */
 
-export const dynamic = 'force-dynamic';
-
-const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
+import * as access from '@/lib/images/access';
+import {
+  imageCache,
+  imagesBinding,
+  runInBackground,
+} from '@/lib/images/runtime';
+import { serveImage } from '@/lib/images/service';
 
 /**
- * Generic, abuse-preventable image-proxy redirect.
- *
- * Accepts:
- *   - `src` — fully-qualified HTTPS URL whose host must be in
- *     `ALLOWED_HOSTS` (currently `image.tmdb.org`).
- *   - `w`   — render width; must be one of `ALLOWED_WIDTHS`. Restricting
- *     to a small set prevents cache-pollution by enumerating widths.
- *
- * Returns:
- *   - `301 Moved Permanently` to `/cdn-cgi/image/.../{src}` so the
- *     browser caches the redirect and subsequent loads skip the route
- *     entirely. Cloudflare's image resizer then serves the actual bytes
- *     with its own caching.
- *
- * The page never embeds external image URLs directly — every poster
- * (and future media) goes via this route — which is what lets the CSP
- * lock `img-src` down to `'self'`.
+ * `GET /api/img?url=…&w=…`: the picture at `url`, scaled to the nearest
+ * allowed width and kept at the edge. Answers 200 with the image (304 when the
+ * browser's copy is current), 400 for an address that is not a public image,
+ * 403 when the app does not serve it to this caller, 404 when its site no
+ * longer has it, 413 when it is too large, 415 when it is not a raster image
+ * and 502 when its site fails. Errors are short plain text that no cache keeps.
  */
-export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const src = url.searchParams.get('src');
-  const widthParam = url.searchParams.get('w');
-  if (src === null) {
-    return Response.json({ ok: false, error: 'missing src' }, { status: 400 });
-  }
-  const requestedWidth = widthParam
-    ? Number.parseInt(widthParam, 10)
-    : DEFAULT_WIDTH;
-  const target = buildOptimizedUrl({ src, width: requestedWidth });
-  if (target === null) {
-    return Response.json(
-      { ok: false, error: 'rejected: host or width not allowed' },
-      { status: 400 },
-    );
-  }
-  // Permanent redirect with a long immutable cache. The combination of
-  // (src, width) fully determines the response, so the browser and CDN
-  // can re-use the redirect freely.
-  return new Response(null, {
-    status: 301,
-    headers: {
-      Location: target,
-      'Cache-Control': `public, max-age=${ONE_YEAR_SECONDS}, immutable`,
-    },
+export async function GET(request: Request): Promise<Response> {
+  return serveImage(request, {
+    access,
+    cache: imageCache(),
+    images: imagesBinding(),
+    background: runInBackground,
   });
 }

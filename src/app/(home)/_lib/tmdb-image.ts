@@ -1,11 +1,12 @@
 /**
  * Same-origin TMDB image URL builders. Every poster and backdrop on the
- * page is funneled through the `/api/img` proxy (which redirects to
- * Cloudflare Image Resizing), so the strict CSP can keep `img-src` at
- * `'self'`. Picking the right pixel width here keeps page weight tight:
- * the smallest size that still looks crisp at the slot wins.
+ * page is funneled through the `/api/img` proxy (which scales it with the
+ * Cloudflare Images binding and keeps a copy at the edge), so the strict
+ * CSP can keep `img-src` at `'self'`. Picking the right pixel width here
+ * keeps page weight tight: the smallest size that still looks crisp at the
+ * slot wins.
  */
-import { buildProxyUrl } from '../../../lib/img';
+import { imageSrc } from '../../../lib/images/address';
 
 /** TMDB size token → integer pixel width the proxy understands. */
 const POSTER_WIDTHS = {
@@ -26,8 +27,7 @@ export type PosterSize = keyof typeof POSTER_WIDTHS;
 
 /**
  * Build a same-origin poster URL routed through `/api/img`, or `null` if
- * there's no poster path. The returned URL is a relative path; the proxy
- * redirects to Cloudflare's image resizer.
+ * there's no poster path. The returned URL is a relative path.
  *
  * @public
  */
@@ -39,7 +39,7 @@ export function posterUrl(
     return null;
   }
   const src = `https://image.tmdb.org/t/p/original${posterPath}`;
-  return buildProxyUrl(src, POSTER_WIDTHS[size]);
+  return imageSrc(src, POSTER_WIDTHS[size]);
 }
 
 /**
@@ -84,5 +84,5 @@ export function backdropUrl(
     return null;
   }
   const src = `https://image.tmdb.org/t/p/original${path}`;
-  return buildProxyUrl(src, BACKDROP_WIDTHS[size]);
+  return imageSrc(src, BACKDROP_WIDTHS[size]);
 }
