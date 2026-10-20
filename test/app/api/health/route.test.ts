@@ -1,63 +1,58 @@
-import { beforeAll, describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import { APP_MIGRATIONS } from '../../../lib/db/migrations';
-import { sqliteD1 } from '../../../lib/db/sqlite-d1';
-
-let d1: D1Database;
-
-beforeAll(() => {
-  d1 = sqliteD1(...APP_MIGRATIONS).d1;
-});
+/** What the mocked parts of the app answer. */
+const app = {
+  bound: true,
+  health: { ok: true, details: {} as Record<string, unknown> },
+};
 
 jest.unstable_mockModule('../../../../src/lib/util', () => ({
-  getDB: () => d1,
-  getEnv: () => ({}),
-  logInfo: () => undefined,
-  logWarn: () => undefined,
-  logError: () => undefined,
-  safeJsonParse: () => ({ ok: false, error: 'stub' }),
+  isDatabaseBound: () => app.bound,
+}));
+
+jest.unstable_mockModule('../../../../src/lib/health', () => ({
+  appHealth: async () => app.health,
 }));
 
 const { GET } = await import('../../../../src/app/api/health/route');
 
-interface HealthBody {
-  readonly ok: boolean;
-  readonly movies: number;
-  readonly last_scrape_source: string | null;
-  readonly last_scrape_at: string | null;
-  readonly stale_threshold_ms: number;
-}
+beforeEach(() => {
+  app.bound = true;
+  app.health = { ok: true, details: {} };
+});
 
 describe('GET /api/health', () => {
-  // Runs first, against the freshly-migrated (empty) database.
-  it('returns 503 / ok:false when the catalog is empty and stale', async () => {
-    const res = await GET();
-    expect(res.status).toBe(503);
-    const body = (await res.json()) as HealthBody;
-    expect(body.ok).toBe(false);
-    expect(body.movies).toBe(0);
-    expect(body.last_scrape_at).toBeNull();
-    expect(body.stale_threshold_ms).toBeGreaterThan(0);
-  });
-
-  it('returns 200 / ok:true after a recent scrape snapshot', async () => {
-    const src = (await d1
-      .prepare("SELECT id FROM sources WHERE slug = 'scnsrc'")
-      .first()) as { id: number };
-    await d1
-      .prepare(
-        `INSERT INTO page_snapshots
-           (source_id, page_number, page_url, fetched_at, fetcher, html, byte_size)
-         VALUES (?, 1, 'https://example.test/1', ?, 'test', '<html></html>', 13)`,
-      )
-      .bind(src.id, new Date().toISOString())
-      .run();
-
+  it('answers 200 with ok, the database binding and a timestamp', async () => {
     const res = await GET();
     expect(res.status).toBe(200);
-    const body = (await res.json()) as HealthBody;
+    const body = (await res.json()) as { ok: boolean; db: boolean; ts: string };
     expect(body.ok).toBe(true);
-    expect(body.last_scrape_source).toBe('scnsrc');
-    expect(body.last_scrape_at).not.toBeNull();
+    expect(body.db).toBe(true);
+    expect(new Date(body.ts).toISOString()).toBe(body.ts);
+  });
+
+  it('is never cached', async () => {
+    expect((await GET()).headers.get('cache-control')).toBe('no-store');
+  });
+
+  it('reports the database as missing, without failing', async () => {
+    app.bound = false;
+    const res = await GET();
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { db: boolean }).db).toBe(false);
+  });
+
+  it('adds what the app reports about itself to the body', async () => {
+    app.health = { ok: true, details: { movies: 3 } };
+    expect(((await (await GET()).json()) as { movies: number }).movies).toBe(3);
+  });
+
+  it('answers 503 when the app says it is not healthy', async () => {
+    app.health = { ok: false, details: { stale: true } };
+    const res = await GET();
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { ok: boolean; stale: boolean };
+    expect(body).toMatchObject({ ok: false, stale: true });
+    expect(res.headers.get('cache-control')).toBe('no-store');
   });
 });

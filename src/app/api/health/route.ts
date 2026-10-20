@@ -1,44 +1,32 @@
-import { CatalogService } from '../../../lib/catalog';
-import { getDB } from '../../../lib/util';
+/**
+ * Minimal health endpoint for uptime monitors.
+ *
+ *   GET /api/health → 200 { ok, db, ts }, or 503 when the app's own check fails
+ */
 
+import { appHealth } from '@/lib/health';
+import { isDatabaseBound } from '@/lib/util';
+
+/** Never prerender or cache this route: the answer must reflect right now. */
 export const dynamic = 'force-dynamic';
 
-const STALE_THRESHOLD_MS = 48 * 60 * 60 * 1000;
-
 /**
- * Minimal health endpoint for uptime monitors and the staleness check.
- * Returns 200 + JSON when the catalog has at least one snapshot in the
- * last 48 h; returns 503 + JSON otherwise.
+ * `GET /api/health`: reports whether the D1 binding is reachable from the
+ * current request context, and whatever else the app checks about itself
+ * (`lib/health.ts`, which adds fields to the body and can turn the answer into
+ * a 503). Needs no sign-in: the monitor wants to know the Worker is up, and a
+ * missing database binding is reported in the body (`db: false`) rather than
+ * failing the check.
  */
-export async function GET() {
-  const db = getDB();
-  const catalog = CatalogService.fromD1(db);
-  const [stats, last] = await Promise.all([
-    catalog.stats(),
-    catalog.lastUpdate(),
-  ]);
-  const nowMs = Date.now();
-  const scrapeAgeMs =
-    last.scrapeAt !== null ? nowMs - Date.parse(last.scrapeAt) : null;
-  const stale = scrapeAgeMs === null || scrapeAgeMs > STALE_THRESHOLD_MS;
-  const body = {
-    ok: !stale,
-    movies: stats.movies,
-    releases: stats.releases,
-    tmdb_found: stats.tmdb_found,
-    failed_attempts: stats.failed_attempts,
-    last_scrape_at: last.scrapeAt,
-    last_scrape_source: last.scrapeSource,
-    last_scrape_age_ms: scrapeAgeMs,
-    last_enrich_at: last.enrichAt,
-    last_torrent_at: last.torrentsAt,
-    last_torrent_provider: last.torrentsProvider,
-    stale_threshold_ms: STALE_THRESHOLD_MS,
-  };
-  return Response.json(body, {
-    status: stale ? 503 : 200,
-    headers: {
-      'Cache-Control': 'no-store',
+export async function GET(): Promise<Response> {
+  const app = await appHealth();
+  return Response.json(
+    {
+      ok: app.ok,
+      db: isDatabaseBound(),
+      ts: new Date().toISOString(),
+      ...app.details,
     },
-  });
+    { status: app.ok ? 200 : 503, headers: { 'Cache-Control': 'no-store' } },
+  );
 }

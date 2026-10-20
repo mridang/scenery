@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-import { logError, logInfo, logWarn } from '../../../src/lib/util/logging';
+import {
+  errorMessage,
+  logError,
+  logInfo,
+  logWarn,
+} from '../../../src/lib/util/logging';
 
 type ConsoleSpy = jest.SpiedFunction<typeof console.log>;
 
@@ -83,5 +88,13 @@ describe('structured logging', () => {
     const parsed = firstRecord(log);
     expect(parsed['count']).toBe(3);
     expect(parsed['nested']).toEqual({ a: 1 });
+  });
+});
+
+describe('errorMessage', () => {
+  it('gives the message of an Error and the text of anything else', () => {
+    expect(errorMessage(new Error('boom'))).toBe('boom');
+    expect(errorMessage('plain')).toBe('plain');
+    expect(errorMessage(42)).toBe('42');
   });
 });

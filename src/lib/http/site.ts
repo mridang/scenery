@@ -1,11 +1,12 @@
 /**
  * @packageDocumentation
  *
- * What differs from one app to the next in the shared HTTP security code
- * (`headers.ts`, `csp.ts`): the pages search engines may index, the files other
- * sites may load, the small files that may be cached for a day, and the few
- * outside places and extra rules a page's policy needs. Everything else in
- * those files is the same in every app.
+ * What differs from one app to the next in the shared HTTP code (`headers.ts`,
+ * `csp.ts`, `edge-limits.ts`, `edge-cache.ts`): the pages search engines may
+ * index (and the edge may keep a copy of), the files other sites may load, the
+ * small files that may be cached for a day, the files the edge limits do not
+ * count or count as discovery, and the few outside places and extra rules a
+ * page's policy needs. Everything else in those files is the same in every app.
  */
 
 /** The pages search engines may index. The whole site is private, so none. */
@@ -48,3 +49,15 @@ export const EXTRA_IMG_SOURCES: readonly string[] = [];
 export const EXTRA_DIRECTIVES: readonly string[] = [
   "style-src-attr 'unsafe-inline'",
 ];
+
+/** Paths served as static files: nothing to protect, and a page loads dozens of them. */
+export const STATIC_PREFIXES: readonly string[] = ['/_next/', '/icons/'];
+
+/** The files at the root that are read by crawlers and installers and cost nothing to serve. */
+export const DISCOVERY_PATHS: ReadonlySet<string> = new Set([
+  '/robots.txt',
+  '/sitemap.xml',
+  '/manifest.webmanifest',
+  '/feed.xml',
+  '/api/health',
+]);
