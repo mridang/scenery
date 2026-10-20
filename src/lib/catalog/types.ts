@@ -1,4 +1,4 @@
-import type { LookupStatus, Quality, TmdbStatus } from '../db';
+import type { LookupStatus, Quality, TmdbStatus } from '../db/enums';
 
 /**
  * Storage budget for {@link CatalogService} plan view, in bytes (1 TB).

@@ -6,18 +6,18 @@
  * Drizzle handles the typing so the column names match the migration.
  */
 
-import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 
-import { push_subscriptions } from '../db/schema';
+import { createDatabase, type Database } from '../db/client';
+import { pushSubscriptions } from '../db/schema';
 import type { PushSubscriptionRecord } from './types';
 
 /** Insert + read + delete operations over the `push_subscriptions` table. @public */
 export class PushSubscriptionRepository {
-  private readonly db: ReturnType<typeof drizzle>;
+  private readonly db: Database;
 
   public constructor(d1: D1Database) {
-    this.db = drizzle(d1);
+    this.db = createDatabase(d1);
   }
 
   /**
@@ -30,7 +30,7 @@ export class PushSubscriptionRepository {
     nowIso: string,
   ): Promise<void> {
     await this.db
-      .insert(push_subscriptions)
+      .insert(pushSubscriptions)
       .values({
         endpoint: record.endpoint,
         p256dh: record.p256dh,
@@ -38,7 +38,7 @@ export class PushSubscriptionRepository {
         created_at: nowIso,
       })
       .onConflictDoUpdate({
-        target: push_subscriptions.endpoint,
+        target: pushSubscriptions.endpoint,
         set: { p256dh: record.p256dh, auth: record.auth },
       });
   }
@@ -47,25 +47,25 @@ export class PushSubscriptionRepository {
   public async listAll(): Promise<readonly PushSubscriptionRecord[]> {
     return this.db
       .select({
-        endpoint: push_subscriptions.endpoint,
-        p256dh: push_subscriptions.p256dh,
-        auth: push_subscriptions.auth,
+        endpoint: pushSubscriptions.endpoint,
+        p256dh: pushSubscriptions.p256dh,
+        auth: pushSubscriptions.auth,
       })
-      .from(push_subscriptions);
+      .from(pushSubscriptions);
   }
 
   /** Drop the row keyed by `endpoint`. Idempotent. */
   public async remove(endpoint: string): Promise<void> {
     await this.db
-      .delete(push_subscriptions)
-      .where(eq(push_subscriptions.endpoint, endpoint));
+      .delete(pushSubscriptions)
+      .where(eq(pushSubscriptions.endpoint, endpoint));
   }
 
   /** Stamp the most-recent send time for a subscription. */
   public async markSent(endpoint: string, nowIso: string): Promise<void> {
     await this.db
-      .update(push_subscriptions)
+      .update(pushSubscriptions)
       .set({ last_sent_at: nowIso })
-      .where(eq(push_subscriptions.endpoint, endpoint));
+      .where(eq(pushSubscriptions.endpoint, endpoint));
   }
 }

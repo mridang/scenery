@@ -1,13 +1,7 @@
 import { and, asc, count, eq, gt, lte, ne, notExists, sql } from 'drizzle-orm';
 
-import {
-  createDatabase,
-  type Database,
-  movies,
-  releases,
-  torrent_lookups,
-  torrents,
-} from '../db';
+import { createDatabase, type Database } from '../db/client';
+import { movies, releases, torrentLookups, torrents } from '../db/schema';
 import type {
   LookupResult,
   ResolvedLookup,
@@ -53,12 +47,12 @@ export class TorrentRepository {
         and(
           notExists(
             this.db
-              .select({ one: torrent_lookups.imdb_id })
-              .from(torrent_lookups)
+              .select({ one: torrentLookups.imdb_id })
+              .from(torrentLookups)
               .where(
                 and(
-                  eq(torrent_lookups.imdb_id, movies.imdb_id),
-                  ne(torrent_lookups.status, 'error'),
+                  eq(torrentLookups.imdb_id, movies.imdb_id),
+                  ne(torrentLookups.status, 'error'),
                 ),
               ),
           ),
@@ -81,9 +75,9 @@ export class TorrentRepository {
         and(
           notExists(
             this.db
-              .select({ one: torrent_lookups.imdb_id })
-              .from(torrent_lookups)
-              .where(eq(torrent_lookups.imdb_id, movies.imdb_id)),
+              .select({ one: torrentLookups.imdb_id })
+              .from(torrentLookups)
+              .where(eq(torrentLookups.imdb_id, movies.imdb_id)),
           ),
           gt(newestRelease, cutoff),
         ),
@@ -137,7 +131,7 @@ export class TorrentRepository {
     now: string,
   ): Promise<void> {
     await this.db
-      .insert(torrent_lookups)
+      .insert(torrentLookups)
       .values({
         imdb_id: imdbId,
         status: result.status,
@@ -149,11 +143,11 @@ export class TorrentRepository {
         provider,
       })
       .onConflictDoUpdate({
-        target: torrent_lookups.imdb_id,
+        target: torrentLookups.imdb_id,
         set: {
           status: result.status,
           searched_at: now,
-          attempt_count: sql`${torrent_lookups.attempt_count} + 1`,
+          attempt_count: sql`${torrentLookups.attempt_count} + 1`,
           result_count: result.torrents.length,
           last_error: result.error ?? null,
           raw_response: result.rawResponse,

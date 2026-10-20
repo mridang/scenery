@@ -1,17 +1,16 @@
 import { count, desc, eq, isNull, max, sql, type SQL } from 'drizzle-orm';
 
+import { createDatabase, type Database } from '../db/client';
 import {
-  createDatabase,
-  type Database,
-  fetch_attempts,
+  fetchAttempts,
   movies,
-  page_snapshots,
+  pageSnapshots,
   releases,
   sources,
-  tmdb_genres,
-  tmdb_movies,
-  torrent_lookups,
-} from '../db';
+  tmdbGenres,
+  tmdbMovies,
+  torrentLookups,
+} from '../db/schema';
 
 import { PRESTIGE_IDS } from './prestige';
 import type { CatalogStats, LangCount, LastUpdate, ScoredRow } from './types';
@@ -255,11 +254,11 @@ export class CatalogRepository {
   }
 
   public async loadLanguageCounts(): Promise<LangCount[]> {
-    const code = sql<string>`COALESCE(${tmdb_movies.original_language}, '?')`;
+    const code = sql<string>`COALESCE(${tmdbMovies.original_language}, '?')`;
     const rows = await this.db
       .select({ code, count: count() })
       .from(movies)
-      .leftJoin(tmdb_movies, eq(tmdb_movies.imdb_id, movies.imdb_id))
+      .leftJoin(tmdbMovies, eq(tmdbMovies.imdb_id, movies.imdb_id))
       .groupBy(code)
       .orderBy(desc(count()));
     return rows.map((row) => ({ code: row.code, count: Number(row.count) }));
@@ -267,8 +266,8 @@ export class CatalogRepository {
 
   public async loadGenres(): Promise<Map<number, string>> {
     const rows = await this.db
-      .select({ id: tmdb_genres.id, name: tmdb_genres.name })
-      .from(tmdb_genres);
+      .select({ id: tmdbGenres.id, name: tmdbGenres.name })
+      .from(tmdbGenres);
     return new Map(rows.map((genre) => [genre.id, genre.name]));
   }
 
@@ -288,31 +287,31 @@ export class CatalogRepository {
     ] = await Promise.all([
       scalar(this.db.select({ n: count() }).from(releases)),
       scalar(this.db.select({ n: count() }).from(movies)),
-      scalar(this.db.select({ n: count() }).from(page_snapshots)),
+      scalar(this.db.select({ n: count() }).from(pageSnapshots)),
       scalar(
         this.db
           .select({ n: count() })
-          .from(fetch_attempts)
-          .where(eq(fetch_attempts.status, 'failed')),
+          .from(fetchAttempts)
+          .where(eq(fetchAttempts.status, 'failed')),
       ),
       scalar(
         this.db
           .select({ n: count() })
-          .from(tmdb_movies)
-          .where(eq(tmdb_movies.status, 'found')),
+          .from(tmdbMovies)
+          .where(eq(tmdbMovies.status, 'found')),
       ),
       scalar(
         this.db
           .select({ n: count() })
-          .from(tmdb_movies)
-          .where(eq(tmdb_movies.status, 'not_found')),
+          .from(tmdbMovies)
+          .where(eq(tmdbMovies.status, 'not_found')),
       ),
       scalar(
         this.db
           .select({ n: count() })
           .from(movies)
-          .leftJoin(tmdb_movies, eq(tmdb_movies.imdb_id, movies.imdb_id))
-          .where(isNull(tmdb_movies.imdb_id)),
+          .leftJoin(tmdbMovies, eq(tmdbMovies.imdb_id, movies.imdb_id))
+          .where(isNull(tmdbMovies.imdb_id)),
       ),
     ]);
     return {
@@ -328,21 +327,21 @@ export class CatalogRepository {
 
   public async loadLastUpdate(): Promise<LastUpdate> {
     const [scrape] = await this.db
-      .select({ at: page_snapshots.fetched_at, slug: sources.slug })
-      .from(page_snapshots)
-      .innerJoin(sources, eq(sources.id, page_snapshots.source_id))
-      .orderBy(desc(page_snapshots.fetched_at))
+      .select({ at: pageSnapshots.fetched_at, slug: sources.slug })
+      .from(pageSnapshots)
+      .innerJoin(sources, eq(sources.id, pageSnapshots.source_id))
+      .orderBy(desc(pageSnapshots.fetched_at))
       .limit(1);
     const [enrich] = await this.db
-      .select({ at: max(tmdb_movies.fetched_at) })
-      .from(tmdb_movies);
+      .select({ at: max(tmdbMovies.fetched_at) })
+      .from(tmdbMovies);
     const [torrents] = await this.db
       .select({
-        at: torrent_lookups.searched_at,
-        provider: torrent_lookups.provider,
+        at: torrentLookups.searched_at,
+        provider: torrentLookups.provider,
       })
-      .from(torrent_lookups)
-      .orderBy(desc(torrent_lookups.searched_at))
+      .from(torrentLookups)
+      .orderBy(desc(torrentLookups.searched_at))
       .limit(1);
     return {
       scrapeAt: scrape?.at ?? null,

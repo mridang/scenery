@@ -1,35 +1,24 @@
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from '@jest/globals';
+import { beforeEach, describe, expect, it } from '@jest/globals';
 
 import { ScrapingRepository } from '../../../src/lib/scraping/repository';
 import type { ExtractedRelease } from '../../../src/lib/sources/types';
-import { createTestD1, wipe, type TestD1 } from '../../d1';
+import { APP_MIGRATIONS } from '../../lib/db/migrations';
+import { sqliteD1 } from '../../lib/db/sqlite-d1';
 
 /**
- * Runs against a real workerd-backed D1 (via Miniflare), so it exercises
- * the actual ON CONFLICT upsert semantics and the seeded `scnsrc` source.
+ * Runs against a SQLite-backed D1 stand-in with the migrations applied, so it
+ * exercises the actual ON CONFLICT upsert semantics and the seeded `scnsrc`
+ * source.
  */
-let harness: TestD1;
+let d1: D1Database;
 
-beforeAll(async () => {
-  harness = await createTestD1();
-});
-afterAll(async () => {
-  await harness.dispose();
-});
-beforeEach(async () => {
-  await wipe(harness.db);
+beforeEach(() => {
+  d1 = sqliteD1(...APP_MIGRATIONS).d1;
 });
 
-describe('ScrapingRepository (real D1)', () => {
+describe('ScrapingRepository (SQLite-backed D1)', () => {
   it('upserts movie + release and dedupes on re-scrape', async () => {
-    const repo = new ScrapingRepository(harness.db);
+    const repo = new ScrapingRepository(d1);
 
     const source = await repo.findSource('scnsrc');
     expect(source).not.toBeNull();
@@ -52,7 +41,7 @@ describe('ScrapingRepository (real D1)', () => {
       '2026-06-09T00:00:00Z',
     );
 
-    const movies = await harness.db
+    const movies = await d1
       .prepare('SELECT imdb_id, first_seen_at, last_seen_at FROM movies')
       .all();
     expect(movies.results).toHaveLength(1);
@@ -62,7 +51,7 @@ describe('ScrapingRepository (real D1)', () => {
       last_seen_at: '2026-06-09T00:00:00Z',
     });
 
-    const releases = await harness.db
+    const releases = await d1
       .prepare('SELECT title, first_seen_at, last_seen_at FROM releases')
       .all();
     expect(releases.results).toHaveLength(1);

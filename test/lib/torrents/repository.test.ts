@@ -1,38 +1,26 @@
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from '@jest/globals';
+import { beforeEach, describe, expect, it } from '@jest/globals';
 
 import { ScrapingRepository } from '../../../src/lib/scraping/repository';
 import { TorrentRepository } from '../../../src/lib/torrents/repository';
 import type { ResolvedLookup } from '../../../src/lib/torrents/types';
-import { createTestD1, wipe, type TestD1 } from '../../d1';
+import { APP_MIGRATIONS } from '../../lib/db/migrations';
+import { sqliteD1 } from '../../lib/db/sqlite-d1';
 
 /**
- * Real-D1 tests for the torrent repository: the candidate gate (maturity +
+ * Tests for the torrent repository: the candidate gate (maturity +
  * lookup status), the too-fresh counter, and persist/totalStored. Seeds via
  * ScrapingRepository so the releases/movies joins are realistic; lookup rows
  * go in through the repository or raw SQL.
  */
-let harness: TestD1;
+let d1: D1Database;
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const old = (): string => new Date(Date.now() - 3 * ONE_DAY_MS).toISOString(); // >24h ago
 const recent = (): string =>
   new Date(Date.now() - 60 * 60 * 1000).toISOString(); // 1h ago
 
-beforeAll(async () => {
-  harness = await createTestD1();
-});
-afterAll(async () => {
-  await harness.dispose();
-});
-beforeEach(async () => {
-  await wipe(harness.db);
+beforeEach(() => {
+  d1 = sqliteD1(...APP_MIGRATIONS).d1;
 });
 
 /** Seed a movie + release for the seeded `scnsrc` source with a posted_at. */
@@ -41,7 +29,7 @@ async function seedRelease(
   imdb: string,
   postedAt: string,
 ): Promise<void> {
-  const scraping = new ScrapingRepository(harness.db);
+  const scraping = new ScrapingRepository(d1);
   const sourceId = (await scraping.findSource('scnsrc'))!.id;
   await scraping.upsertRelease(
     sourceId,
@@ -59,7 +47,7 @@ async function seedRelease(
 
 /** Insert a torrent_lookups row directly with a chosen status. */
 async function seedLookup(imdb: string, status: string): Promise<void> {
-  await harness.db
+  await d1
     .prepare(
       `INSERT INTO torrent_lookups
          (imdb_id, status, searched_at, attempt_count, result_count)
@@ -69,10 +57,10 @@ async function seedLookup(imdb: string, status: string): Promise<void> {
     .run();
 }
 
-describe('TorrentRepository.candidates (real D1)', () => {
+describe('TorrentRepository.candidates (SQLite-backed D1)', () => {
   it('returns a mature movie with no lookup row', async () => {
     await seedRelease('m-1', 'tt5000001', old());
-    const repo = new TorrentRepository(harness.db);
+    const repo = new TorrentRepository(d1);
 
     const ids = await repo.candidates(10);
     expect(ids).toEqual(['tt5000001']);
@@ -80,7 +68,7 @@ describe('TorrentRepository.candidates (real D1)', () => {
 
   it('excludes a movie whose newest release is within 24h unless force', async () => {
     await seedRelease('m-fresh', 'tt5000002', recent());
-    const repo = new TorrentRepository(harness.db);
+    const repo = new TorrentRepository(d1);
 
     expect(await repo.candidates(10)).toEqual([]);
     expect(await repo.candidates(10, true)).toEqual(['tt5000002']);
@@ -91,7 +79,7 @@ describe('TorrentRepository.candidates (real D1)', () => {
     await seedRelease('m-ok', 'tt5000004', old());
     await seedLookup('tt5000003', 'error');
     await seedLookup('tt5000004', 'success');
-    const repo = new TorrentRepository(harness.db);
+    const repo = new TorrentRepository(d1);
 
     const ids = await repo.candidates(10);
     expect(ids).toEqual(['tt5000003']);
@@ -100,7 +88,7 @@ describe('TorrentRepository.candidates (real D1)', () => {
   it("also excludes movies with an 'empty' lookup (any non-error status)", async () => {
     await seedRelease('m-empty', 'tt5000005', old());
     await seedLookup('tt5000005', 'empty');
-    const repo = new TorrentRepository(harness.db);
+    const repo = new TorrentRepository(d1);
 
     expect(await repo.candidates(10)).toEqual([]);
   });
@@ -121,19 +109,19 @@ describe('TorrentRepository.candidates (real D1)', () => {
       'tt5000012',
       new Date(Date.now() - 3 * ONE_DAY_MS).toISOString(),
     );
-    const repo = new TorrentRepository(harness.db);
+    const repo = new TorrentRepository(d1);
 
     const ids = await repo.candidates(2);
     expect(ids).toEqual(['tt5000010', 'tt5000011']);
   });
 });
 
-describe('TorrentRepository.tooFreshCount (real D1)', () => {
+describe('TorrentRepository.tooFreshCount (SQLite-backed D1)', () => {
   it('counts movies with no lookup whose newest release is within 24h', async () => {
     await seedRelease('fresh-1', 'tt6000001', recent());
     await seedRelease('fresh-2', 'tt6000002', recent());
     await seedRelease('mature', 'tt6000003', old());
-    const repo = new TorrentRepository(harness.db);
+    const repo = new TorrentRepository(d1);
 
     expect(await repo.tooFreshCount()).toBe(2);
   });
@@ -141,16 +129,16 @@ describe('TorrentRepository.tooFreshCount (real D1)', () => {
   it('does not count a fresh movie that already has any lookup row', async () => {
     await seedRelease('fresh-looked', 'tt6000004', recent());
     await seedLookup('tt6000004', 'error');
-    const repo = new TorrentRepository(harness.db);
+    const repo = new TorrentRepository(d1);
 
     expect(await repo.tooFreshCount()).toBe(0);
   });
 });
 
-describe('TorrentRepository.persist + totalStored (real D1)', () => {
+describe('TorrentRepository.persist + totalStored (SQLite-backed D1)', () => {
   it('stores torrents and writes a lookup row on success', async () => {
     await seedRelease('p-1', 'tt7000001', old());
-    const repo = new TorrentRepository(harness.db);
+    const repo = new TorrentRepository(d1);
 
     const resolved: ResolvedLookup = {
       provider: 'apibay',
@@ -178,7 +166,7 @@ describe('TorrentRepository.persist + totalStored (real D1)', () => {
 
     expect(await repo.totalStored()).toBe(1);
 
-    const lookup = await harness.db
+    const lookup = await d1
       .prepare(
         `SELECT status, result_count, provider FROM torrent_lookups WHERE imdb_id = ?`,
       )
@@ -194,7 +182,7 @@ describe('TorrentRepository.persist + totalStored (real D1)', () => {
 
   it('writes only a lookup row (no torrents) on an empty result', async () => {
     await seedRelease('p-2', 'tt7000002', old());
-    const repo = new TorrentRepository(harness.db);
+    const repo = new TorrentRepository(d1);
 
     await repo.persist('tt7000002', {
       provider: 'apibay',
@@ -203,7 +191,7 @@ describe('TorrentRepository.persist + totalStored (real D1)', () => {
     });
 
     expect(await repo.totalStored()).toBe(0);
-    const n = await harness.db
+    const n = await d1
       .prepare(`SELECT COUNT(*) AS n FROM torrent_lookups WHERE imdb_id = ?`)
       .bind('tt7000002')
       .first<{ n: number }>();

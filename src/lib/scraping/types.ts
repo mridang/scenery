@@ -1,4 +1,4 @@
-import type { FetchStatus } from '../db';
+import type { FetchStatus } from '../db/enums';
 
 /**
  * Result of attempting to scrape a single listing page.

@@ -1,20 +1,18 @@
-import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals';
+import { beforeAll, describe, expect, it, jest } from '@jest/globals';
 
 import type { NextRequest } from 'next/server';
 
-import { createTestD1, type TestD1 } from '../../d1';
+import { APP_MIGRATIONS } from '../../lib/db/migrations';
+import { sqliteD1 } from '../../lib/db/sqlite-d1';
 
-let harness: TestD1;
+let d1: D1Database;
 
-beforeAll(async () => {
-  harness = await createTestD1();
-});
-afterAll(async () => {
-  await harness.dispose();
+beforeAll(() => {
+  d1 = sqliteD1(...APP_MIGRATIONS).d1;
 });
 
 jest.unstable_mockModule('../../../src/lib/util', () => ({
-  getDB: () => harness.db,
+  getDB: () => d1,
   getEnv: () => ({}),
   logInfo: () => undefined,
   logWarn: () => undefined,
@@ -60,11 +58,11 @@ describe('GET /feed.xml', () => {
   });
 
   it('emits at least one <item> once a movie + release are seeded', async () => {
-    const src = (await harness.db
+    const src = (await d1
       .prepare("SELECT id FROM sources WHERE slug = 'scnsrc'")
       .first()) as { id: number };
 
-    const repo = new ScrapingRepository(harness.db);
+    const repo = new ScrapingRepository(d1);
     await repo.upsertRelease(
       src.id,
       {

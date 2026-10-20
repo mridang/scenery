@@ -5,18 +5,18 @@
  * `tmdb_movies` so the catalog view picks them up without a join.
  */
 
-import { drizzle } from 'drizzle-orm/d1';
 import { and, eq, isNull, or } from 'drizzle-orm';
 
-import { tmdb_movies } from '../db/schema';
+import { createDatabase, type Database } from '../db/client';
+import { tmdbMovies } from '../db/schema';
 import type { OmdbEnrichResult } from './types';
 
 /** Read + write OMDB columns on tmdb_movies. @public */
 export class OmdbRepository {
-  private readonly db: ReturnType<typeof drizzle>;
+  private readonly db: Database;
 
   public constructor(d1: D1Database) {
-    this.db = drizzle(d1);
+    this.db = createDatabase(d1);
   }
 
   /**
@@ -27,14 +27,14 @@ export class OmdbRepository {
    */
   public async pending(limit: number): Promise<readonly string[]> {
     const rows = await this.db
-      .select({ imdb_id: tmdb_movies.imdb_id })
-      .from(tmdb_movies)
+      .select({ imdb_id: tmdbMovies.imdb_id })
+      .from(tmdbMovies)
       .where(
         and(
-          eq(tmdb_movies.status, 'found'),
+          eq(tmdbMovies.status, 'found'),
           or(
-            isNull(tmdb_movies.omdb_status),
-            eq(tmdb_movies.omdb_status, 'error'),
+            isNull(tmdbMovies.omdb_status),
+            eq(tmdbMovies.omdb_status, 'error'),
           ),
         ),
       )
@@ -49,7 +49,7 @@ export class OmdbRepository {
     nowIso: string,
   ): Promise<void> {
     await this.db
-      .update(tmdb_movies)
+      .update(tmdbMovies)
       .set({
         omdb_status: result.status,
         omdb_fetched_at: nowIso,
@@ -59,6 +59,6 @@ export class OmdbRepository {
         metacritic_score: result.ratings?.metacritic_score ?? null,
         rt_score: result.ratings?.rt_score ?? null,
       })
-      .where(eq(tmdb_movies.imdb_id, imdbId));
+      .where(eq(tmdbMovies.imdb_id, imdbId));
   }
 }

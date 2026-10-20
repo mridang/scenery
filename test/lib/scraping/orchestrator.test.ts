@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { ScrapeOrchestrator } from '../../../src/lib/scraping/orchestrator';
-import type { SourceSlug } from '../../../src/lib/db';
+import type { SourceSlug } from '../../../src/lib/db/enums';
 import type { ScrapingRepository } from '../../../src/lib/scraping/repository';
 import type {
   ExtractedRelease,

@@ -1,15 +1,14 @@
 import { and, eq, sql } from 'drizzle-orm';
 
+import { createDatabase, type Database } from '../db/client';
+import { type SourceSlug } from '../db/enums';
 import {
-  createDatabase,
-  type Database,
-  fetch_attempts,
+  fetchAttempts,
   movies,
-  page_snapshots,
+  pageSnapshots,
   releases,
   sources,
-  type SourceSlug,
-} from '../db';
+} from '../db/schema';
 
 import type { ExtractedRelease } from '../sources/types';
 
@@ -69,13 +68,13 @@ export class ScrapingRepository {
   ): Promise<number> {
     const row = await this.db
       .select({
-        n: sql<number>`COALESCE(MAX(${fetch_attempts.attempt_number}), 0)`,
+        n: sql<number>`COALESCE(MAX(${fetchAttempts.attempt_number}), 0)`,
       })
-      .from(fetch_attempts)
+      .from(fetchAttempts)
       .where(
         and(
-          eq(fetch_attempts.source_id, sourceId),
-          eq(fetch_attempts.page_number, pageNumber),
+          eq(fetchAttempts.source_id, sourceId),
+          eq(fetchAttempts.page_number, pageNumber),
         ),
       )
       .get();
@@ -94,7 +93,7 @@ export class ScrapingRepository {
     error?: string;
     responseBody?: string;
   }): Promise<void> {
-    await this.db.insert(fetch_attempts).values({
+    await this.db.insert(fetchAttempts).values({
       source_id: opts.sourceId,
       page_number: opts.pageNumber,
       page_url: opts.pageUrl,
@@ -121,7 +120,7 @@ export class ScrapingRepository {
     responseHeaders?: Record<string, string>;
   }): Promise<number> {
     const row = await this.db
-      .insert(page_snapshots)
+      .insert(pageSnapshots)
       .values({
         source_id: opts.sourceId,
         page_number: opts.pageNumber,
@@ -135,7 +134,7 @@ export class ScrapingRepository {
           ? JSON.stringify(opts.responseHeaders)
           : null,
       })
-      .returning({ id: page_snapshots.id })
+      .returning({ id: pageSnapshots.id })
       .get();
     return Number(row.id);
   }
@@ -151,7 +150,7 @@ export class ScrapingRepository {
     httpStatus?: number;
     snapshotId: number;
   }): Promise<void> {
-    await this.db.insert(fetch_attempts).values({
+    await this.db.insert(fetchAttempts).values({
       source_id: opts.sourceId,
       page_number: opts.pageNumber,
       page_url: opts.pageUrl,

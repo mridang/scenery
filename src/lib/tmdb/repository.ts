@@ -1,13 +1,7 @@
 import { and, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
 
-import {
-  createDatabase,
-  type Database,
-  movies,
-  tmdb_genres,
-  tmdb_movies,
-  tmdb_people,
-} from '../db';
+import { createDatabase, type Database } from '../db/client';
+import { movies, tmdbGenres, tmdbMovies, tmdbPeople } from '../db/schema';
 import type {
   TmdbCastEntry,
   TmdbCrewEntry,
@@ -34,7 +28,7 @@ export class TmdbRepository {
   public async countGenres(): Promise<number> {
     const row = await this.db
       .select({ n: sql<number>`COUNT(*)` })
-      .from(tmdb_genres)
+      .from(tmdbGenres)
       .get();
     return row?.n ?? 0;
   }
@@ -42,10 +36,10 @@ export class TmdbRepository {
   /** Upsert one TMDB genre. */
   public async upsertGenre(genre: TmdbGenre): Promise<void> {
     await this.db
-      .insert(tmdb_genres)
+      .insert(tmdbGenres)
       .values({ id: genre.id, name: genre.name })
       .onConflictDoUpdate({
-        target: tmdb_genres.id,
+        target: tmdbGenres.id,
         set: { name: genre.name },
       });
   }
@@ -60,8 +54,8 @@ export class TmdbRepository {
     const rows = await this.db
       .select({ imdb_id: movies.imdb_id })
       .from(movies)
-      .leftJoin(tmdb_movies, eq(tmdb_movies.imdb_id, movies.imdb_id))
-      .where(or(isNull(tmdb_movies.imdb_id), eq(tmdb_movies.status, 'error')))
+      .leftJoin(tmdbMovies, eq(tmdbMovies.imdb_id, movies.imdb_id))
+      .where(or(isNull(tmdbMovies.imdb_id), eq(tmdbMovies.status, 'error')))
       .limit(limit);
     return rows.map((row) => row.imdb_id);
   }
@@ -71,13 +65,13 @@ export class TmdbRepository {
     limit: number,
   ): Promise<{ imdb_id: string; tmdb_id: number }[]> {
     return this.db
-      .select({ imdb_id: tmdb_movies.imdb_id, tmdb_id: tmdb_movies.tmdb_id })
-      .from(tmdb_movies)
+      .select({ imdb_id: tmdbMovies.imdb_id, tmdb_id: tmdbMovies.tmdb_id })
+      .from(tmdbMovies)
       .where(
         and(
-          eq(tmdb_movies.status, 'found'),
-          isNotNull(tmdb_movies.tmdb_id),
-          isNull(tmdb_movies.credits_fetched_at),
+          eq(tmdbMovies.status, 'found'),
+          isNotNull(tmdbMovies.tmdb_id),
+          isNull(tmdbMovies.credits_fetched_at),
         ),
       )
       .limit(limit) as Promise<{ imdb_id: string; tmdb_id: number }[]>;
@@ -91,7 +85,7 @@ export class TmdbRepository {
     now: string,
   ): Promise<void> {
     await this.db
-      .insert(tmdb_movies)
+      .insert(tmdbMovies)
       .values({
         imdb_id: imdbId,
         status: 'error',
@@ -100,7 +94,7 @@ export class TmdbRepository {
         error: errorMessage,
       })
       .onConflictDoUpdate({
-        target: tmdb_movies.imdb_id,
+        target: tmdbMovies.imdb_id,
         set: {
           status: 'error',
           raw_response: raw,
@@ -117,7 +111,7 @@ export class TmdbRepository {
     now: string,
   ): Promise<void> {
     await this.db
-      .insert(tmdb_movies)
+      .insert(tmdbMovies)
       .values({
         imdb_id: imdbId,
         status: 'not_found',
@@ -125,7 +119,7 @@ export class TmdbRepository {
         fetched_at: now,
       })
       .onConflictDoUpdate({
-        target: tmdb_movies.imdb_id,
+        target: tmdbMovies.imdb_id,
         set: {
           status: 'not_found',
           raw_response: raw,
@@ -163,10 +157,10 @@ export class TmdbRepository {
       fetched_at: now,
     };
     await this.db
-      .insert(tmdb_movies)
+      .insert(tmdbMovies)
       .values({ imdb_id: imdbId, ...values })
       .onConflictDoUpdate({
-        target: tmdb_movies.imdb_id,
+        target: tmdbMovies.imdb_id,
         set: { ...values, error: null },
       });
   }
@@ -198,7 +192,7 @@ export class TmdbRepository {
       .map((company) => ({ id: company.id, name: company.name }));
 
     await this.db
-      .update(tmdb_movies)
+      .update(tmdbMovies)
       .set({
         runtime: movie.runtime ?? null,
         budget: movie.budget ?? null,
@@ -222,7 +216,7 @@ export class TmdbRepository {
         raw_credits: raw,
         credits_fetched_at: now,
       })
-      .where(eq(tmdb_movies.imdb_id, imdbId));
+      .where(eq(tmdbMovies.imdb_id, imdbId));
   }
 
   /** Record a credits-fetch error without overwriting a prior good row. */
@@ -233,9 +227,9 @@ export class TmdbRepository {
     now: string,
   ): Promise<void> {
     await this.db
-      .update(tmdb_movies)
+      .update(tmdbMovies)
       .set({ raw_credits: raw, credits_fetched_at: now, error: errorMessage })
-      .where(eq(tmdb_movies.imdb_id, imdbId));
+      .where(eq(tmdbMovies.imdb_id, imdbId));
   }
 
   /**
@@ -246,19 +240,19 @@ export class TmdbRepository {
   public async backfillFromRawCredits(): Promise<number> {
     const rows = (await this.db
       .select({
-        imdb_id: tmdb_movies.imdb_id,
-        raw_credits: tmdb_movies.raw_credits,
+        imdb_id: tmdbMovies.imdb_id,
+        raw_credits: tmdbMovies.raw_credits,
       })
-      .from(tmdb_movies)
+      .from(tmdbMovies)
       .where(
         and(
-          eq(tmdb_movies.status, 'found'),
-          isNotNull(tmdb_movies.raw_credits),
+          eq(tmdbMovies.status, 'found'),
+          isNotNull(tmdbMovies.raw_credits),
           or(
-            isNull(tmdb_movies.budget),
-            isNull(tmdb_movies.cast_ids),
-            isNull(tmdb_movies.production_companies),
-            isNull(tmdb_movies.original_language),
+            isNull(tmdbMovies.budget),
+            isNull(tmdbMovies.cast_ids),
+            isNull(tmdbMovies.production_companies),
+            isNull(tmdbMovies.original_language),
           ),
         ),
       )) as { imdb_id: string; raw_credits: string }[];
@@ -280,7 +274,7 @@ export class TmdbRepository {
           .filter((company) => company.id !== undefined)
           .map((company) => ({ id: company.id, name: company.name }));
         await this.db
-          .update(tmdb_movies)
+          .update(tmdbMovies)
           .set({
             budget: json.budget ?? null,
             revenue: json.revenue ?? null,
@@ -289,7 +283,7 @@ export class TmdbRepository {
             director_ids: sql`COALESCE(director_ids, ${directorIds.length > 0 ? JSON.stringify(directorIds) : null})`,
             production_companies: sql`COALESCE(production_companies, ${companies.length > 0 ? JSON.stringify(companies) : null})`,
           })
-          .where(eq(tmdb_movies.imdb_id, row.imdb_id));
+          .where(eq(tmdbMovies.imdb_id, row.imdb_id));
         return updated + 1;
       } catch {
         /* skip malformed rows */
@@ -302,16 +296,16 @@ export class TmdbRepository {
   public async collectReferencedPeople(): Promise<Set<number>> {
     const rows = await this.db
       .select({
-        cast_ids: tmdb_movies.cast_ids,
-        director_ids: tmdb_movies.director_ids,
+        cast_ids: tmdbMovies.cast_ids,
+        director_ids: tmdbMovies.director_ids,
       })
-      .from(tmdb_movies)
+      .from(tmdbMovies)
       .where(
         and(
-          eq(tmdb_movies.status, 'found'),
+          eq(tmdbMovies.status, 'found'),
           or(
-            isNotNull(tmdb_movies.cast_ids),
-            isNotNull(tmdb_movies.director_ids),
+            isNotNull(tmdbMovies.cast_ids),
+            isNotNull(tmdbMovies.director_ids),
           ),
         ),
       );
@@ -333,11 +327,11 @@ export class TmdbRepository {
   public async peopleIdsForMovie(imdbId: string): Promise<number[]> {
     const row = await this.db
       .select({
-        cast_ids: tmdb_movies.cast_ids,
-        director_ids: tmdb_movies.director_ids,
+        cast_ids: tmdbMovies.cast_ids,
+        director_ids: tmdbMovies.director_ids,
       })
-      .from(tmdb_movies)
-      .where(eq(tmdb_movies.imdb_id, imdbId))
+      .from(tmdbMovies)
+      .where(eq(tmdbMovies.imdb_id, imdbId))
       .get();
     if (!row) {
       return [];
@@ -356,16 +350,16 @@ export class TmdbRepository {
 
   /** Ids in tmdb_people. */
   public async knownPeopleIds(): Promise<Set<number>> {
-    const rows = await this.db.select({ id: tmdb_people.id }).from(tmdb_people);
+    const rows = await this.db.select({ id: tmdbPeople.id }).from(tmdbPeople);
     return new Set<number>(rows.map((row) => row.id));
   }
 
   /** People still missing a prestige_score — covers the migration backfill. */
   public async stalePeopleIds(): Promise<Set<number>> {
     const rows = await this.db
-      .select({ id: tmdb_people.id })
-      .from(tmdb_people)
-      .where(isNull(tmdb_people.prestige_score));
+      .select({ id: tmdbPeople.id })
+      .from(tmdbPeople)
+      .where(isNull(tmdbPeople.prestige_score));
     return new Set<number>(rows.map((row) => row.id));
   }
 
@@ -388,10 +382,10 @@ export class TmdbRepository {
       raw_response: raw,
     };
     await this.db
-      .insert(tmdb_people)
+      .insert(tmdbPeople)
       .values({ id: person.id ?? fallbackId, ...values })
       .onConflictDoUpdate({
-        target: tmdb_people.id,
+        target: tmdbPeople.id,
         set: values,
       });
   }
@@ -402,17 +396,17 @@ export class TmdbRepository {
   > {
     return this.db
       .select({
-        imdb_id: tmdb_movies.imdb_id,
-        cast_ids: tmdb_movies.cast_ids,
-        director_ids: tmdb_movies.director_ids,
+        imdb_id: tmdbMovies.imdb_id,
+        cast_ids: tmdbMovies.cast_ids,
+        director_ids: tmdbMovies.director_ids,
       })
-      .from(tmdb_movies)
+      .from(tmdbMovies)
       .where(
         and(
-          eq(tmdb_movies.status, 'found'),
+          eq(tmdbMovies.status, 'found'),
           or(
-            isNotNull(tmdb_movies.cast_ids),
-            isNotNull(tmdb_movies.director_ids),
+            isNotNull(tmdbMovies.cast_ids),
+            isNotNull(tmdbMovies.director_ids),
           ),
         ),
       );
@@ -422,14 +416,14 @@ export class TmdbRepository {
   public async peoplePrestigeMap(): Promise<Map<number, number>> {
     const rows = await this.db
       .select({
-        id: tmdb_people.id,
+        id: tmdbPeople.id,
         pop: sql<
           number | null
-        >`COALESCE(${tmdb_people.prestige_score}, ${tmdb_people.popularity})`.as(
+        >`COALESCE(${tmdbPeople.prestige_score}, ${tmdbPeople.popularity})`.as(
           'pop',
         ),
       })
-      .from(tmdb_people);
+      .from(tmdbPeople);
     return new Map<number, number>(
       rows
         .filter((row): row is { id: number; pop: number } => row.pop !== null)
@@ -440,8 +434,8 @@ export class TmdbRepository {
   /** Write a movie's computed talent_score. */
   public async updateTalentScore(imdbId: string, score: number): Promise<void> {
     await this.db
-      .update(tmdb_movies)
+      .update(tmdbMovies)
       .set({ talent_score: score })
-      .where(eq(tmdb_movies.imdb_id, imdbId));
+      .where(eq(tmdbMovies.imdb_id, imdbId));
   }
 }

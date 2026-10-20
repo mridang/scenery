@@ -1,31 +1,19 @@
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from '@jest/globals';
+import { beforeEach, describe, expect, it } from '@jest/globals';
 
 import { CatalogRepository } from '../../../src/lib/catalog/repository';
 import { ScrapingRepository } from '../../../src/lib/scraping/repository';
-import { createTestD1, wipe, type TestD1 } from '../../d1';
+import { APP_MIGRATIONS } from '../../lib/db/migrations';
+import { sqliteD1 } from '../../lib/db/sqlite-d1';
 
 /**
- * Real-D1 tests for the catalog read model: the language filter, the
+ * Tests for the catalog read model: the language filter, the
  * counters, and the all-SQL scoring / tier / prestige / 1 TB-budget
  * query. Seeds via ScrapingRepository so the joins are realistic.
  */
-let harness: TestD1;
+let d1: D1Database;
 
-beforeAll(async () => {
-  harness = await createTestD1();
-});
-afterAll(async () => {
-  await harness.dispose();
-});
-beforeEach(async () => {
-  await wipe(harness.db);
+beforeEach(() => {
+  d1 = sqliteD1(...APP_MIGRATIONS).d1;
 });
 
 /** Seed a release for the seeded `scnsrc` source. */
@@ -34,7 +22,7 @@ async function seedRelease(
   imdb: string,
   postedAt: string,
 ): Promise<void> {
-  const scraping = new ScrapingRepository(harness.db);
+  const scraping = new ScrapingRepository(d1);
   const sourceId = (await scraping.findSource('scnsrc'))!.id;
   await scraping.upsertRelease(
     sourceId,
@@ -50,13 +38,13 @@ async function seedRelease(
   );
 }
 
-describe('CatalogRepository (real D1)', () => {
+describe('CatalogRepository (SQLite-backed D1)', () => {
   it('loadMovies filters by language and loadStats counts the catalog', async () => {
     await seedRelease('en-1', 'tt2000001', '2026-06-01T00:00:00Z');
     await seedRelease('hi-1', 'tt2000002', '2026-06-02T00:00:00Z');
 
     // Enrich only the English movie so the language filter has a target.
-    await harness.db
+    await d1
       .prepare(
         `INSERT INTO tmdb_movies
             (imdb_id, status, original_language, raw_response, fetched_at)
@@ -65,7 +53,7 @@ describe('CatalogRepository (real D1)', () => {
       .bind('tt2000001')
       .run();
 
-    const catalog = new CatalogRepository(harness.db);
+    const catalog = new CatalogRepository(d1);
 
     const all = await catalog.loadMovies('all', 'date', 'catalog');
     expect(all.map((m) => m.imdb_id).sort()).toEqual([
@@ -94,8 +82,8 @@ describe('CatalogRepository (real D1)', () => {
     await seedRelease('s-strong', 'tt3000001', '2026-06-01T00:00:00Z');
     await seedRelease('s-weak', 'tt3000002', '2026-06-01T00:00:00Z');
 
-    await harness.db.batch([
-      harness.db
+    await d1.batch([
+      d1
         .prepare(
           `INSERT INTO tmdb_movies (imdb_id, status, original_language,
              vote_average, vote_count, budget, production_companies,
@@ -104,7 +92,7 @@ describe('CatalogRepository (real D1)', () => {
              '[{"id":210099,"name":"Amazon MGM"}]', '{}', '2026-06-03T00:00:00Z')`,
         )
         .bind('tt3000001'),
-      harness.db
+      d1
         .prepare(
           `INSERT INTO tmdb_movies (imdb_id, status, original_language,
              vote_average, vote_count, budget, raw_response, fetched_at)
@@ -113,7 +101,7 @@ describe('CatalogRepository (real D1)', () => {
         .bind('tt3000002'),
     ]);
 
-    const catalog = new CatalogRepository(harness.db);
+    const catalog = new CatalogRepository(d1);
     const rows = await catalog.loadMovies('all', 'score', 'catalog');
 
     expect(rows.map((r) => r.imdb_id)).toEqual(['tt3000001', 'tt3000002']);
@@ -135,15 +123,15 @@ describe('CatalogRepository (real D1)', () => {
     // Two 600 GB torrents — cumulative 1.2 TB overflows the 1 TB budget,
     // so the second (older) one must not fit.
     const big = 600_000_000_000;
-    await harness.db.batch([
-      harness.db
+    await d1.batch([
+      d1
         .prepare(
           `INSERT INTO torrents (imdb_id, info_hash, title, raw_title,
              size_bytes, seeders, fetched_at)
            VALUES (?, 'hasha', 'A', 'A', ?, 10, '2026-06-03T00:00:00Z')`,
         )
         .bind('tt4000001', big),
-      harness.db
+      d1
         .prepare(
           `INSERT INTO torrents (imdb_id, info_hash, title, raw_title,
              size_bytes, seeders, fetched_at)
@@ -152,7 +140,7 @@ describe('CatalogRepository (real D1)', () => {
         .bind('tt4000002', big),
     ]);
 
-    const catalog = new CatalogRepository(harness.db);
+    const catalog = new CatalogRepository(d1);
     const rows = await catalog.loadMovies('all', 'date', 'plan');
 
     expect(rows.map((r) => r.imdb_id)).toEqual(['tt4000001', 'tt4000002']);
