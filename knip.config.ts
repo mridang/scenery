@@ -1,6 +1,8 @@
 export default {
   entry: ['open-next.config.ts'],
-  ignore: ['knip.config.ts'],
-  ignoreDependencies: [/^@semantic-release\//, /^postcss$/, /^cloudflare$/],
+  ignore: ['public/**'],
+  // Knip reads the `cloudflare:workers` import of the Workflows as a package
+  // called `cloudflare`.
+  ignoreDependencies: ['cloudflare'],
   tags: ['+public'],
 };
