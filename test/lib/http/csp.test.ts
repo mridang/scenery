@@ -3,10 +3,15 @@ import { describe, expect, it } from '@jest/globals';
 import {
   buildCsp,
   buildReportOnlyCsp,
+  cspSurfaceFor,
   forwardedHeaders,
   newNonce,
   nonceOf,
 } from '../../../src/lib/http/csp';
+import {
+  EXTRA_DIRECTIVES,
+  EXTRA_IMG_SOURCES,
+} from '../../../src/lib/http/site';
 
 describe('newNonce', () => {
   it('is base64 of 16 bytes, and different every time', () => {
@@ -28,15 +33,13 @@ describe('buildCsp', () => {
     );
   });
 
-  it('never allows inline script or eval', () => {
+  it('never allows inline script or eval, beyond the directives site.ts names', () => {
+    const rest = csp
+      .split('; ')
+      .filter((d) => !EXTRA_DIRECTIVES.includes(d))
+      .join('; ');
+    expect(rest).not.toContain('unsafe-inline');
     expect(csp).not.toContain('unsafe-eval');
-    expect(directive('script-src')).not.toContain('unsafe-inline');
-    expect(directive('style-src')).not.toContain('unsafe-inline');
-  });
-
-  it('allows inline style attributes and nothing more inline', () => {
-    expect(directive('style-src-attr')).toBe("style-src-attr 'unsafe-inline'");
-    expect(directive('style-src')).toBe("style-src 'self' 'nonce-abc123=='");
   });
 
   it('denies by default, so only what is listed can load', () => {
@@ -55,10 +58,21 @@ describe('buildCsp', () => {
     expect(directive(name)).toMatch(new RegExp(`^${name} 'self'`));
   });
 
-  it('loads pictures only from this site, data and blob addresses', () => {
-    expect(directive('img-src')).toBe("img-src 'self' data: blob:");
+  it('allows pictures from this site and the places site.ts names, nothing else', () => {
+    expect(directive('img-src')).toBe(
+      ['img-src', "'self'", 'data:', ...EXTRA_IMG_SOURCES].join(' '),
+    );
     expect(directive('connect-src')).toBe("connect-src 'self'");
     expect(directive('font-src')).toBe("font-src 'self'");
+  });
+
+  it('adds the directives site.ts names to both kinds of policy', () => {
+    for (const surface of ['site', 'approval'] as const) {
+      const directives = buildCsp('abc123==', surface).split('; ');
+      for (const extra of EXTRA_DIRECTIVES) {
+        expect(directives).toContain(extra);
+      }
+    }
   });
 
   it('forbids plugins, frames, media and a rewritten <base>', () => {
@@ -70,8 +84,25 @@ describe('buildCsp', () => {
 
   it('only lets this site frame it, and forces https', () => {
     expect(directive('frame-ancestors')).toBe("frame-ancestors 'self'");
-    expect(directive('form-action')).toBe("form-action 'self'");
     expect(csp).toContain('upgrade-insecure-requests');
+  });
+
+  it('forbids framing altogether on the approval screen', () => {
+    const approval = buildCsp('abc123==', 'approval');
+    expect(approval).toContain("frame-ancestors 'none'");
+    expect(approval).toContain("script-src 'self' 'nonce-abc123=='");
+  });
+
+  it('names no form-action on the approval screen, so its redirect back to the app is allowed', () => {
+    // A browser checks the consent form's redirect (to the client's address)
+    // against form-action. `'self'` there would block returning to ChatGPT or
+    // Claude after approval.
+    expect(buildCsp('abc123==', 'approval')).not.toContain('form-action');
+    expect(buildCsp('abc123==', 'site')).toContain("form-action 'self'");
+  });
+
+  it('puts the nonce on styles as well', () => {
+    expect(directive('style-src')).toBe("style-src 'self' 'nonce-abc123=='");
   });
 });
 
@@ -104,11 +135,28 @@ describe('forwardedHeaders', () => {
   });
 });
 
+describe('cspSurfaceFor', () => {
+  it('gives the approval screen its own policy and every other path the site policy', () => {
+    expect(cspSurfaceFor('/oauth/authorize')).toBe('approval');
+    for (const pathname of [
+      '/',
+      '/some/page',
+      '/oauth/consent',
+      '/oauth/authorize/x',
+      '/api/mcp',
+    ]) {
+      expect(cspSurfaceFor(pathname)).toBe('site');
+    }
+  });
+});
+
 describe('reporting', () => {
-  it('points the policy at the report group and address', () => {
-    const csp = buildCsp('abc');
-    expect(csp).toContain('report-to csp-endpoint');
-    expect(csp).toContain('report-uri /api/csp-reports');
+  it('points every policy at the report group and address', () => {
+    for (const surface of ['site', 'approval'] as const) {
+      const csp = buildCsp('abc', surface);
+      expect(csp).toContain('report-to csp-endpoint');
+      expect(csp).toContain('report-uri /api/csp-reports');
+    }
   });
 
   it('builds a Trusted Types policy that only reports', () => {

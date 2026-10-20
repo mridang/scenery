@@ -1,27 +1,12 @@
 /**
  * @packageDocumentation
  *
- * The few values in the site's security headers that belong to this app and
- * not to the shared header code (`headers.ts`, `csp.ts`): which pictures the
- * pages may load from other sites, which pages search engines may index, which
- * files other sites may fetch, and which small files may be cached for a day.
+ * What differs from one app to the next in the shared HTTP security code
+ * (`headers.ts`, `csp.ts`): the pages search engines may index, the files other
+ * sites may load, the small files that may be cached for a day, and the few
+ * outside places and extra rules a page's policy needs. Everything else in
+ * those files is the same in every app.
  */
-
-/**
- * The `img-src` sources. Posters come through this site's own `/api/img`, and
- * the pages draw their icons inline, so no other site is named.
- */
-export const IMG_SRC = "'self' data: blob:";
-
-/**
- * Directives only this app adds. The pages set colours, widths and background
- * pictures through `style` attributes, which a nonce cannot cover, so
- * attributes (and only attributes; `<style>` elements still need the nonce) may
- * be inline.
- */
-export const EXTRA_DIRECTIVES: readonly string[] = [
-  "style-src-attr 'unsafe-inline'",
-];
 
 /** The pages search engines may index. The whole site is private, so none. */
 export const PUBLIC_PAGES: ReadonlySet<string> = new Set();
@@ -45,3 +30,21 @@ export const RARELY_CHANGING: ReadonlySet<string> = new Set([
   '/android-chrome-192x192.png',
   '/android-chrome-512x512.png',
 ]);
+
+/**
+ * The outside places pages may load pictures from, besides this site (`'self'`)
+ * and inline `data:` pictures.
+ * Posters come through this site's own `/api/img` and the pages draw their
+ * icons inline; only `blob:` pictures (made in the browser) are added.
+ */
+export const EXTRA_IMG_SOURCES: readonly string[] = ['blob:'];
+
+/**
+ * Directives only this app adds to its policy.
+ * The pages set colours, widths and background pictures through `style`
+ * attributes, which a nonce cannot cover, so attributes (and only attributes;
+ * `<style>` elements still need the nonce) may be inline.
+ */
+export const EXTRA_DIRECTIVES: readonly string[] = [
+  "style-src-attr 'unsafe-inline'",
+];

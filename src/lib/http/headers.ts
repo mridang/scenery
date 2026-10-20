@@ -22,8 +22,8 @@ export const SECURITY_HEADERS: Readonly<Record<string, string>> = {
   // Nothing here needs the camera, microphone, location or payments.
   'Permissions-Policy':
     'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
-  // Only this site may frame it, and keep forms, <base> and plugins on a short
-  // leash.
+  // Only this site may frame it (the sign-in approval page forbids even that),
+  // and keep forms, <base> and plugins on a short leash.
   'Content-Security-Policy':
     "frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'",
   'X-Frame-Options': 'SAMEORIGIN',
@@ -34,6 +34,19 @@ export const SECURITY_HEADERS: Readonly<Record<string, string>> = {
 /** The `Cross-Origin-Resource-Policy` for a path. */
 export function resourcePolicyFor(pathname: string): string {
   return OPEN_FILES.test(pathname) ? 'cross-origin' : 'same-site';
+}
+
+/**
+ * The `Cross-Origin-Opener-Policy` for a path. Everywhere but one place it cuts
+ * other windows off from this one. The approval screen is the exception: an
+ * assistant that opens it in a popup finishes sign-in through the window that
+ * opened it, and `same-origin` would sever that link the moment the popup
+ * lands here. The screen holds nothing a window that opened it could read.
+ */
+export function openerPolicyFor(pathname: string): string {
+  return pathname === '/oauth/authorize'
+    ? 'unsafe-none'
+    : (SECURITY_HEADERS['Cross-Origin-Opener-Policy'] ?? 'same-origin');
 }
 
 /** One response header: its name and value. */
@@ -64,10 +77,10 @@ function cacheControlFor(pathname: string, response: Response): string | null {
   }
   const type = response.headers.get('content-type') ?? '';
   const isPage = type.startsWith('text/html');
-  const ours = !pathname.startsWith('/api/');
+  const ours = !pathname.startsWith('/api/') && !pathname.startsWith('/oauth/');
   if (isPage && ours) {
-    // Pages are rendered per request, so a shared cache must not keep them;
-    // "no-cache" (rather than Next's "no-store") still lets the back button restore a page
+    // Pages are personal, so a shared cache must not keep them; "no-cache"
+    // (rather than Next's "no-store") still lets the back button restore a page
     // instantly while the browser checks for a newer one.
     return 'private, no-cache';
   }
@@ -76,7 +89,8 @@ function cacheControlFor(pathname: string, response: Response): string | null {
 
 /**
  * The response with the site's security headers added and, where it has one, a
- * better cache rule. Responses that set their own security headers keep them.
+ * better cache rule. Responses that set their own security headers (the
+ * sign-in approval page) keep them.
  */
 export function applyResponseHeaders(
   request: Request,
@@ -91,7 +105,12 @@ export function applyResponseHeaders(
   const leftAlone = PUBLIC_PAGES.has(pathname) || OPEN_FILES.test(pathname);
   const candidates: HeaderPair[] = [
     ...Object.entries(SECURITY_HEADERS).map(
-      ([name, value]): HeaderPair => [name, value],
+      ([name, value]): HeaderPair => [
+        name,
+        name === 'Cross-Origin-Opener-Policy'
+          ? openerPolicyFor(pathname)
+          : value,
+      ],
     ),
     ['Cross-Origin-Resource-Policy', resourcePolicyFor(pathname)],
     // Tells the browser where the policies' `report-to csp-endpoint` reports go.

@@ -15,22 +15,40 @@
 import { bytesToBase64 } from '../util/base64';
 import { replacingHeaders } from './headers';
 import { CSP_REPORT_DIRECTIVES } from './reporting';
-import { EXTRA_DIRECTIVES, IMG_SRC } from './site';
+import { EXTRA_DIRECTIVES, EXTRA_IMG_SOURCES } from './site';
 
 /** A fresh, unguessable nonce: 16 random bytes, base64. */
 export function newNonce(): string {
   return bytesToBase64(crypto.getRandomValues(new Uint8Array(16)));
 }
 
-/** The policy for one response, carrying that response's nonce. */
-export function buildCsp(nonce: string): string {
+/** Which kind of page a policy is for: an ordinary one, or the approval screen. */
+export type CspSurface = 'site' | 'approval';
+
+/**
+ * The policy for one response, carrying that response's nonce.
+ *
+ * The approval screen (`approval`) differs in two ways. It may not be framed by
+ * anyone, this site included (`frame-ancestors 'none'`). And it names no
+ * `form-action`: its form posts to our own consent endpoint, which answers with a
+ * redirect to the *client's* address (a web page, a localhost port, an app's own
+ * scheme). Browsers check a form's redirects against `form-action`, so listing
+ * `'self'` there makes them refuse to send the person back to the app they just
+ * approved. Where the form is allowed to post is not what protects the page
+ * (the consent endpoint is protected by its own same-origin and CSRF checks),
+ * so the directive is left out rather than made so wide it means nothing.
+ */
+export function buildCsp(nonce: string, surface: CspSurface = 'site'): string {
+  const approval = surface === 'approval';
   return [
     // Deny anything not named below; every kind of load the site needs is listed.
     "default-src 'none'",
     // `'self'` only matters to browsers too old to know strict-dynamic.
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
     `style-src 'self' 'nonce-${nonce}'`,
-    `img-src ${IMG_SRC}`,
+    // Pictures come from this site; the few other places the app shows a
+    // picture from are named in `site.ts`.
+    ['img-src', "'self'", 'data:', ...EXTRA_IMG_SOURCES].join(' '),
     "font-src 'self'",
     "connect-src 'self'",
     "manifest-src 'self'",
@@ -39,9 +57,10 @@ export function buildCsp(nonce: string): string {
     "object-src 'none'",
     "frame-src 'none'",
     "base-uri 'self'",
-    "form-action 'self'",
-    "frame-ancestors 'self'",
+    ...(approval ? [] : ["form-action 'self'"]),
+    `frame-ancestors '${approval ? 'none' : 'self'}'`,
     'upgrade-insecure-requests',
+    // Directives only this app adds, if any (see `site.ts`).
     ...EXTRA_DIRECTIVES,
     ...CSP_REPORT_DIRECTIVES,
   ].join('; ');
@@ -59,6 +78,15 @@ export function buildReportOnlyCsp(): string {
   return ["require-trusted-types-for 'script'", ...CSP_REPORT_DIRECTIVES].join(
     '; ',
   );
+}
+
+/**
+ * Which policy a path gets. The approval screen may not be framed by anyone,
+ * not even this site, and must let the browser follow the redirect back to the
+ * assistant, so it has a policy of its own; every other page has the site's.
+ */
+export function cspSurfaceFor(pathname: string): CspSurface {
+  return pathname === '/oauth/authorize' ? 'approval' : 'site';
 }
 
 /** The nonce in a policy, if it carries one. */
