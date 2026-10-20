@@ -65,13 +65,10 @@ Everything runs through [devbox](https://www.jetify.com/devbox) on the
 pinned Node 24 toolchain:
 
 ```sh
-devbox run migrate        # apply D1 migrations to the local database
-devbox run wrangler-dev   # Workers runtime locally on :3737 (bindings + workflows)
-devbox run dev            # plain `next dev` on :3737 (no Workers bindings)
-devbox run tunnel         # expose :3737 over a cloudflared quick tunnel
-devbox run check          # test + build + lint (the pre-push gate)
-devbox run test           # vitest
-devbox run lint           # eslint
+devbox run -- npm run migrate   # apply D1 migrations to the local database
+devbox run -- npm run dev       # next dev on :3737
+devbox run -- npm test          # jest
+devbox run -- npm run lint      # eslint
 ```
 
 Secrets for local dev live in `.dev.vars` (gitignored):
@@ -92,7 +89,7 @@ wrangler secret put TMDB_API_KEY
 wrangler secret put CRON_SECRET        # any random string
 
 # every release
-devbox run deploy                      # opennext build + wrangler deploy
+devbox run -- npm run deploy          # opennext build + wrangler deploy
 ```
 
 The cron (`0 6 * * *`, daily 06:00 UTC) fires `scheduled()`, which kicks
