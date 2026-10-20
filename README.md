@@ -63,7 +63,7 @@ devbox run -- npm run typecheck    # tsc --noEmit
 devbox run -- npm run format       # prettier
 ```
 
-Secrets for local development live in `.dev.vars` (gitignored):
+Secrets for local development live in `.env` (gitignored):
 
 ```
 SCRAPINGANT_API_KEY=...
