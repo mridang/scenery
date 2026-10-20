@@ -30,8 +30,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-::selection {
-  background: rgba(124, 58, 237, 0.32);
+@supports selector(::selection) {
+  ::selection {
+    background: rgba(124, 58, 237, 0.32);
+  }
 }
 
 a {

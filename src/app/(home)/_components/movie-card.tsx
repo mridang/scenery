@@ -3,7 +3,6 @@ import { magnetPath } from '../../../lib/magnet';
 
 import { formatRuntime } from '../_lib/format';
 import {
-  gradeLabel,
   qualityIconPath,
   statusColor,
   topRightLabel,
