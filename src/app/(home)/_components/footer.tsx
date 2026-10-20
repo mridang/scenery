@@ -83,7 +83,7 @@ export function Footer({
           </div>
         </div>
       </div>
-      <div className="border-t border-white/[0.06]">
+      <div className="border-t border-white/6">
         <div className="flex w-full flex-wrap justify-between gap-4 px-4 pt-4 pb-9 font-mono text-[11px] text-[#6e6e78] sm:px-7 2xl:px-12">
           <span>© 2026 scenery</span>
           <span>

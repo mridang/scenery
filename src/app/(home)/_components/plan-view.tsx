@@ -40,7 +40,7 @@ export function PlanView({
         <h1 className="m-0 mb-[7px] text-[27px] font-semibold tracking-[-0.02em]">
           1 TB download plan
         </h1>
-        <p className="m-0 max-w-[560px] text-[13.5px] leading-[1.5] text-[#a1a1aa]">
+        <p className="m-0 max-w-[560px] text-[13.5px] leading-normal text-[#a1a1aa]">
           Highest-scored releases with available torrents, packed greedily
           against a 1&nbsp;TB budget — your priority queue, ranked.
         </p>
@@ -66,7 +66,7 @@ export function PlanView({
         </div>
       </div>
 
-      <div className="flex flex-col gap-[1px] overflow-hidden rounded-[14px] border border-transparent bg-white/5">
+      <div className="flex flex-col gap-px overflow-hidden rounded-[14px] border border-transparent bg-white/5">
         {eligible.map((movie, idx) => (
           <PlanRow
             key={movie.row.imdb_id}

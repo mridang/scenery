@@ -56,7 +56,7 @@ export function RatingsRow({
           <img
             src="/icon.svg"
             alt="scenery"
-            className={`inline-block ${big ? 'h-4 w-4' : 'h-3 w-3'}`}
+            className={`inline-block ${big ? 'size-4' : 'size-3'}`}
             width={big ? 16 : 12}
             height={big ? 16 : 12}
           />
@@ -91,7 +91,7 @@ export function RatingsRow({
           <img
             src="/icons/metacritic.svg"
             alt="Metacritic"
-            className={`inline-block ${big ? 'h-4 w-4' : 'h-3 w-3'}`}
+            className={`inline-block ${big ? 'size-4' : 'size-3'}`}
             width={big ? 16 : 12}
             height={big ? 16 : 12}
           />
@@ -103,7 +103,7 @@ export function RatingsRow({
           <img
             src="/icons/rotten-tomatoes.svg"
             alt="Rotten Tomatoes"
-            className={`inline-block ${big ? 'h-4 w-4' : 'h-3 w-3'}`}
+            className={`inline-block ${big ? 'size-4' : 'size-3'}`}
             width={big ? 16 : 12}
             height={big ? 16 : 12}
           />

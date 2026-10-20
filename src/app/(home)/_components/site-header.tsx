@@ -51,7 +51,7 @@ export function SiteHeader({
 
   return (
     <header className="sticky top-0 z-30 border-b border-transparent bg-[rgba(31,31,34,0.86)] backdrop-blur-xl">
-      <div className="relative flex w-full items-center justify-between gap-6 px-4 py-4 sm:px-7 2xl:px-12">
+      <div className="relative flex w-full items-center justify-between gap-6 p-4 sm:px-7 2xl:px-12">
         {/* Left: brand + nav */}
         <div className="flex items-center gap-6 sm:gap-[38px]">
           <a
@@ -69,7 +69,7 @@ export function SiteHeader({
             </span>
             <span className="flex cursor-default items-center gap-[7px] text-[14px] font-medium text-[#9a9aa4]">
               Shows
-              <span className="rounded-full bg-white/10 px-1.5 py-0.5 font-mono text-[8px] font-semibold tracking-[0.05em] text-[#9a9aa4] uppercase">
+              <span className="rounded-full bg-white/10 px-1.5 py-0.5 font-mono text-[8px] font-semibold tracking-wider text-[#9a9aa4] uppercase">
                 Soon
               </span>
             </span>
@@ -98,7 +98,7 @@ export function SiteHeader({
             <button
               type="submit"
               aria-label="Search"
-              className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-[#3a3a41]"
+              className="flex size-8 flex-none items-center justify-center rounded-lg bg-[#3a3a41]"
             >
               <svg
                 width="16"
@@ -116,8 +116,8 @@ export function SiteHeader({
 
           <MaintenanceMenu />
 
-          <div className="relative h-[42px] w-[42px] flex-none" title="Updates">
-            <div className="flex h-[42px] w-[42px] items-center justify-center rounded-full border border-transparent bg-[#26262d]">
+          <div className="relative size-[42px] flex-none" title="Updates">
+            <div className="flex size-[42px] items-center justify-center rounded-full border border-transparent bg-[#26262d]">
               <svg
                 width="19"
                 height="19"
@@ -134,7 +134,7 @@ export function SiteHeader({
             </div>
             {stale ? (
               <span
-                className="absolute top-[1px] right-[1px] h-[9px] w-[9px] rounded-full border-2 border-[#1f1f22] bg-red-500"
+                className="absolute top-px right-px size-[9px] rounded-full border-2 border-[#1f1f22] bg-red-500"
                 title={`stale · last scrape ${timeAgo(lastUpdate.scrapeAt, nowMs)}`}
               />
             ) : null}
@@ -153,7 +153,7 @@ export function SiteHeader({
 function MaintenanceMenu() {
   return (
     <details className="group relative">
-      <summary className="flex h-[42px] w-[42px] cursor-pointer list-none items-center justify-center rounded-full border border-transparent bg-[#26262d] [&::-webkit-details-marker]:hidden">
+      <summary className="flex size-[42px] cursor-pointer list-none items-center justify-center rounded-full border border-transparent bg-[#26262d] [&::-webkit-details-marker]:hidden">
         <svg
           width="18"
           height="18"

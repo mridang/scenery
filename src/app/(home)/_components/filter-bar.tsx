@@ -102,7 +102,7 @@ export function FilterBar({
   return (
     <div>
       <div className="mb-5">
-        <h1 className="m-0 text-[26px] font-bold tracking-[-0.025em]">
+        <h1 className="m-0 text-[26px] font-bold tracking-tight">
           {opts.view === 'plan' ? '1 TB download plan' : 'New releases'}
         </h1>
         <p className="m-0 mt-[7px] text-[13.5px] text-[#9a9aa4]">
@@ -118,7 +118,7 @@ export function FilterBar({
         <div className="ml-auto flex items-center gap-4">
           <Link
             href={planHref}
-            className="rounded-[10px] border-none bg-[var(--accent)] px-4 py-[9px] font-sans text-[13px] font-semibold whitespace-nowrap text-white no-underline"
+            className="rounded-[10px] border-none bg-(--accent) px-4 py-[9px] font-sans text-[13px] font-semibold whitespace-nowrap text-white no-underline"
           >
             1 TB Plan
           </Link>
@@ -128,7 +128,7 @@ export function FilterBar({
             target="_blank"
             rel="noreferrer"
             aria-label="RSS feed"
-            className="flex h-[38px] w-[38px] flex-none items-center justify-center rounded-[10px] bg-white/5 no-underline hover:bg-[rgba(238,128,47,0.16)]"
+            className="flex size-[38px] flex-none items-center justify-center rounded-[10px] bg-white/5 no-underline hover:bg-[rgba(238,128,47,0.16)]"
           >
             <svg width="17" height="17" viewBox="0 0 24 24" fill="#ee802f">
               <circle cx="6.18" cy="17.82" r="2.18" />

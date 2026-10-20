@@ -66,12 +66,12 @@ export function Hero({ movie }: { movie: ScoredMovie | null }) {
       className="relative block h-full min-h-[430px] overflow-hidden rounded-[14px] bg-[#2a2a2e] text-inherit no-underline"
     >
       <div
-        className="absolute inset-0 bg-cover bg-[center_20%] saturate-[1.06]"
+        className="absolute inset-0 bg-cover bg-position-[center_20%] saturate-[1.06]"
         style={{ backgroundImage: `url(${backdrop})` }}
       />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(15,15,17,0.97)_0%,rgba(15,15,17,0.95)_30%,rgba(15,15,17,0.5)_52%,rgba(15,15,17,0)_68%)]" />
       <div className="absolute inset-y-0 left-0 flex max-w-[580px] flex-col justify-center gap-[13px] px-6 sm:px-[42px]">
-        <span className="font-mono text-[11px] tracking-[0.16em] text-[var(--accent)] uppercase">
+        <span className="font-mono text-[11px] tracking-[0.16em] text-(--accent) uppercase">
           Latest movies
         </span>
         <h2 className="m-0 text-[36px] leading-none font-extrabold tracking-[-0.035em] sm:text-[48px]">
@@ -81,7 +81,7 @@ export function Hero({ movie }: { movie: ScoredMovie | null }) {
           <div className="font-mono text-[12px] text-[#c3c3cc]">{metaLine}</div>
         ) : null}
         {credit ? (
-          <div className="max-w-[460px] truncate text-[13.5px] leading-[1.5] text-[#b4b4be]">
+          <div className="max-w-[460px] truncate text-[13.5px] leading-normal text-[#b4b4be]">
             {credit}
           </div>
         ) : null}

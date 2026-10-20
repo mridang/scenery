@@ -82,13 +82,13 @@ export function MovieCardUniform({ movie }: CardProps) {
         className="absolute inset-0 z-10 rounded-[14px]"
       />
 
-      <div className="relative aspect-[2/3] overflow-hidden rounded bg-[#1c1c22]">
+      <div className="relative aspect-2/3 overflow-hidden rounded bg-[#1c1c22]">
         {poster ? (
           <img
             src={poster}
             loading="lazy"
             alt=""
-            className={`block h-full w-full object-cover ${grayscale ? 'grayscale' : ''}`}
+            className={`block size-full object-cover ${grayscale ? 'grayscale' : ''}`}
           />
         ) : null}
         <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(9,9,11,0.88)_0%,rgba(9,9,11,0.12)_32%,rgba(9,9,11,0)_54%)]" />
@@ -121,7 +121,7 @@ export function MovieCardUniform({ movie }: CardProps) {
         ) : (
           <div className="absolute top-[10px] right-[10px] flex items-center gap-[6px] rounded-[8px] border border-transparent bg-[rgba(9,9,11,0.66)] px-[9px] py-[5px] font-mono text-[10px] font-medium text-[#d4d4d8] backdrop-blur">
             <span
-              className="inline-block h-[6px] w-[6px] rounded-full"
+              className="inline-block size-[6px] rounded-full"
               style={{ background: stColor }}
             />
             {topRight}
@@ -129,7 +129,7 @@ export function MovieCardUniform({ movie }: CardProps) {
         )}
 
         {studios.length > 0 ? (
-          <div className="absolute right-[10px] bottom-[10px] left-[10px] flex flex-wrap gap-[5px]">
+          <div className="absolute inset-x-[10px] bottom-[10px] flex flex-wrap gap-[5px]">
             {studios.map((label) => (
               <span
                 key={label}
@@ -144,7 +144,7 @@ export function MovieCardUniform({ movie }: CardProps) {
 
       <div className="flex flex-col gap-[4px] px-[3px] pb-[2px]">
         <div className="flex items-baseline gap-[7px]">
-          <span className="truncate text-[14.5px] leading-[1.25] font-semibold tracking-[-0.01em]">
+          <span className="truncate text-[14.5px] leading-tight font-semibold tracking-[-0.01em]">
             {title}
           </span>
           {row.tmdb_year !== null ? (
@@ -176,7 +176,7 @@ export function MovieCardUniform({ movie }: CardProps) {
           size="sm"
         />
         {torrentBits ? (
-          <div className="mt-[1px] truncate font-mono text-[10px] text-[#6e6e78]">
+          <div className="mt-px truncate font-mono text-[10px] text-[#6e6e78]">
             {torrentBits}
           </div>
         ) : null}
@@ -235,7 +235,7 @@ export function MovieCardMosaic({ movie, big = false }: CardProps) {
           src={poster}
           loading="lazy"
           alt=""
-          className={`absolute inset-0 h-full w-full object-cover ${grayscale ? 'grayscale' : ''}`}
+          className={`absolute inset-0 size-full object-cover ${grayscale ? 'grayscale' : ''}`}
         />
       ) : null}
       <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(9,9,11,0.97)_0%,rgba(9,9,11,0.88)_30%,rgba(9,9,11,0.5)_56%,rgba(9,9,11,0)_82%)]" />
@@ -268,20 +268,20 @@ export function MovieCardMosaic({ movie, big = false }: CardProps) {
       ) : (
         <div className="absolute top-[9px] right-[9px] flex items-center gap-[5px] rounded-[8px] bg-[rgba(9,9,11,0.6)] px-2 py-1 font-mono text-[9.5px] text-[#d4d4d8] backdrop-blur">
           <span
-            className="inline-block h-[6px] w-[6px] rounded-full"
+            className="inline-block size-[6px] rounded-full"
             style={{ background: stColor }}
           />
           {topRight}
         </div>
       )}
 
-      <div className="absolute right-0 bottom-0 left-0 flex flex-col gap-[4px] p-[13px]">
+      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-[4px] p-[13px]">
         {studios.length > 0 ? (
-          <div className="mb-[1px] flex flex-wrap gap-[5px]">
+          <div className="mb-px flex flex-wrap gap-[5px]">
             {studios.map((label) => (
               <span
                 key={label}
-                className="rounded-[5px] border border-white/20 bg-white/15 px-[6px] py-[2px] font-mono text-[9px] font-semibold tracking-[0.05em] text-[#fafafa] uppercase backdrop-blur"
+                className="rounded-[5px] border border-white/20 bg-white/15 px-[6px] py-[2px] font-mono text-[9px] font-semibold tracking-wider text-[#fafafa] uppercase backdrop-blur"
               >
                 {label}
               </span>

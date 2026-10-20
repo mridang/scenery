@@ -95,7 +95,7 @@ function CarouselButton({
       type="button"
       aria-label={direction === 'prev' ? 'Previous' : 'Next'}
       onClick={onClick}
-      className={`absolute top-1/2 z-20 -translate-y-1/2 ${sideCls} flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-[rgba(9,9,11,0.55)] text-white backdrop-blur transition-colors hover:bg-[rgba(9,9,11,0.85)]`}
+      className={`absolute top-1/2 z-20 -translate-y-1/2 ${sideCls} flex size-10 items-center justify-center rounded-full border border-white/10 bg-[rgba(9,9,11,0.55)] text-white backdrop-blur transition-colors hover:bg-[rgba(9,9,11,0.85)]`}
     >
       <svg
         width="20"
