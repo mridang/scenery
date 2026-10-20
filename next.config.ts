@@ -1,53 +1,47 @@
 import type { NextConfig } from 'next';
+import { PHASE_DEVELOPMENT_SERVER } from 'next/constants';
 import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
 
-/**
- * Strict Content-Security-Policy. Everything renders from this origin —
- * posters and future media flow through `/api/img` which 301s to
- * `/cdn-cgi/image/...` (same origin to the browser), the static icons
- * are local SVGs under `/icons/`, the service worker is at `/sw.js`,
- * scripts/styles ship from `/_next/static/...`.
- *
- * Tailwind v4 inlines theme variables and Next inlines some runtime
- * bootstrap shims, so `style-src` and `script-src` accept
- * `'unsafe-inline'`. Everything that fetches data from a different
- * origin (TMDB, IMDb, OMDB, FCM, ScrapingAnt) runs server-side inside
- * the Worker, never from the page.
- */
-const csp = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "font-src 'self' data:",
-  "connect-src 'self'",
-  "worker-src 'self'",
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "object-src 'none'",
-  'upgrade-insecure-requests',
-].join('; ');
-
 const nextConfig: NextConfig = {
+  // No need to tell the world which framework is serving the site.
+  poweredByHeader: false,
   async headers() {
     return [
       {
-        source: '/:path*',
+        // The approval screen must never be framed (clickjacking would let a
+        // hostile page trick someone into approving an app) or cached. (Its
+        // Content-Security-Policy, which also forbids framing, comes from the
+        // Worker with the rest of the site's.)
+        source: '/oauth/authorize',
         headers: [
-          { key: 'Content-Security-Policy', value: csp },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains',
-          },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Cache-Control', value: 'no-store' },
+          { key: 'Referrer-Policy', value: 'no-referrer' },
         ],
       },
     ];
   },
+  experimental: {
+    // (The stylesheet is deliberately NOT inlined into the page. An inline
+    // <style> carries no nonce, so the Content Security Policy would refuse it
+    // and the page would show unstyled; a linked stylesheet from this site is
+    // allowed.)
+    // Keep prefetched pages in the browser's client cache for three minutes, so a
+    // card that has already been prefetched opens instantly with no server
+    // request. Short, because recipe pages are personal (favourites, notes) and
+    // router.refresh() after a change invalidates the cache anyway.
+    staleTimes: { dynamic: 180, static: 180 },
+  },
 };
 
-void initOpenNextCloudflareForDev();
-
-export default nextConfig;
+/**
+ * The Cloudflare bindings (D1, AI, Images) are only emulated for `next dev`. A
+ * production build must not try: the AI binding is remote-only, so starting the
+ * emulation needs Cloudflare credentials, and a build has no use for them.
+ */
+export default function config(phase: string): NextConfig {
+  if (phase === PHASE_DEVELOPMENT_SERVER) {
+    void initOpenNextCloudflareForDev();
+  }
+  return nextConfig;
+}

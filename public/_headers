@@ -1,16 +1,48 @@
-# Cloudflare Workers Assets header rules (overrides OpenNext's default
-# `max-age=0, must-revalidate` on static assets).
+# Cloudflare Workers Assets header rules for static files. They bypass the
+# Worker, so the security headers it adds to pages are repeated here (a test
+# keeps the two lists in step). Later, more specific rules add to these.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+  Content-Security-Policy: frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'
+  X-Frame-Options: SAMEORIGIN
+  Cross-Origin-Opener-Policy: same-origin
 
 # Content-hashed build output — the filename changes whenever the bytes
 # change, so it is safe to cache forever.
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
 
-# Un-hashed public files — cache for a day; they change rarely.
+# Un-hashed public files — cache for a day; they change rarely. The icons and
+# the manifest are also files other sites load or fetch on purpose.
+/icons/*
+  Cache-Control: public, max-age=86400
+  Cross-Origin-Resource-Policy: cross-origin
 /favicon.ico
   Cache-Control: public, max-age=86400
+  Cross-Origin-Resource-Policy: cross-origin
+/android-chrome-*
+  Cache-Control: public, max-age=86400
+  Cross-Origin-Resource-Policy: cross-origin
+/apple-touch-icon.png
+  Cache-Control: public, max-age=86400
+  Cross-Origin-Resource-Policy: cross-origin
+/favicon-*
+  Cache-Control: public, max-age=86400
+  Cross-Origin-Resource-Policy: cross-origin
+/icon.png
+  Cache-Control: public, max-age=86400
+  Cross-Origin-Resource-Policy: cross-origin
+/site.webmanifest
+  Cache-Control: public, max-age=86400
+  Cross-Origin-Resource-Policy: cross-origin
+/*.svg
+  Cache-Control: public, max-age=86400
+  Cross-Origin-Resource-Policy: cross-origin
 
-# Brand icons under /icons/* are fixed bytes for the life of the
-# build; tag them as immutable so repeat visits skip the network.
-/icons/*
-  Cache-Control: public, max-age=31536000, immutable
+# The service worker must be re-checked every time, or a bad one could stick.
+/sw.js
+  Cache-Control: no-cache
