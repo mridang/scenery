@@ -4,6 +4,10 @@ import { isRetryableStatus, withRetry } from '../../../src/lib/transport/retry';
 
 const FAST = { baseDelayMs: 0, jitterMs: 0 } as const;
 
+function stubTransport(): jest.Mock<typeof fetch> {
+  return jest.fn<typeof fetch>();
+}
+
 function res(status: number): Response {
   return new Response('', { status });
 }
@@ -28,10 +32,8 @@ describe('isRetryableStatus', () => {
 
 describe('withRetry', () => {
   it('returns on the first successful attempt without retrying', async () => {
-    const transport = jest.fn(() =>
-      Promise.resolve(res(200)),
-    ) as unknown as jest.Mock & typeof fetch;
-    const wrapped = withRetry(transport as unknown as typeof fetch, FAST);
+    const transport = jest.fn<typeof fetch>(() => Promise.resolve(res(200)));
+    const wrapped = withRetry(transport, FAST);
 
     const response = await wrapped('https://x');
 
@@ -40,11 +42,10 @@ describe('withRetry', () => {
   });
 
   it('retries on a retryable status then succeeds', async () => {
-    const transport = jest
-      .fn()
+    const transport = stubTransport()
       .mockResolvedValueOnce(res(503))
       .mockResolvedValueOnce(res(200));
-    const wrapped = withRetry(transport as unknown as typeof fetch, FAST);
+    const wrapped = withRetry(transport, FAST);
 
     const response = await wrapped('https://x');
 
@@ -53,11 +54,10 @@ describe('withRetry', () => {
   });
 
   it('retries on a thrown network error then succeeds', async () => {
-    const transport = jest
-      .fn()
+    const transport = stubTransport()
       .mockRejectedValueOnce(new Error('network down'))
       .mockResolvedValueOnce(res(200));
-    const wrapped = withRetry(transport as unknown as typeof fetch, FAST);
+    const wrapped = withRetry(transport, FAST);
 
     const response = await wrapped('https://x');
 
@@ -66,8 +66,8 @@ describe('withRetry', () => {
   });
 
   it('gives up after the max attempts and returns the last response', async () => {
-    const transport = jest.fn().mockResolvedValue(res(500));
-    const wrapped = withRetry(transport as unknown as typeof fetch, {
+    const transport = stubTransport().mockResolvedValue(res(500));
+    const wrapped = withRetry(transport, {
       ...FAST,
       attempts: 3,
     });
@@ -79,8 +79,8 @@ describe('withRetry', () => {
   });
 
   it('re-throws the error when all attempts throw', async () => {
-    const transport = jest.fn().mockRejectedValue(new Error('boom'));
-    const wrapped = withRetry(transport as unknown as typeof fetch, {
+    const transport = stubTransport().mockRejectedValue(new Error('boom'));
+    const wrapped = withRetry(transport, {
       ...FAST,
       attempts: 2,
     });
@@ -90,8 +90,8 @@ describe('withRetry', () => {
   });
 
   it('does not retry a non-retryable status', async () => {
-    const transport = jest.fn().mockResolvedValue(res(404));
-    const wrapped = withRetry(transport as unknown as typeof fetch, FAST);
+    const transport = stubTransport().mockResolvedValue(res(404));
+    const wrapped = withRetry(transport, FAST);
 
     const response = await wrapped('https://x');
 
@@ -100,8 +100,8 @@ describe('withRetry', () => {
   });
 
   it('clamps attempts to a minimum of one', async () => {
-    const transport = jest.fn().mockResolvedValue(res(500));
-    const wrapped = withRetry(transport as unknown as typeof fetch, {
+    const transport = stubTransport().mockResolvedValue(res(500));
+    const wrapped = withRetry(transport, {
       ...FAST,
       attempts: 0,
     });
@@ -113,8 +113,8 @@ describe('withRetry', () => {
   });
 
   it('forwards input and init to the underlying transport', async () => {
-    const transport = jest.fn().mockResolvedValue(res(200));
-    const wrapped = withRetry(transport as unknown as typeof fetch, FAST);
+    const transport = stubTransport().mockResolvedValue(res(200));
+    const wrapped = withRetry(transport, FAST);
 
     const init = { method: 'POST' };
     await wrapped('https://x', init);

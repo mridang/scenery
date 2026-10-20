@@ -5,14 +5,24 @@ import { scrapingAntTransport } from '../../../../src/lib/transport/providers/sc
 const realFetch = globalThis.fetch;
 const ENDPOINT = 'https://api.scrapingant.com/v2/general';
 
-function stubFetch(): jest.Mock {
-  const stub = jest.fn(() => Promise.resolve(new Response('ok')));
-  globalThis.fetch = stub as unknown as typeof fetch;
+type FetchStub = jest.Mock<typeof fetch>;
+
+function stubFetch(): FetchStub {
+  const stub = jest.fn<typeof fetch>(() => Promise.resolve(new Response('ok')));
+  globalThis.fetch = stub;
   return stub;
 }
 
-function capturedUrl(stub: jest.Mock): URL {
-  return stub.mock.calls[0][0] as URL;
+function capturedUrl(stub: FetchStub): URL {
+  const input = stub.mock.calls[0]?.[0];
+  expect(input).toBeInstanceOf(URL);
+  return input as URL;
+}
+
+function capturedInit(stub: FetchStub): RequestInit {
+  const init = stub.mock.calls[0]?.[1];
+  expect(init).toBeDefined();
+  return init ?? {};
 }
 
 afterEach(() => {
@@ -60,7 +70,7 @@ describe('scrapingAntTransport', () => {
 
     await transport('https://upstream.test');
 
-    const init = stub.mock.calls[0][1] as RequestInit;
+    const init = capturedInit(stub);
     expect(init.method).toBe('GET');
     const headers = init.headers as Headers;
     expect(headers.get('x-api-key')).toBe('SECRET');
@@ -120,7 +130,7 @@ describe('scrapingAntTransport', () => {
 
     await transport('https://upstream.test');
 
-    const init = stub.mock.calls[0][1] as RequestInit;
+    const init = capturedInit(stub);
     expect(init.signal).toBeInstanceOf(AbortSignal);
   });
 
@@ -131,7 +141,7 @@ describe('scrapingAntTransport', () => {
 
     await transport('https://upstream.test', { signal: controller.signal });
 
-    const init = stub.mock.calls[0][1] as RequestInit;
+    const init = capturedInit(stub);
     expect(init.signal).toBe(controller.signal);
   });
 });
