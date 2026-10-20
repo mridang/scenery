@@ -91,7 +91,7 @@ devbox run -- npm run deploy                             # opennextjs-cloudflare
 
 The custom domain `scenery.apps.mrida.ng` requires the `apps.mrida.ng` zone on the Cloudflare account; the `workers.dev` subdomain is disabled. The public VAPID key and subject are plain `vars` in `wrangler.jsonc`.
 
-GitHub Actions (`deploy.yml`) applies the D1 migrations and deploys on pushes to `master` or `main`.
+GitHub Actions (`deploy.yml`) applies the D1 migrations and deploys on pushes to `master`.
 
 ## Operations
 
