@@ -14,6 +14,15 @@ const transportOf = (
       }),
     )) as typeof fetch;
 
+/** Returns the item at `index`, failing the test loudly when it is absent. */
+function nth<T>(items: readonly T[], index: number): T {
+  const item = items[index];
+  if (item === undefined) {
+    throw new Error(`expected an item at index ${index}`);
+  }
+  return item;
+}
+
 describe('TorrentioProvider', () => {
   it("returns 'empty' when streams array is empty", async () => {
     const r = await new TorrentioProvider(transportOf({ streams: [] })).search(
@@ -38,7 +47,7 @@ describe('TorrentioProvider', () => {
     ).search('tt12042730');
     expect(r.status).toBe('success');
     expect(r.torrents).toHaveLength(1);
-    const t = r.torrents[0];
+    const t = nth(r.torrents, 0);
     expect(t.infoHash).toBe('aaaa1234');
     expect(t.seeders).toBe(852);
     expect(t.sizeBytes).toBe(5_400_000_000);

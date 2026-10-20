@@ -9,6 +9,15 @@ import type {
   TmdbPersonResponse,
 } from '../../../src/lib/tmdb/types';
 
+/** Returns the item at `index`, failing the test loudly when it is absent. */
+function nth<T>(items: readonly T[], index: number): T {
+  const item = items[index];
+  if (item === undefined) {
+    throw new Error(`expected an item at index ${index}`);
+  }
+  return item;
+}
+
 /** A recorded call: the repo method name plus its arguments. */
 type Call = { method: string; args: readonly unknown[] };
 
@@ -70,7 +79,7 @@ describe('TmdbEnricher.enrichMovie', () => {
 
     expect(verdict).toBe('error');
     expect(calls.map((c) => c.method)).toEqual(['recordMovieError']);
-    const [imdbId, raw, message] = calls[0].args;
+    const [imdbId, raw, message] = nth(calls, 0).args;
     expect(imdbId).toBe('tt1');
     expect(raw).toBe('boom');
     expect(message).toBe('http 500');
@@ -88,7 +97,7 @@ describe('TmdbEnricher.enrichMovie', () => {
 
     expect(verdict).toBe('not_found');
     expect(calls.map((c) => c.method)).toEqual(['recordMovieNotFound']);
-    expect(calls[0].args[0]).toBe('tt2');
+    expect(nth(calls, 0).args[0]).toBe('tt2');
   });
 
   it('persists a found movie then its credits and returns "found"', async () => {
@@ -111,11 +120,11 @@ describe('TmdbEnricher.enrichMovie', () => {
       'updateMovieCredits',
     ]);
     // upsertFoundMovie is handed the first movie result.
-    expect(calls[0].args[0]).toBe('tt1375666');
-    expect(calls[0].args[1]).toEqual({ id: 27205, title: 'Inception' });
+    expect(nth(calls, 0).args[0]).toBe('tt1375666');
+    expect(nth(calls, 0).args[1]).toEqual({ id: 27205, title: 'Inception' });
     // updateMovieCredits receives the parsed credits payload.
-    expect(calls[1].args[0]).toBe('tt1375666');
-    expect(calls[1].args[1]).toEqual(movie);
+    expect(nth(calls, 1).args[0]).toBe('tt1375666');
+    expect(nth(calls, 1).args[1]).toEqual(movie);
   });
 
   it('still returns "found" but records a credits error when /movie fails', async () => {
@@ -136,7 +145,7 @@ describe('TmdbEnricher.enrichMovie', () => {
       'upsertFoundMovie',
       'recordCreditsError',
     ]);
-    expect(calls[1].args[2]).toBe('http 502');
+    expect(nth(calls, 1).args[2]).toBe('http 502');
   });
 });
 
@@ -173,7 +182,7 @@ describe('TmdbEnricher.enrichPerson', () => {
 
     expect(okFlag).toBe(true);
     expect(calls.map((c) => c.method)).toEqual(['upsertPerson']);
-    const [value, fallbackId, prestige, totalCredits] = calls[0].args as [
+    const [value, fallbackId, prestige, totalCredits] = nth(calls, 0).args as [
       TmdbPersonResponse,
       number,
       number,

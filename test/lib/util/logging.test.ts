@@ -2,6 +2,19 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import { logError, logInfo, logWarn } from '../../../src/lib/util/logging';
 
+type ConsoleSpy = jest.SpiedFunction<typeof console.log>;
+
+/** Parses the first line the spy captured, asserting that one was emitted. */
+function firstLine(spy: ConsoleSpy): string {
+  const line = spy.mock.calls[0]?.[0];
+  expect(typeof line).toBe('string');
+  return String(line);
+}
+
+function firstRecord(spy: ConsoleSpy): Record<string, unknown> {
+  return JSON.parse(firstLine(spy)) as Record<string, unknown>;
+}
+
 afterEach(() => {
   jest.restoreAllMocks();
 });
@@ -18,16 +31,15 @@ describe('structured logging', () => {
     expect(log).toHaveBeenCalledTimes(1);
     expect(err).not.toHaveBeenCalled();
 
-    const line = log.mock.calls[0][0] as string;
-    expect(typeof line).toBe('string');
+    const line = firstLine(log);
     expect(line.includes('\n')).toBe(false);
 
-    const parsed = JSON.parse(line) as Record<string, unknown>;
-    expect(parsed.level).toBe('info');
-    expect(parsed.event).toBe('torrent.lookup');
-    expect(parsed.status).toBe('ok');
-    expect(typeof parsed.ts).toBe('string');
-    expect(Number.isNaN(Date.parse(parsed.ts as string))).toBe(false);
+    const parsed = firstRecord(log);
+    expect(parsed['level']).toBe('info');
+    expect(parsed['event']).toBe('torrent.lookup');
+    expect(parsed['status']).toBe('ok');
+    expect(typeof parsed['ts']).toBe('string');
+    expect(Number.isNaN(Date.parse(parsed['ts'] as string))).toBe(false);
   });
 
   it('logWarn emits one warn-level line to console.error', () => {
@@ -41,13 +53,10 @@ describe('structured logging', () => {
     expect(log).not.toHaveBeenCalled();
     expect(err).toHaveBeenCalledTimes(1);
 
-    const parsed = JSON.parse(err.mock.calls[0][0] as string) as Record<
-      string,
-      unknown
-    >;
-    expect(parsed.level).toBe('warn');
-    expect(parsed.event).toBe('torrent.lookup');
-    expect(typeof parsed.ts).toBe('string');
+    const parsed = firstRecord(err);
+    expect(parsed['level']).toBe('warn');
+    expect(parsed['event']).toBe('torrent.lookup');
+    expect(typeof parsed['ts']).toBe('string');
   });
 
   it('logError emits one error-level line to console.error', () => {
@@ -61,11 +70,8 @@ describe('structured logging', () => {
     expect(log).not.toHaveBeenCalled();
     expect(err).toHaveBeenCalledTimes(1);
 
-    const parsed = JSON.parse(err.mock.calls[0][0] as string) as Record<
-      string,
-      unknown
-    >;
-    expect(parsed.level).toBe('error');
+    const parsed = firstRecord(err);
+    expect(parsed['level']).toBe('error');
   });
 
   it('preserves extra fields verbatim', () => {
@@ -74,11 +80,8 @@ describe('structured logging', () => {
 
     logInfo({ event: 'x', count: 3, nested: { a: 1 } });
 
-    const parsed = JSON.parse(log.mock.calls[0][0] as string) as Record<
-      string,
-      unknown
-    >;
-    expect(parsed.count).toBe(3);
-    expect(parsed.nested).toEqual({ a: 1 });
+    const parsed = firstRecord(log);
+    expect(parsed['count']).toBe(3);
+    expect(parsed['nested']).toEqual({ a: 1 });
   });
 });

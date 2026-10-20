@@ -3,6 +3,15 @@ import { describe, expect, it } from '@jest/globals';
 import { TmdbClient } from '../../../src/lib/tmdb/client';
 import type { TmdbFindResponse } from '../../../src/lib/tmdb/types';
 
+/** Returns the item at `index`, failing the test loudly when it is absent. */
+function nth<T>(items: readonly T[], index: number): T {
+  const item = items[index];
+  if (item === undefined) {
+    throw new Error(`expected an item at index ${index}`);
+  }
+  return item;
+}
+
 /**
  * Build a `typeof fetch` stub that records the URL it was called with and
  * returns a canned response. The TmdbClient only ever passes a `URL` (or a
@@ -50,7 +59,7 @@ describe('TmdbClient', () => {
     await client.findByImdb('tt1375666');
 
     expect(calls).toHaveLength(1);
-    const url = new URL(calls[0]);
+    const url = new URL(nth(calls, 0));
     expect(url.origin + url.pathname).toBe(
       'https://api.themoviedb.org/3/find/tt1375666',
     );
@@ -70,7 +79,7 @@ describe('TmdbClient', () => {
 
     await client.getMovieGenres();
 
-    const url = new URL(calls[0]);
+    const url = new URL(nth(calls, 0));
     expect(url.origin + url.pathname).toBe(
       'https://proxy.example/tmdb/genre/movie/list',
     );
@@ -102,7 +111,7 @@ describe('TmdbClient', () => {
 
     const res = await client.getMovieWithCredits(27205);
 
-    const url = new URL(calls[0]);
+    const url = new URL(nth(calls, 0));
     expect(url.origin + url.pathname).toBe(
       'https://api.themoviedb.org/3/movie/27205',
     );

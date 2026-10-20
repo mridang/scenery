@@ -16,6 +16,15 @@ const transportOf = (
 
 const EMPTY_HASH = '0000000000000000000000000000000000000000';
 
+/** Returns the item at `index`, failing the test loudly when it is absent. */
+function nth<T>(items: readonly T[], index: number): T {
+  const item = items[index];
+  if (item === undefined) {
+    throw new Error(`expected an item at index ${index}`);
+  }
+  return item;
+}
+
 describe('ApibayProvider', () => {
   it('parses a canned apibay response into the provider result shape', async () => {
     const r = await new ApibayProvider(
@@ -54,7 +63,7 @@ describe('ApibayProvider', () => {
     expect(r.status).toBe('success');
     expect(r.torrents).toHaveLength(2);
 
-    const first = r.torrents[0];
+    const first = nth(r.torrents, 0);
     expect(first.infoHash).toBe('abcdef0123456789abcdef0123456789abcdef01');
     expect(first.title).toBe(
       'Dune.Part.Two.2024.2160p.UHD.BluRay.REMUX.HDR-FraMeSToR',
@@ -66,7 +75,7 @@ describe('ApibayProvider', () => {
     expect(first.isHdr).toBe(true);
     expect(first.isRemux).toBe(true);
 
-    const second = r.torrents[1];
+    const second = nth(r.torrents, 1);
     expect(second.quality).toBe('1080p');
     expect(second.isHdr).toBe(false);
     expect(second.isRemux).toBe(false);
@@ -119,9 +128,9 @@ describe('ApibayProvider', () => {
 
     expect(r.status).toBe('success');
     expect(r.torrents).toHaveLength(1);
-    expect(r.torrents[0].seeders).toBeNull();
-    expect(r.torrents[0].sizeBytes).toBeNull();
-    expect(r.torrents[0].quality).toBe('720p');
+    expect(nth(r.torrents, 0).seeders).toBeNull();
+    expect(nth(r.torrents, 0).sizeBytes).toBeNull();
+    expect(nth(r.torrents, 0).quality).toBe('720p');
   });
 
   it("returns 'error' on a non-2xx response", async () => {
