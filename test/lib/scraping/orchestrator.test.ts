@@ -1,6 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { ScrapeOrchestrator } from '../../../src/lib/scraping/orchestrator';
+import type { SourceSlug } from '../../../src/lib/db';
 import type { ScrapingRepository } from '../../../src/lib/scraping/repository';
 import type {
   ExtractedRelease,
@@ -26,7 +27,7 @@ function fakeRepo(overrides: Partial<ScrapingRepository> = {}): {
   const successful: unknown[] = [];
 
   const base: Partial<ScrapingRepository> = {
-    findSource: jest.fn(async () => ({ id: 7, slug: 'fake' })),
+    findSource: jest.fn(async () => ({ id: 7, slug: 'scnsrc' })),
     nextAttemptNumber: jest.fn(async () => 1),
     insertFailedAttempt: jest.fn(async (opts: unknown) => {
       failed.push(opts);
@@ -67,7 +68,7 @@ function release(id: string): ExtractedRelease {
 
 /** A fully controllable fake Source. */
 function fakeSource(opts: {
-  slug: string;
+  slug: SourceSlug;
   fetch: (pageNumber: number) => Promise<FetchResult>;
   releases?: ExtractedRelease[];
 }): Source {
@@ -85,7 +86,7 @@ describe('ScrapeOrchestrator.run', () => {
   it('persists extracted releases on a successful fetch', async () => {
     const { repo, upserts, snapshots, successful } = fakeRepo();
     const src = fakeSource({
-      slug: 'fake',
+      slug: 'scnsrc',
       fetch: async () => ({
         ok: true,
         httpStatus: 200,
@@ -95,9 +96,9 @@ describe('ScrapeOrchestrator.run', () => {
       releases: [release('1'), release('2')],
     });
 
-    const orchestrator = new ScrapeOrchestrator(repo, { fake: src });
+    const orchestrator = new ScrapeOrchestrator(repo, { scnsrc: src });
     const results = await orchestrator.run({
-      sourceSlug: 'fake',
+      sourceSlug: 'scnsrc',
       pageNumbers: [1],
     });
 
@@ -112,7 +113,7 @@ describe('ScrapeOrchestrator.run', () => {
   it('records a failed attempt without throwing when a fetch fails', async () => {
     const { repo, failed, upserts } = fakeRepo();
     const src = fakeSource({
-      slug: 'fake',
+      slug: 'scnsrc',
       fetch: async () => ({
         ok: false,
         httpStatus: 403,
@@ -121,9 +122,9 @@ describe('ScrapeOrchestrator.run', () => {
       }),
     });
 
-    const orchestrator = new ScrapeOrchestrator(repo, { fake: src });
+    const orchestrator = new ScrapeOrchestrator(repo, { scnsrc: src });
     const results = await orchestrator.run({
-      sourceSlug: 'fake',
+      sourceSlug: 'scnsrc',
       pageNumbers: [1],
     });
 
@@ -137,7 +138,7 @@ describe('ScrapeOrchestrator.run', () => {
   it('is fail-safe across pages: a failed page does not abort later pages', async () => {
     const { repo, upserts, failed } = fakeRepo();
     const src = fakeSource({
-      slug: 'fake',
+      slug: 'scnsrc',
       fetch: async (pageNumber) =>
         pageNumber === 1
           ? { ok: false, httpStatus: 500, error: 'boom', byteSize: 0 }
@@ -150,9 +151,9 @@ describe('ScrapeOrchestrator.run', () => {
       releases: [release('9')],
     });
 
-    const orchestrator = new ScrapeOrchestrator(repo, { fake: src });
+    const orchestrator = new ScrapeOrchestrator(repo, { scnsrc: src });
     const results = await orchestrator.run({
-      sourceSlug: 'fake',
+      sourceSlug: 'scnsrc',
       pageNumbers: [1, 2],
     });
 
@@ -177,20 +178,20 @@ describe('ScrapeOrchestrator.run', () => {
       findSource: jest.fn(async () => null),
     });
     const src = fakeSource({
-      slug: 'fake',
+      slug: 'scnsrc',
       fetch: async () => ({ ok: true, html: '', byteSize: 0 }),
     });
-    const orchestrator = new ScrapeOrchestrator(repo, { fake: src });
+    const orchestrator = new ScrapeOrchestrator(repo, { scnsrc: src });
 
     await expect(
-      orchestrator.run({ sourceSlug: 'fake', pageNumbers: [1] }),
+      orchestrator.run({ sourceSlug: 'scnsrc', pageNumbers: [1] }),
     ).rejects.toThrow('not in db');
   });
 
   it('upserts nothing when a successful page yields no releases', async () => {
     const { repo, upserts, snapshots } = fakeRepo();
     const src = fakeSource({
-      slug: 'fake',
+      slug: 'scnsrc',
       fetch: async () => ({
         ok: true,
         httpStatus: 200,
@@ -200,9 +201,9 @@ describe('ScrapeOrchestrator.run', () => {
       releases: [],
     });
 
-    const orchestrator = new ScrapeOrchestrator(repo, { fake: src });
+    const orchestrator = new ScrapeOrchestrator(repo, { scnsrc: src });
     const results = await orchestrator.run({
-      sourceSlug: 'fake',
+      sourceSlug: 'scnsrc',
       pageNumbers: [1],
     });
 
