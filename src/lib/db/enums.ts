@@ -36,3 +36,15 @@ export type TorrentProviderName = (typeof TORRENT_PROVIDERS)[number];
 /** Detected video quality of a torrent (null when unknown). */
 export const QUALITIES = ['2160p', '1080p', '720p', '480p'] as const;
 export type Quality = (typeof QUALITIES)[number];
+
+/** What an operator can ask `POST /api/operations` to run. */
+export const OPERATION_TYPES = [
+  'pipeline_run',
+  'omdb_backfill',
+  'push_trigger',
+] as const;
+export type OperationType = (typeof OPERATION_TYPES)[number];
+
+/** Where an operation is: running, or how it ended. */
+export const OPERATION_STATUSES = ['running', 'succeeded', 'failed'] as const;
+export type OperationStatus = (typeof OPERATION_STATUSES)[number];

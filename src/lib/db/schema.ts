@@ -23,6 +23,8 @@ import {
 import {
   FETCH_STATUSES,
   LOOKUP_STATUSES,
+  OPERATION_STATUSES,
+  OPERATION_TYPES,
   QUALITIES,
   SOURCE_SLUGS,
   TMDB_STATUSES,
@@ -283,4 +285,18 @@ export const pushSubscriptions = sqliteTable('push_subscriptions', {
   auth: text('auth').notNull(),
   created_at: text('created_at').notNull(),
   last_sent_at: text('last_sent_at'),
+});
+
+/**
+ * One run of an operator operation. `parameters` and `result` are JSON text;
+ * the timestamps are RFC 3339.
+ */
+export const operations = sqliteTable('operations', {
+  id: text('id').primaryKey(),
+  type: text('type', { enum: OPERATION_TYPES }).notNull(),
+  status: text('status', { enum: OPERATION_STATUSES }).notNull(),
+  parameters: text('parameters').notNull(),
+  result: text('result'),
+  created_at: text('created_at').notNull(),
+  finished_at: text('finished_at'),
 });
