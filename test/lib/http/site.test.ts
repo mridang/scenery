@@ -1,6 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
+  CACHED_QUERY_PARAMS,
+  EDGE_CACHED_PAGES,
+  EDGE_TTL_SECONDS,
   EXTRA_DIRECTIVES,
   EXTRA_IMG_SOURCES,
   OPEN_FILES,
@@ -9,6 +12,25 @@ import {
 } from '../../../src/lib/http/site';
 
 describe('site settings', () => {
+  it('lets the edge keep the catalog page and its feed, though nothing is indexed', () => {
+    expect([...EDGE_CACHED_PAGES].sort()).toEqual(['/', '/feed.xml']);
+  });
+
+  it('lets a kept page carry only the names the catalog page reads', () => {
+    expect([...CACHED_QUERY_PARAMS].sort()).toEqual([
+      'lang',
+      'layout',
+      'q',
+      'sort',
+      'status',
+      'view',
+    ]);
+  });
+
+  it('keeps a copy for half an hour, as the catalog changes once a day', () => {
+    expect(EDGE_TTL_SECONDS).toBe(1800);
+  });
+
   it('lets search engines index nothing: the whole site is private', () => {
     expect([...PUBLIC_PAGES]).toEqual([]);
   });
