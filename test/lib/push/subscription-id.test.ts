@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   endpointForId,
+  isSubscriptionId,
   subscriptionId,
 } from '../../../src/lib/push/subscription-id';
 
@@ -11,6 +12,21 @@ describe('subscriptionId', () => {
       'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
     );
   });
+});
+
+describe('isSubscriptionId', () => {
+  it('accepts exactly 64 lowercase hex digits', async () => {
+    expect(isSubscriptionId(await subscriptionId('https://a.test/1'))).toBe(
+      true,
+    );
+  });
+
+  it.each(['', 'abc', 'F'.repeat(64), 'f'.repeat(65), `${'f'.repeat(63)}g`])(
+    'refuses %j',
+    (id) => {
+      expect(isSubscriptionId(id)).toBe(false);
+    },
+  );
 });
 
 describe('endpointForId', () => {

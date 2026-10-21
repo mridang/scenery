@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import { subscriptionId } from '../../../../src/lib/push/subscription-id';
+import { subscriptionId } from '../../../../../src/lib/push/subscription-id';
 
 const store = new Map<string, { p256dh: string; auth: string }>();
-jest.unstable_mockModule('../../../../src/lib/util', () => ({
+jest.unstable_mockModule('../../../../../src/lib/util', () => ({
   getDB: () => ({}),
 }));
-jest.unstable_mockModule('../../../../src/lib/push', () => ({
+jest.unstable_mockModule('../../../../../src/lib/push', () => ({
   PushSubscriptionRepository: class {
     public listAll() {
       return Promise.resolve(
@@ -21,13 +21,13 @@ jest.unstable_mockModule('../../../../src/lib/push', () => ({
 }));
 
 const { POST } =
-  await import('../../../../src/app/api/push-subscriptions/route');
+  await import('../../../../../src/app/api/push/subscriptions/route');
 
 const ENDPOINT = 'https://push.test/abc';
 const GOOD = { endpoint: ENDPOINT, keys: { p256dh: 'p', auth: 'a' } };
 
 const post = (body: unknown, type = 'application/json'): Request =>
-  new Request('https://x/api/push-subscriptions', {
+  new Request('https://x/api/push/subscriptions', {
     method: 'POST',
     headers: { 'content-type': type },
     body: JSON.stringify(body),
@@ -35,13 +35,13 @@ const post = (body: unknown, type = 'application/json'): Request =>
 
 beforeEach(() => store.clear());
 
-describe('POST /api/push-subscriptions', () => {
+describe('POST /api/push/subscriptions', () => {
   it('201s a new subscription with its Location and id', async () => {
     const res = await POST(post(GOOD));
     const id = await subscriptionId(ENDPOINT);
     expect(res.status).toBe(201);
     expect(res.headers.get('location')).toBe(
-      `https://x/api/push-subscriptions/${id}`,
+      `https://x/api/push/subscriptions/${id}`,
     );
     expect(await res.json()).toEqual({ id });
     expect(store.get(ENDPOINT)).toEqual({ p256dh: 'p', auth: 'a' });

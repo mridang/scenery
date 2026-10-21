@@ -1,9 +1,9 @@
-import { absoluteLocation } from '../../../lib/api/location';
-import { readJsonObject } from '../../../lib/api/json';
-import { problems } from '../../../lib/api/problem';
-import { PushSubscriptionRepository } from '../../../lib/push';
-import { subscriptionId } from '../../../lib/push/subscription-id';
-import { getDB } from '../../../lib/util';
+import { absoluteLocation } from '../../../../lib/api/location';
+import { readJsonObject } from '../../../../lib/api/json';
+import { problems } from '../../../../lib/api/problem';
+import { PushSubscriptionRepository } from '../../../../lib/push';
+import { subscriptionId } from '../../../../lib/push/subscription-id';
+import { getDB } from '../../../../lib/util';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +42,7 @@ function checkSubscription(body: Readonly<Record<string, unknown>>): Checked {
 }
 
 /**
- * `POST /api/push-subscriptions`: register a Web Push subscription (the JSON of
+ * `POST /api/push/subscriptions`: register a Web Push subscription (the JSON of
  * a browser `PushSubscription`). A repeated call for the same `endpoint`
  * replaces the keys (browsers can rotate them) instead of failing.
  *
@@ -75,7 +75,7 @@ export async function POST(request: Request): Promise<Response> {
     {
       status: existed ? 200 : 201,
       headers: {
-        Location: absoluteLocation(request, `/api/push-subscriptions/${id}`),
+        Location: absoluteLocation(request, `/api/push/subscriptions/${id}`),
       },
     },
   );

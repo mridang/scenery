@@ -1,11 +1,16 @@
 /**
  * @packageDocumentation
  *
- * The id of a push subscription as it appears in `/api/push-subscriptions/{id}`:
+ * The id of a push subscription as it appears in `/api/push/subscriptions/{id}`:
  * the lowercase hex SHA-256 of its endpoint. The endpoint itself is a long,
  * secret-ish URL that does not belong in a path, and a browser can always
  * recompute the id from the subscription it holds.
  */
+
+/** Whether `id` has the shape of a {@link subscriptionId}: 64 lowercase hex digits. */
+export function isSubscriptionId(id: string): boolean {
+  return /^[0-9a-f]{64}$/.test(id);
+}
 
 /** The id for a subscription `endpoint`. */
 export async function subscriptionId(endpoint: string): Promise<string> {
