@@ -4,6 +4,7 @@ import {
   buildMagnet,
   isValidInfoHash,
 } from '../../../lib/magnet';
+import { problems } from '../../../lib/api/problem';
 import { genericTransport, withRetry } from '../../../lib/transport';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +24,7 @@ export async function GET(
 ): Promise<Response> {
   const { hash } = await ctx.params;
   if (!isValidInfoHash(hash)) {
-    return new Response('Invalid info hash.', { status: 400 });
+    return problems.badRequest('The info hash must be 40 hex characters.');
   }
   const name = request.nextUrl.searchParams.get('dn');
   const trackers = await bestTrackers(withRetry(genericTransport()));

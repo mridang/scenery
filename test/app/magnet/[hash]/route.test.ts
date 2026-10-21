@@ -41,6 +41,7 @@ describe('GET /magnet/[hash]', () => {
       ctx('not-a-hash'),
     );
     expect(res.status).toBe(400);
+    expect(res.headers.get('content-type')).toBe('application/problem+json');
   });
 
   it('302-redirects a valid hash to a magnet URI with live trackers', async () => {
