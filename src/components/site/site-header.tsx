@@ -3,7 +3,6 @@ import type { LastUpdate } from '@/lib/catalog';
 
 import { InstallButton } from './install-button';
 import { Logo } from './logo';
-import { MaintenanceActions } from './maintenance-actions';
 
 /** Beyond this gap, the bell's red dot signals "last scrape is stale". */
 const STALE_THRESHOLD_MS = 48 * 60 * 60 * 1000;
@@ -142,9 +141,33 @@ function MaintenanceMenu() {
           <circle cx="12" cy="19" r="1.6" />
         </svg>
       </summary>
-      <MaintenanceActions>
+      <form
+        action="/api/cron"
+        method="post"
+        className="absolute top-[calc(100%+8px)] right-0 z-40 flex w-[180px] flex-col gap-1 rounded-xl border border-white/10 bg-[#26262d] p-2 shadow-2xl"
+      >
+        <button
+          type="submit"
+          formAction="/api/cron?backfill=10"
+          className="rounded-md px-3 py-2 text-left text-[12.5px] font-medium text-[#d4d4d8] hover:bg-white/5"
+        >
+          Backfill 10 pages
+        </button>
+        <button
+          type="submit"
+          formAction="/api/cron?enrichOnly=1"
+          className="rounded-md px-3 py-2 text-left text-[12.5px] font-medium text-[#d4d4d8] hover:bg-white/5"
+        >
+          TMDB enrich
+        </button>
+        <button
+          type="submit"
+          className="rounded-md px-3 py-2 text-left text-[12.5px] font-medium text-[#d4d4d8] hover:bg-white/5"
+        >
+          Scrape page 1
+        </button>
         <InstallButton />
-      </MaintenanceActions>
+      </form>
     </details>
   );
 }

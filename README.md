@@ -36,19 +36,19 @@ The home page ranks everything top to bottom by score as a download queue, with 
 
 ## Routes
 
-| Route                                 | What                                                                                                       |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `/`                                   | Catalog, score-ranked. `?lang=`, `?sort=score\|date`, `?view=catalog\|plan`                                |
-| `/feed.xml`                           | RSS of the same, honours the same params plus `?limit=N` and `?budgetGb=N`                                 |
-| `/magnet/{hash}`                      | Redirects to a magnet link built with the current best tracker list                                        |
-| `/api/health`                         | JSON status and staleness (200 ok, 503 when there has been no scrape in 48 hours)                          |
-| `/api/pipeline-runs`                  | `POST`: runs the scrape, enrich and torrent steps now (JSON body, all optional); `CRON_SECRET` bearer      |
-| `/api/workflows/{workflow}/instances` | `POST` starts a `scrape`, `movie` or `notify` workflow (201 + `Location`); `GET .../{id}` shows its status |
-| `/api/push-configuration`             | `GET`: the VAPID public key for `pushManager.subscribe`                                                    |
-| `/api/push-subscriptions`             | `POST` registers a Web Push subscription (201, or 200 when known); `DELETE /{id}` forgets it (204)         |
-| `/api/omdb-backfills`                 | `POST`: fills in OMDB ratings for movies that lack them (`{"limit": N}`, at most 200)                      |
-| `/api/img`                            | Image proxy: scales and caches TMDB images (`?url=&w=`)                                                    |
-| `/api/csp-reports`                    | Receives Content Security Policy violation reports                                                         |
+| Route                     | What                                                                                               |
+| ------------------------- | -------------------------------------------------------------------------------------------------- |
+| `/`                       | Catalog, score-ranked. `?lang=`, `?sort=score\|date`, `?view=catalog\|plan`                        |
+| `/feed.xml`               | RSS of the same, honours the same params plus `?limit=N` and `?budgetGb=N`                         |
+| `/magnet/{hash}`          | Redirects to a magnet link built with the current best tracker list                                |
+| `/api/health`             | JSON status and staleness (200 ok, 503 when there has been no scrape in 48 hours)                  |
+| `/api/cron`               | Manual pipeline trigger, gated by `CRON_SECRET` as a bearer token                                  |
+| `/api/push/trigger`       | `POST`: runs the notify workflow now (manual test)                                                 |
+| `/api/push-configuration` | `GET`: the VAPID public key for `pushManager.subscribe`                                            |
+| `/api/push-subscriptions` | `POST` registers a Web Push subscription (201, or 200 when known); `DELETE /{id}` forgets it (204) |
+| `/api/omdb/backfill`      | `POST`: fills in OMDB ratings for movies that lack them (`?limit=N`, at most 200)                  |
+| `/api/img`                | Image proxy: scales and caches TMDB images (`?url=&w=`)                                            |
+| `/api/csp-reports`        | Receives Content Security Policy violation reports                                                 |
 
 The security headers and the nonce-based Content Security Policy are added by the Worker itself (`src/lib/http`), not by Next.js.
 

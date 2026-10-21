@@ -22,7 +22,7 @@ describe('EDGE_LIMITS', () => {
     ['/api/csp-reports', 'reports'],
     ['/api/health', 'discovery'],
     ['/feed.xml', 'discovery'],
-    ['/api/pipeline-runs', 'api'],
+    ['/api/cron', 'api'],
   ])('puts %s in %s', (pathname, expected) => {
     expect(classOf(pathname)).toBe(expected);
   });

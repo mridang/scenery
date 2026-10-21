@@ -122,7 +122,7 @@ async function pickTopFiveNew(db: D1Database): Promise<readonly ScoredMovie[]> {
       Date.parse(firstSeen) >= cutoff
     );
   });
-  // Fallback for low-traffic days and the manual POST /api/workflows/notify/instances
+  // Fallback for low-traffic days and the manual /api/push/trigger
   // smoke test: if nothing fresh, still surface the top 5 overall so
   // the notification path itself stays verifiable.
   const picks = fresh.length > 0 ? fresh : view.movies;
