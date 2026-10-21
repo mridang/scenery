@@ -53,7 +53,7 @@ describe('site settings', () => {
     expect(OPEN_FILES.test(path)).toBe(true);
   });
 
-  it.each(['/', '/movies', '/api/img', '/api/things'])(
+  it.each(['/', '/movies', '/img', '/api/things'])(
     'keeps %s to this site',
     (path) => {
       expect(OPEN_FILES.test(path)).toBe(false);

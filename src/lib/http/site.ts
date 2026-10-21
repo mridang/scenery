@@ -60,7 +60,7 @@ export const RARELY_CHANGING: ReadonlySet<string> = new Set([
 /**
  * The outside places pages may load pictures from, besides this site (`'self'`)
  * and inline `data:` pictures.
- * None: posters come through this site's own `/api/img` and the pages draw
+ * None: posters come through this site's own `/img` and the pages draw
  * their icons inline.
  */
 export const EXTRA_IMG_SOURCES: readonly string[] = [];
@@ -84,5 +84,5 @@ export const DISCOVERY_PATHS: ReadonlySet<string> = new Set([
   '/sitemap.xml',
   '/manifest.webmanifest',
   '/feed.xml',
-  '/api/health',
+  '/health',
 ]);

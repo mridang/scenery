@@ -19,7 +19,7 @@ describe('posterUrl', () => {
 
   it('routes the original through our own image proxy', () => {
     expect(posterUrl('/abc.jpg', 'w185')).toBe(
-      `/api/img?url=${encodeURIComponent(`${ORIGINAL}/abc.jpg`)}&w=185`,
+      `/img?url=${encodeURIComponent(`${ORIGINAL}/abc.jpg`)}&w=185`,
     );
   });
 
@@ -41,7 +41,7 @@ describe('backdropUrl', () => {
 
   it('falls back to the poster so the hero is never blank', () => {
     expect(backdropUrl(null, '/poster.jpg', 'w780')).toBe(
-      `/api/img?url=${encodeURIComponent(`${ORIGINAL}/poster.jpg`)}&w=780`,
+      `/img?url=${encodeURIComponent(`${ORIGINAL}/poster.jpg`)}&w=780`,
     );
   });
 

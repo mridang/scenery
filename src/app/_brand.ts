@@ -64,8 +64,18 @@ export const INDEX_BY_DEFAULT = false;
  */
 export const CRAWLABLE_PATHS: readonly string[] = ['/'];
 
-/** The paths crawlers must stay out of: the API and the magnet redirect. */
-export const PRIVATE_PATHS: readonly string[] = ['/api/', '/magnet/'];
+/**
+ * The paths crawlers must stay out of: the API, the magnet redirect, the picture
+ * proxy (`/img?` covers its query forms without hiding other paths that start
+ * with `/img`), the report endpoint and the health check.
+ */
+export const PRIVATE_PATHS: readonly string[] = [
+  '/api/',
+  '/csp/',
+  '/health$',
+  '/img?',
+  '/magnet/',
+];
 
 /** The pages worth listing in the sitemap. None: nothing here is meant to be indexed. */
 export const SITEMAP_PAGES: readonly Readonly<{

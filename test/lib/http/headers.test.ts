@@ -34,7 +34,7 @@ describe('openerPolicyFor', () => {
       '/some/page',
       '/oauth/consent',
       '/oauth/token',
-      '/api/mcp',
+      '/mcp',
     ]) {
       expect(openerPolicyFor(pathname)).toBe('same-origin');
     }
@@ -260,7 +260,7 @@ describe('applyResponseHeaders — reporting', () => {
         applyResponseHeaders(at(pathname), html()).headers.get(
           'reporting-endpoints',
         ),
-      ).toBe('csp-endpoint="/api/csp-reports"');
+      ).toBe('csp-endpoint="/csp/reports"');
     }
   });
 });

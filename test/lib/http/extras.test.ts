@@ -18,11 +18,12 @@ describe('EDGE_LIMITS', () => {
   it.each([
     ['/', 'site'],
     ['/movies', 'site'],
-    ['/api/img', 'cover'],
-    ['/api/csp-reports', 'reports'],
-    ['/api/health', 'discovery'],
+    ['/img', 'cover'],
+    ['/csp/reports', 'reports'],
+    ['/health', 'discovery'],
     ['/feed.xml', 'discovery'],
-    ['/api/cron', 'api'],
+    ['/api/operations', 'api'],
+    ['/api/push/subscriptions', 'api'],
   ])('puts %s in %s', (pathname, expected) => {
     expect(classOf(pathname)).toBe(expected);
   });

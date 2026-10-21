@@ -142,7 +142,7 @@ describe('cspSurfaceFor', () => {
       '/some/page',
       '/oauth/consent',
       '/oauth/authorize/x',
-      '/api/mcp',
+      '/mcp',
     ]) {
       expect(cspSurfaceFor(pathname)).toBe('site');
     }
@@ -154,7 +154,7 @@ describe('reporting', () => {
     for (const surface of ['site', 'approval'] as const) {
       const csp = buildCsp('abc', surface);
       expect(csp).toContain('report-to csp-endpoint');
-      expect(csp).toContain('report-uri /api/csp-reports');
+      expect(csp).toContain('report-uri /csp/reports');
     }
   });
 });

@@ -1,6 +1,6 @@
 /**
  * Same-origin TMDB image URL builders. Every poster and backdrop on the
- * page is funneled through the `/api/img` proxy (which scales it with the
+ * page is funneled through the `/img` proxy (which scales it with the
  * Cloudflare Images binding and keeps a copy at the edge), so the strict
  * CSP can keep `img-src` at `'self'`. Picking the right pixel width here
  * keeps page weight tight: the smallest size that still looks crisp at the
@@ -26,7 +26,7 @@ const POSTER_WIDTHS = {
 export type PosterSize = keyof typeof POSTER_WIDTHS;
 
 /**
- * Build a same-origin poster URL routed through `/api/img`, or `null` if
+ * Build a same-origin poster URL routed through `/img`, or `null` if
  * there's no poster path. The returned URL is a relative path.
  *
  * @public

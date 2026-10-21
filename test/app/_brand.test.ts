@@ -22,7 +22,13 @@ describe('what crawlers may read', () => {
   });
 
   it('keeps them out of the API and the magnet redirect', () => {
-    expect(PRIVATE_PATHS).toEqual(['/api/', '/magnet/']);
+    expect(PRIVATE_PATHS).toEqual([
+      '/api/',
+      '/csp/',
+      '/health$',
+      '/img?',
+      '/magnet/',
+    ]);
   });
 
   it('lists no page in the sitemap, as nothing here is meant to be indexed', () => {
