@@ -9,8 +9,10 @@
 export { encryptPayload } from './encrypt';
 export type { EncryptedPayload } from './encrypt';
 export { signVapidAuthHeader } from './vapid';
-export { sendPush } from './send';
-export type { VapidConfig } from './send';
+export { WebPushSender } from './send';
+export type { VapidConfig, WebPushSenderOptions } from './send';
+export { PushNotifier } from './notifier';
+export type { BroadcastResult, DeliveryOutcome } from './notifier';
 export type {
   DeliveryResult,
   PushPayload,

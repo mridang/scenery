@@ -1,12 +1,12 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { ScrapeOrchestrator } from '@/domain/scraping/orchestrator';
-import type { SourceSlug } from '@/lib/sources/types';
 import type { ScrapingRepository } from '@/domain/scraping/repository';
 import type {
   ExtractedRelease,
   FetchResult,
   Source,
+  SourceSlug,
 } from '@/lib/sources/types';
 
 /**

@@ -1,8 +1,11 @@
 /**
  * @packageDocumentation
  *
- * Composes a single Web Push delivery: encrypt the payload, sign the
- * VAPID JWT, POST to the subscription endpoint, classify the response.
+ * One Web Push delivery as a constructed handle: build a {@link WebPushSender}
+ * with the VAPID identity (and, optionally, a `fetcher` and TTL for tests),
+ * then `send` encrypts the payload, signs the VAPID JWT, POSTs to the
+ * subscription endpoint and classifies the response. No storage: the
+ * list/prune/mark orchestration is {@link PushNotifier}'s job.
  */
 
 import { bs } from './encode';
@@ -24,57 +27,72 @@ export interface VapidConfig {
   readonly subject: string;
 }
 
+/** Tunables for a {@link WebPushSender}, all optional. @public */
+export interface WebPushSenderOptions {
+  /** Injected fetch, so tests need no network. Defaults to `globalThis.fetch`. */
+  readonly fetcher?: typeof fetch;
+  /**
+   * How long the push service may queue the message for an offline device.
+   * One hour by default — sensible for a daily timely update, since the next
+   * one supersedes a stale undelivered one anyway.
+   */
+  readonly ttlSeconds?: number;
+}
+
 /**
- * Send one Web Push notification. The TTL controls how long the push
- * service may queue the message if the device is offline; we use one
- * hour, which is sensible for a daily timely update (the next one will
- * supersede a stale undelivered one anyway).
+ * Sends a single Web Push notification for a fixed VAPID identity. Build once,
+ * reuse per delivery. Pure codec (VAPID + RFC 8291 encryption): it owns no
+ * subscriptions.
  *
  * @public
  */
-export async function sendPush(opts: {
-  readonly subscription: PushSubscriptionRecord;
-  readonly payload: PushPayload;
-  readonly vapid: VapidConfig;
-  readonly ttlSeconds?: number;
-  readonly nowSeconds?: number;
-  readonly fetcher?: typeof fetch;
-}): Promise<DeliveryResult> {
-  const endpoint = opts.subscription.endpoint;
-  const audience = new URL(endpoint).origin;
-  const nowSeconds = opts.nowSeconds ?? Math.floor(Date.now() / 1000);
-  const fetcher = opts.fetcher ?? globalThis.fetch;
+export class WebPushSender {
+  public constructor(
+    private readonly vapid: VapidConfig,
+    private readonly options: WebPushSenderOptions = {},
+  ) {}
 
-  const plaintext = new TextEncoder().encode(JSON.stringify(opts.payload));
-  const encrypted = await encryptPayload({
-    plaintext,
-    subscriberPublicKeyB64u: opts.subscription.p256dh,
-    subscriberAuthB64u: opts.subscription.auth,
-  });
+  /** Encrypt, sign and POST one notification; classify the response. */
+  public async send(
+    subscription: PushSubscriptionRecord,
+    payload: PushPayload,
+    nowSeconds: number = Math.floor(Date.now() / 1000),
+  ): Promise<DeliveryResult> {
+    const endpoint = subscription.endpoint;
+    const audience = new URL(endpoint).origin;
+    const fetcher = this.options.fetcher ?? globalThis.fetch;
 
-  const authorization = await signVapidAuthHeader({
-    audience,
-    subject: opts.vapid.subject,
-    publicKeyB64u: opts.vapid.publicKey,
-    privateKeyB64u: opts.vapid.privateKey,
-    nowSeconds,
-  });
+    const plaintext = new TextEncoder().encode(JSON.stringify(payload));
+    const encrypted = await encryptPayload({
+      plaintext,
+      subscriberPublicKeyB64u: subscription.p256dh,
+      subscriberAuthB64u: subscription.auth,
+    });
 
-  const response = await fetcher(endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: authorization,
-      'Content-Encoding': 'aes128gcm',
-      'Content-Type': 'application/octet-stream',
-      TTL: String(opts.ttlSeconds ?? 3600),
-      Urgency: 'normal',
-    },
-    body: bs(encrypted.body),
-  });
+    const authorization = await signVapidAuthHeader({
+      audience,
+      subject: this.vapid.subject,
+      publicKeyB64u: this.vapid.publicKey,
+      privateKeyB64u: this.vapid.privateKey,
+      nowSeconds,
+    });
 
-  return {
-    endpoint,
-    status: response.status,
-    gone: response.status === 404 || response.status === 410,
-  };
+    const response = await fetcher(endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: authorization,
+        'Content-Encoding': 'aes128gcm',
+        'Content-Type': 'application/octet-stream',
+        TTL: String(this.options.ttlSeconds ?? 3600),
+        Urgency: 'normal',
+      },
+      body: bs(encrypted.body),
+    });
+
+    return {
+      endpoint,
+      status: response.status,
+      gone: response.status === 404 || response.status === 410,
+    };
+  }
 }

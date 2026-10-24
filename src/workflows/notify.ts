@@ -9,9 +9,9 @@ import { createDatabase, type Database } from '@/core/db/client';
 import { CatalogService, type ScoredMovie } from '@/domain/catalog';
 import { PushSubscriptionRepository } from '@/domain/push';
 import {
-  sendPush,
+  PushNotifier,
+  WebPushSender,
   type PushPayload,
-  type PushSubscriptionRecord,
   type VapidConfig,
 } from '@/lib/push';
 
@@ -66,20 +66,24 @@ export class NotifyWorkflow extends WorkflowEntrypoint<
       privateKey: this.env.VAPID_PRIVATE_KEY,
       subject: this.env.VAPID_SUBJECT,
     };
+    const sender = new WebPushSender(vapid);
 
+    // Each send is its own checkpointed step: a transient push-service error
+    // retries just that one, and a 404/410 drops only that subscription.
     const sent = await subscriptions.reduce<Promise<number>>(
       async (accP, subscription) => {
         const acc = await accP;
         const delivered = await step.do(
           `send:${shortKey(subscription.endpoint)}`,
           retry,
-          async () =>
-            deliverOne(
-              createDatabase(this.env.DB),
-              subscription,
-              payload,
-              vapid,
-            ),
+          async () => {
+            const notifier = new PushNotifier(
+              sender,
+              new PushSubscriptionRepository(createDatabase(this.env.DB)),
+            );
+            const outcome = await notifier.deliver(subscription, payload);
+            return outcome.delivered;
+          },
         );
         return acc + (delivered ? 1 : 0);
       },
@@ -88,25 +92,6 @@ export class NotifyWorkflow extends WorkflowEntrypoint<
 
     return { sent, total: subscriptions.length, payload };
   }
-}
-
-async function deliverOne(
-  db: Database,
-  subscription: PushSubscriptionRecord,
-  payload: PushPayload,
-  vapid: VapidConfig,
-): Promise<boolean> {
-  const repo = new PushSubscriptionRepository(db);
-  const result = await sendPush({ subscription, payload, vapid });
-  if (result.gone) {
-    await repo.remove(subscription.endpoint);
-    return false;
-  }
-  const ok = result.status >= 200 && result.status < 300;
-  if (ok) {
-    await repo.markSent(subscription.endpoint, new Date().toISOString());
-  }
-  return ok;
 }
 
 async function pickTopFiveNew(db: Database): Promise<readonly ScoredMovie[]> {
