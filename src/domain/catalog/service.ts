@@ -49,7 +49,7 @@ function castNames(raw: string | null): string[] {
  * scored rows into the {@link ScoredMovie} shape the views render —
  * mapping prestige-studio ids to labels and tallying the plan summary.
  *
- * Construct with {@link CatalogService.fromD1} in production. Unit tests
+ * Construct with {@link CatalogService.fromDatabase} in production. Unit tests
  * pass a stub {@link CatalogReader} straight to the constructor.
  *
  * @public
