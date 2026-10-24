@@ -10,5 +10,4 @@ import { operationsItem } from '@/domain/operations/controller';
 
 export const dynamic = 'force-dynamic';
 
-const handlers = operationsItem.handlers();
-export const GET = handlers.GET!;
+export const { GET } = operationsItem.handlers();

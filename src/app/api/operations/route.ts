@@ -13,5 +13,4 @@ import { operationsCollection } from '@/domain/operations/controller';
 
 export const dynamic = 'force-dynamic';
 
-const handlers = operationsCollection.handlers();
-export const POST = handlers.POST!;
+export const { POST } = operationsCollection.handlers();

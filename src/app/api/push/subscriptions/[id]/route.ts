@@ -7,5 +7,4 @@ import { subscriptionsItem } from '@/domain/push/controller';
 
 export const dynamic = 'force-dynamic';
 
-const handlers = subscriptionsItem.handlers();
-export const DELETE = handlers.DELETE!;
+export const { DELETE } = subscriptionsItem.handlers();

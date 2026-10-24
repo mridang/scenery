@@ -8,5 +8,4 @@ import { subscriptionsCollection } from '@/domain/push/controller';
 
 export const dynamic = 'force-dynamic';
 
-const handlers = subscriptionsCollection.handlers();
-export const POST = handlers.POST!;
+export const { POST } = subscriptionsCollection.handlers();

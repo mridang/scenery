@@ -7,7 +7,8 @@
  */
 
 import type { Database } from '@/core/db/client';
-import { ApiController, Problem, type RouteContext } from '@/core/api';
+import { ApiController } from '@/core/api/controller';
+import type { RouteContext } from '@/core/api/route-context';
 import { getDatabase } from '@/core/runtime';
 import { absoluteLocation } from '@/lib/rest-json/location';
 import { readJsonObject } from '@/lib/rest-json/json';
@@ -20,7 +21,9 @@ import {
 import { PushSubscriptionRepository } from './repository';
 
 /** Per-request context for the push subscriptions API. */
-interface PushCtx extends RouteContext {
+interface PushCtx {
+  readonly request: Request;
+  readonly params: Promise<Readonly<Record<string, string>>>;
   readonly db: Database;
 }
 
@@ -32,8 +35,12 @@ interface CheckedSubscription {
 }
 
 /** Build the context (no auth: a subscription endpoint is itself the secret). */
-function pushContext(route: RouteContext): PushCtx {
-  return { request: route.request, params: route.params, db: getDatabase() };
+function pushContext(request: Request, route: RouteContext): PushCtx {
+  return {
+    request,
+    params: route.params ?? Promise.resolve({}),
+    db: getDatabase(),
+  };
 }
 
 /** Check the JSON of a browser `PushSubscription`, or the messages for what was wrong. */
@@ -76,19 +83,17 @@ export const subscriptionsCollection = new ApiController<PushCtx>({
   context: pushContext,
 }).on<CheckedSubscription, Created>({
   method: 'POST',
-  decode: async (ctx) => {
+  decode: async (request) => {
     const body = await readJsonObject(
-      ctx.request,
+      request,
       'The body must be a push subscription object.',
     );
     if (!body.ok) {
-      throw new Problem(body.response);
+      throw body.response;
     }
     const checked = checkSubscription(body.value);
     if (Array.isArray(checked)) {
-      throw new Problem(
-        problems.badRequest('The subscription is not valid.', checked),
-      );
+      throw problems.badRequest('The subscription is not valid.', checked);
     }
     return checked as CheckedSubscription;
   },
@@ -123,7 +128,7 @@ export const subscriptionsItem = new ApiController<PushCtx>({
   handle: async (_input, ctx) => {
     const { id } = await ctx.params;
     if (!id || !isSubscriptionId(id)) {
-      throw new Problem(problems.notFound('push subscription'));
+      throw problems.notFound('push subscription');
     }
     const repo = new PushSubscriptionRepository(ctx.db);
     const endpoint = await endpointForId(
@@ -131,7 +136,7 @@ export const subscriptionsItem = new ApiController<PushCtx>({
       id,
     );
     if (!endpoint) {
-      throw new Problem(problems.notFound('push subscription'));
+      throw problems.notFound('push subscription');
     }
     await repo.remove(endpoint);
     return undefined;

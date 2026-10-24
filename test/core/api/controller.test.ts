@@ -1,104 +1,117 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { ApiController, Problem, type RouteContext } from '@/core/api';
+import { ApiController } from '@/core/api/controller';
 import { problems } from '@/lib/rest-json/problem';
 
-const req = (method = 'GET') => new Request('https://x/thing', { method });
+/** Read a response's JSON body as a record. */
+async function body(response: Response): Promise<Record<string, unknown>> {
+  return (await response.json()) as Record<string, unknown>;
+}
 
 describe('ApiController', () => {
-  it('defaults to a 200 JSON response of the handled output', async () => {
+  it('answers a handler result as JSON 200 by default', async () => {
     const { GET } = new ApiController()
-      .on({ method: 'GET', handle: () => ({ hello: 'world' }) })
-      .handlers();
-    const res = await GET!(req());
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ hello: 'world' });
-  });
-
-  it('honours a custom status, body and headers from encode', async () => {
-    const { POST } = new ApiController()
-      .on({
-        method: 'POST',
-        handle: () => ({ id: '7', secret: 'kept-out' }),
-        encode: (out: { id: string }) => ({
-          status: 201,
-          body: { id: out.id },
-          headers: { Location: `/thing/${out.id}` },
-        }),
+      .on<null, { hello: string }>({
+        method: 'GET',
+        handle: () => ({ hello: 'world' }),
       })
       .handlers();
-    const res = await POST!(req('POST'));
-    expect(res.status).toBe(201);
-    expect(res.headers.get('location')).toBe('/thing/7');
-    expect(await res.json()).toEqual({ id: '7' });
+    const res = await GET(new Request('https://app.test/x'));
+    expect(res.status).toBe(200);
+    expect(await body(res)).toEqual({ hello: 'world' });
   });
 
-  it('sends an empty 204 when the output is undefined', async () => {
+  it('honours an encoded status, headers and empty body', async () => {
     const { DELETE } = new ApiController()
-      .on({ method: 'DELETE', handle: () => undefined })
+      .on<null, boolean>({
+        method: 'DELETE',
+        handle: () => true,
+        encode: () => ({ status: 204, headers: { 'X-Done': 'yes' } }),
+      })
       .handlers();
-    const res = await DELETE!(req('DELETE'));
+    const res = await DELETE(new Request('https://app.test/x'));
     expect(res.status).toBe(204);
+    expect(res.headers.get('x-done')).toBe('yes');
     expect(await res.text()).toBe('');
   });
 
-  it('sends a thrown Problem from decode as its response', async () => {
-    const { POST } = new ApiController()
-      .on({
-        method: 'POST',
-        decode: () => {
-          throw new Problem(problems.badRequest('nope'));
-        },
-        handle: () => ({ unreached: true }),
+  it('passes a raw response through the escape hatch', async () => {
+    const { GET } = new ApiController()
+      .on<null, null>({
+        method: 'GET',
+        handle: () => null,
+        encode: () => ({ response: problems.notFound('thing') }),
       })
       .handlers();
-    const res = await POST!(req('POST'));
-    expect(res.status).toBe(400);
-    expect(res.headers.get('content-type')).toContain(
-      'application/problem+json',
-    );
+    const res = await GET(new Request('https://app.test/x'));
+    expect(res.status).toBe(404);
+    expect(res.headers.get('content-type')).toContain('application/problem');
   });
 
-  it('rejects via a Problem thrown while building the context', async () => {
+  it('builds the context and gives it to decode and handle', async () => {
+    const controller = new ApiController<{ who: string }>({
+      context: () => ({ who: 'ada' }),
+    }).on<string, { seen: string }>({
+      method: 'POST',
+      decode: (_request, ctx) => ctx.who.toUpperCase(),
+      handle: (input, ctx) => ({ seen: `${input}/${ctx.who}` }),
+    });
+    const { POST } = controller.handlers();
+    expect(await body(await POST(new Request('https://app.test/x')))).toEqual({
+      seen: 'ADA/ada',
+    });
+  });
+
+  it('sends a problem thrown by decode as it is', async () => {
+    const { POST } = new ApiController()
+      .on<null, null>({
+        method: 'POST',
+        decode: () => {
+          throw problems.badRequest('nope');
+        },
+        handle: () => null,
+      })
+      .handlers();
+    const res = await POST(new Request('https://app.test/x'));
+    expect(res.status).toBe(400);
+  });
+
+  it('sends a refusal thrown by the context as it is', async () => {
     const { GET } = new ApiController({
       context: () => {
-        throw new Problem(problems.unauthorized());
+        throw problems.unauthorized();
       },
     })
-      .on({ method: 'GET', handle: () => ({ ok: true }) })
+      .on<null, null>({ method: 'GET', handle: () => null })
       .handlers();
-    const res = await GET!(req());
-    expect(res.status).toBe(401);
+    expect((await GET(new Request('https://app.test/x'))).status).toBe(401);
   });
 
-  it('maps an unexpected error to a 500 problem by default', async () => {
+  it('maps an unexpected throw to a 500 problem', async () => {
     const { GET } = new ApiController()
-      .on({
+      .on<null, null>({
         method: 'GET',
         handle: () => {
           throw new Error('boom');
         },
       })
       .handlers();
-    const res = await GET!(req());
+    const res = await GET(new Request('https://app.test/x'));
     expect(res.status).toBe(500);
-    expect(res.headers.get('content-type')).toContain(
-      'application/problem+json',
-    );
+    expect(await body(res)).toMatchObject({ status: 500 });
   });
 
-  it('passes the dynamic-segment params through to the handler context', async () => {
-    let seen = '';
-    const { GET } = new ApiController<RouteContext>()
-      .on({
+  it('uses a custom onError when given one', async () => {
+    const { GET } = new ApiController({
+      onError: () => new Response('handled', { status: 503 }),
+    })
+      .on<null, null>({
         method: 'GET',
-        handle: async (_input, ctx) => {
-          seen = (await ctx.params)['id'] ?? '';
-          return { seen };
+        handle: () => {
+          throw new Error('boom');
         },
       })
       .handlers();
-    await GET!(req(), { params: Promise.resolve({ id: 'abc' }) });
-    expect(seen).toBe('abc');
+    expect((await GET(new Request('https://app.test/x'))).status).toBe(503);
   });
 });

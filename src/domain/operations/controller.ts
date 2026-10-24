@@ -7,7 +7,8 @@
  */
 
 import type { Database } from '@/core/db/client';
-import { ApiController, Problem, type RouteContext } from '@/core/api';
+import { ApiController } from '@/core/api/controller';
+import type { RouteContext } from '@/core/api/route-context';
 import { operatorRefusal } from '@/core/api/operator-auth';
 import { getDatabase, getEnv } from '@/core/runtime';
 import { absoluteLocation } from '@/lib/rest-json/location';
@@ -25,21 +26,23 @@ import { runOperation } from './run';
 import type { OperationRequest } from './types';
 
 /** Per-request context for the operator operations API. */
-interface OperationsCtx extends RouteContext {
+interface OperationsCtx {
+  readonly request: Request;
+  readonly params: Promise<Readonly<Record<string, string>>>;
   readonly env: CloudflareEnv;
   readonly db: Database;
 }
 
 /** Build the context, refusing anyone who is not the operator. */
-async function operatorContext(route: RouteContext): Promise<OperationsCtx> {
+function operatorContext(request: Request, route: RouteContext): OperationsCtx {
   const env = getEnv();
-  const refused = operatorRefusal(route.request, env);
+  const refused = operatorRefusal(request, env);
   if (refused) {
-    throw new Problem(refused);
+    throw refused;
   }
   return {
-    request: route.request,
-    params: route.params,
+    request,
+    params: route.params ?? Promise.resolve({}),
     env,
     db: getDatabase(),
   };
@@ -50,26 +53,24 @@ export const operationsCollection = new ApiController<OperationsCtx>({
   context: operatorContext,
 }).on<OperationRequest, OperationResource>({
   method: 'POST',
-  decode: async (ctx) => {
+  decode: async (request) => {
     const body = await readJsonObject(
-      ctx.request,
+      request,
       'The operation must be a JSON object.',
     );
     if (!body.ok) {
-      throw new Problem(body.response);
+      throw body.response;
     }
     const input = parseOperationInput(body.value);
     if (!input.ok) {
-      throw new Problem(
-        problems.badRequest('The operation is not valid.', input.errors),
-      );
+      throw problems.badRequest('The operation is not valid.', input.errors);
     }
     return input.request;
   },
-  handle: async (request, ctx) => {
+  handle: async (operationRequest, ctx) => {
     const repository = new OperationRepository(ctx.db);
     const id = crypto.randomUUID();
-    const { type, parameters } = request;
+    const { type, parameters } = operationRequest;
     await repository.start({
       id,
       type,
@@ -77,7 +78,10 @@ export const operationsCollection = new ApiController<OperationsCtx>({
       createdAt: new Date().toISOString(),
     });
     try {
-      const result = await runOperation(request, { db: ctx.db, env: ctx.env });
+      const result = await runOperation(operationRequest, {
+        db: ctx.db,
+        env: ctx.env,
+      });
       await repository.finish(
         id,
         'succeeded',
@@ -121,7 +125,7 @@ export const operationsItem = new ApiController<OperationsCtx>({
       ? await new OperationRepository(ctx.db).get(id ?? '')
       : undefined;
     if (!row) {
-      throw new Problem(problems.notFound('operation'));
+      throw problems.notFound('operation');
     }
     return operationResource(row);
   },

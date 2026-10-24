@@ -7,8 +7,6 @@
  * `@/lib/operator-auth`; this wraps it with the problem response and logging.
  */
 
-import type { NextResponse } from 'next/server';
-
 import { isOperator } from '@/lib/operator-auth';
 import { problem } from '@/lib/rest-json/problem';
 import { logError } from '@/utils/logging';
@@ -17,7 +15,7 @@ import { logError } from '@/utils/logging';
 export function operatorRefusal(
   request: Request,
   env: Pick<CloudflareEnv, 'CRON_SECRET'>,
-): NextResponse | undefined {
+): Response | undefined {
   if (isOperator(request.headers.get('authorization'), env.CRON_SECRET)) {
     return undefined;
   }

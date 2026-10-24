@@ -6,9 +6,11 @@
  * `type` is a relative URI naming the kind of problem; it identifies the problem
  * and need not be resolvable. Details are written for API clients and never
  * include stack traces or internals.
+ *
+ * These build plain `Response`s, so the module is a pure library with no
+ * framework dependency; the controller framework in `core/api` returns them
+ * unchanged (an endpoint throws one to abandon a request with that problem).
  */
-
-import { NextResponse } from 'next/server';
 
 /** The members of a problem document. */
 export interface ProblemBody {
@@ -30,7 +32,7 @@ export function problem(
     readonly errors?: readonly string[];
     readonly headers?: Readonly<Record<string, string>>;
   } = {},
-): NextResponse {
+): Response {
   const body: ProblemBody = {
     type,
     title,
@@ -40,7 +42,7 @@ export function problem(
       ? { errors: extra.errors }
       : {}),
   };
-  return NextResponse.json(body, {
+  return Response.json(body, {
     status,
     headers: {
       'Content-Type': 'application/problem+json',
@@ -50,32 +52,10 @@ export function problem(
   });
 }
 
-/**
- * A problem response raised as an error, so a controller endpoint can abandon
- * a request from deep in its `decode`/`handle` and have the framework send the
- * problem. Wraps a ready {@link problem} response (e.g. one of {@link problems}).
- */
-export class Problem extends Error {
-  public constructor(public readonly response: NextResponse) {
-    super();
-    this.name = 'Problem';
-  }
-}
-
-/** Whether a caught value is a {@link Problem}. */
-export function isProblem(value: unknown): value is Problem {
-  return value instanceof Problem;
-}
-
 /** The standard problems, so every route words them the same way. */
 export const problems = {
   unauthorized: () =>
     problem(401, '/problems/unauthorized', 'Unauthorized', 'Sign in first.'),
-
-  rateLimited: (detail: string, retryAfterSeconds: number) =>
-    problem(429, '/problems/rate-limited', 'Too many requests', detail, {
-      headers: { 'Retry-After': String(retryAfterSeconds) },
-    }),
 
   forbidden: (detail: string) =>
     problem(403, '/problems/forbidden', 'Forbidden', detail),
@@ -93,25 +73,4 @@ export const problems = {
       'Unsupported media type',
       `Send the request body as ${expected}.`,
     ),
-
-  preconditionFailed: () =>
-    problem(
-      412,
-      '/problems/precondition-failed',
-      'Precondition failed',
-      'The resource changed since you last read it. Fetch it again and retry.',
-    ),
-
-  /** The request needs Google Drive and the person hasn't connected it. */
-  driveNotConnected: () =>
-    problem(
-      409,
-      '/problems/drive-not-connected',
-      'Google Drive is not connected',
-      'Connect your Google Drive in chowdown first, then try again.',
-    ),
-
-  /** Drive (or another upstream) failed; nothing was changed. */
-  upstream: (detail: string) =>
-    problem(502, '/problems/upstream-failure', 'Upstream failure', detail),
 };
