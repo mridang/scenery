@@ -1,4 +1,4 @@
-import type { ScoredMovie } from '../../../lib/catalog';
+import type { ScoredMovie } from '@/domain/catalog';
 
 import { formatRuntime } from '../_lib/format';
 import { backdropUrl } from '../_lib/tmdb-image';

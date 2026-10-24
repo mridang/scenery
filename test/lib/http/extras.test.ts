@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { GENERIC_CLASSES } from '../../../src/lib/http/edge-limits';
-import { EDGE_LIMITS } from '../../../src/lib/http/extras';
+import { GENERIC_CLASSES } from '@/core/http/edge-limits';
+import { EDGE_LIMITS } from '@/core/http/extras';
 
 const classOf = (pathname: string) =>
   EDGE_LIMITS.classify(new Request(`https://app.test${pathname}`));

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { parseOperationInput } from '../../../src/lib/api/operation-input';
+import { parseOperationInput } from '@/domain/operations/operation-input';
 
 const errorsOf = (body: Record<string, unknown>): readonly string[] => {
   const input = parseOperationInput(body);

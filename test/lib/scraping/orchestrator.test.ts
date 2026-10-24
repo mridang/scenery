@@ -1,13 +1,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { ScrapeOrchestrator } from '../../../src/lib/scraping/orchestrator';
-import type { SourceSlug } from '../../../src/lib/db/enums';
-import type { ScrapingRepository } from '../../../src/lib/scraping/repository';
+import { ScrapeOrchestrator } from '@/domain/scraping/orchestrator';
+import type { SourceSlug } from '@/utils/enums';
+import type { ScrapingRepository } from '@/domain/scraping/repository';
 import type {
   ExtractedRelease,
   FetchResult,
   Source,
-} from '../../../src/lib/sources/types';
+} from '@/lib/sources/types';
 
 /**
  * A minimal in-memory stand-in for {@link ScrapingRepository}. The

@@ -1,6 +1,6 @@
 import { timeAgo } from '@/app/(site)/_lib/format';
 import { BRAND_NAME } from '@/app/_brand';
-import type { LastUpdate } from '@/lib/catalog';
+import type { LastUpdate } from '@/domain/catalog';
 
 import { BrandMark } from './logo';
 

@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import { subscriptionId } from '../../../../../../src/lib/push/subscription-id';
+import { subscriptionId } from '@/lib/push/subscription-id';
 
 const store = new Set<string>();
-jest.unstable_mockModule('../../../../../../src/lib/util', () => ({
-  getDB: () => ({}),
+jest.unstable_mockModule('@/core/runtime', () => ({
+  getDatabase: () => ({}),
 }));
-jest.unstable_mockModule('../../../../../../src/lib/push', () => ({
+jest.unstable_mockModule('@/domain/push', () => ({
   PushSubscriptionRepository: class {
     public listAll() {
       return Promise.resolve([...store].map((endpoint) => ({ endpoint })));
@@ -18,8 +18,7 @@ jest.unstable_mockModule('../../../../../../src/lib/push', () => ({
   },
 }));
 
-const { DELETE } =
-  await import('../../../../../../src/app/api/push/subscriptions/[id]/route');
+const { DELETE } = await import('@/app/api/push/subscriptions/[id]/route');
 
 const del = (id: string) =>
   DELETE(

@@ -5,7 +5,7 @@ import {
   SITE_NAME,
   SITE_TITLE,
   SITE_URL,
-} from '../../src/lib/site';
+} from '@/utils/site';
 
 describe('site identity', () => {
   it('gives the site an https address with no trailing slash', () => {

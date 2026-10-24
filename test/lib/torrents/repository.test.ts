@@ -1,8 +1,9 @@
+import { createDatabase, type Database } from '@/core/db/client';
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
-import { ScrapingRepository } from '../../../src/lib/scraping/repository';
-import { TorrentRepository } from '../../../src/lib/torrents/repository';
-import type { ResolvedLookup } from '../../../src/lib/torrents/types';
+import { ScrapingRepository } from '@/domain/scraping/repository';
+import { TorrentRepository } from '@/domain/torrents/repository';
+import type { ResolvedLookup } from '@/lib/torrents/types';
 import { APP_MIGRATIONS } from '../../lib/db/migrations';
 import { sqliteD1 } from '../../lib/db/sqlite-d1';
 
@@ -13,6 +14,7 @@ import { sqliteD1 } from '../../lib/db/sqlite-d1';
  * go in through the repository or raw SQL.
  */
 let d1: D1Database;
+let db: Database;
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const old = (): string => new Date(Date.now() - 3 * ONE_DAY_MS).toISOString(); // >24h ago
@@ -21,6 +23,7 @@ const recent = (): string =>
 
 beforeEach(() => {
   d1 = sqliteD1(...APP_MIGRATIONS).d1;
+  db = createDatabase(d1);
 });
 
 /** Seed a movie + release for the seeded `scnsrc` source with a posted_at. */
@@ -29,7 +32,7 @@ async function seedRelease(
   imdb: string,
   postedAt: string,
 ): Promise<void> {
-  const scraping = new ScrapingRepository(d1);
+  const scraping = new ScrapingRepository(db);
   const sourceId = (await scraping.findSource('scnsrc'))!.id;
   await scraping.upsertRelease(
     sourceId,
@@ -60,7 +63,7 @@ async function seedLookup(imdb: string, status: string): Promise<void> {
 describe('TorrentRepository.candidates (SQLite-backed D1)', () => {
   it('returns a mature movie with no lookup row', async () => {
     await seedRelease('m-1', 'tt5000001', old());
-    const repo = new TorrentRepository(d1);
+    const repo = new TorrentRepository(db);
 
     const ids = await repo.candidates(10);
     expect(ids).toEqual(['tt5000001']);
@@ -68,7 +71,7 @@ describe('TorrentRepository.candidates (SQLite-backed D1)', () => {
 
   it('excludes a movie whose newest release is within 24h unless force', async () => {
     await seedRelease('m-fresh', 'tt5000002', recent());
-    const repo = new TorrentRepository(d1);
+    const repo = new TorrentRepository(db);
 
     expect(await repo.candidates(10)).toEqual([]);
     expect(await repo.candidates(10, true)).toEqual(['tt5000002']);
@@ -79,7 +82,7 @@ describe('TorrentRepository.candidates (SQLite-backed D1)', () => {
     await seedRelease('m-ok', 'tt5000004', old());
     await seedLookup('tt5000003', 'error');
     await seedLookup('tt5000004', 'success');
-    const repo = new TorrentRepository(d1);
+    const repo = new TorrentRepository(db);
 
     const ids = await repo.candidates(10);
     expect(ids).toEqual(['tt5000003']);
@@ -88,7 +91,7 @@ describe('TorrentRepository.candidates (SQLite-backed D1)', () => {
   it("also excludes movies with an 'empty' lookup (any non-error status)", async () => {
     await seedRelease('m-empty', 'tt5000005', old());
     await seedLookup('tt5000005', 'empty');
-    const repo = new TorrentRepository(d1);
+    const repo = new TorrentRepository(db);
 
     expect(await repo.candidates(10)).toEqual([]);
   });
@@ -109,7 +112,7 @@ describe('TorrentRepository.candidates (SQLite-backed D1)', () => {
       'tt5000012',
       new Date(Date.now() - 3 * ONE_DAY_MS).toISOString(),
     );
-    const repo = new TorrentRepository(d1);
+    const repo = new TorrentRepository(db);
 
     const ids = await repo.candidates(2);
     expect(ids).toEqual(['tt5000010', 'tt5000011']);
@@ -121,7 +124,7 @@ describe('TorrentRepository.tooFreshCount (SQLite-backed D1)', () => {
     await seedRelease('fresh-1', 'tt6000001', recent());
     await seedRelease('fresh-2', 'tt6000002', recent());
     await seedRelease('mature', 'tt6000003', old());
-    const repo = new TorrentRepository(d1);
+    const repo = new TorrentRepository(db);
 
     expect(await repo.tooFreshCount()).toBe(2);
   });
@@ -129,7 +132,7 @@ describe('TorrentRepository.tooFreshCount (SQLite-backed D1)', () => {
   it('does not count a fresh movie that already has any lookup row', async () => {
     await seedRelease('fresh-looked', 'tt6000004', recent());
     await seedLookup('tt6000004', 'error');
-    const repo = new TorrentRepository(d1);
+    const repo = new TorrentRepository(db);
 
     expect(await repo.tooFreshCount()).toBe(0);
   });
@@ -138,7 +141,7 @@ describe('TorrentRepository.tooFreshCount (SQLite-backed D1)', () => {
 describe('TorrentRepository.persist + totalStored (SQLite-backed D1)', () => {
   it('stores torrents and writes a lookup row on success', async () => {
     await seedRelease('p-1', 'tt7000001', old());
-    const repo = new TorrentRepository(d1);
+    const repo = new TorrentRepository(db);
 
     const resolved: ResolvedLookup = {
       provider: 'apibay',
@@ -182,7 +185,7 @@ describe('TorrentRepository.persist + totalStored (SQLite-backed D1)', () => {
 
   it('writes only a lookup row (no torrents) on an empty result', async () => {
     await seedRelease('p-2', 'tt7000002', old());
-    const repo = new TorrentRepository(d1);
+    const repo = new TorrentRepository(db);
 
     await repo.persist('tt7000002', {
       provider: 'apibay',

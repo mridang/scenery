@@ -1,4 +1,4 @@
-import type { ScoredMovie } from '../../../lib/catalog';
+import type { ScoredMovie } from '@/domain/catalog';
 
 import { MovieCardMosaic, MovieCardUniform } from './movie-card';
 

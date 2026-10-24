@@ -1,13 +1,13 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { TmdbEnricher } from '../../../src/lib/tmdb/enricher';
-import type { TmdbClient, TmdbResult } from '../../../src/lib/tmdb/client';
-import type { TmdbRepository } from '../../../src/lib/tmdb/repository';
+import { TmdbEnricher } from '@/domain/tmdb/enricher';
+import type { TmdbClient, TmdbResult } from '@/lib/tmdb/client';
+import type { TmdbRepository } from '@/domain/tmdb/repository';
 import type {
   TmdbFindResponse,
   TmdbMovieResponse,
   TmdbPersonResponse,
-} from '../../../src/lib/tmdb/types';
+} from '@/lib/tmdb/types';
 
 /** Returns the item at `index`, failing the test loudly when it is absent. */
 function nth<T>(items: readonly T[], index: number): T {

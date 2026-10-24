@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { ScnsrcSource } from '../../../../src/lib/sources/providers/scnsrc';
+import { ScnsrcSource } from '@/lib/sources/providers/scnsrc';
 
 /**
  * Build a single well-formed scnsrc post chunk. The extractor keys off the

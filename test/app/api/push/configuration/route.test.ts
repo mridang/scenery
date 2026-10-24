@@ -1,11 +1,10 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-jest.unstable_mockModule('../../../../../src/lib/util', () => ({
+jest.unstable_mockModule('@/core/runtime', () => ({
   getEnv: () => ({ VAPID_PUBLIC_KEY: 'pub-key' }),
 }));
 
-const { GET } =
-  await import('../../../../../src/app/api/push/configuration/route');
+const { GET } = await import('@/app/api/push/configuration/route');
 
 describe('GET /api/push/configuration', () => {
   it('answers the VAPID public key, cacheable', async () => {

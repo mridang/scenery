@@ -1,4 +1,4 @@
-import type { ScoredMovie } from '../../../lib/catalog';
+import type { ScoredMovie } from '@/domain/catalog';
 
 import { posterUrl } from '../_lib/tmdb-image';
 import { scoreColor } from '../_lib/movie-style';

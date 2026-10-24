@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import { subscriptionId } from '../../../../../src/lib/push/subscription-id';
+import { subscriptionId } from '@/lib/push/subscription-id';
 
 const store = new Map<string, { p256dh: string; auth: string }>();
-jest.unstable_mockModule('../../../../../src/lib/util', () => ({
-  getDB: () => ({}),
+jest.unstable_mockModule('@/core/runtime', () => ({
+  getDatabase: () => ({}),
 }));
-jest.unstable_mockModule('../../../../../src/lib/push', () => ({
+jest.unstable_mockModule('@/domain/push', () => ({
   PushSubscriptionRepository: class {
     public listAll() {
       return Promise.resolve(
@@ -20,8 +20,7 @@ jest.unstable_mockModule('../../../../../src/lib/push', () => ({
   },
 }));
 
-const { POST } =
-  await import('../../../../../src/app/api/push/subscriptions/route');
+const { POST } = await import('@/app/api/push/subscriptions/route');
 
 const ENDPOINT = 'https://push.test/abc';
 const GOOD = { endpoint: ENDPOINT, keys: { p256dh: 'p', auth: 'a' } };

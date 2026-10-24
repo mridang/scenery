@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-jest.unstable_mockModule('../../src/workflows', () => ({
+jest.unstable_mockModule('@/workflows', () => ({
   ScrapeWorkflow: class ScrapeWorkflow {},
   MovieWorkflow: class MovieWorkflow {},
   NotifyWorkflow: class NotifyWorkflow {},
 }));
 
-const { default: extraHandlers } = await import('../../src/lib/worker-extras');
+const { default: extraHandlers } = await import('@/core/worker-extras');
 
 /** A workflow binding that records the parameters of each instance it is asked to start. */
 function binding(fails = false) {

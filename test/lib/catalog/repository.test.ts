@@ -1,7 +1,8 @@
+import { createDatabase, type Database } from '@/core/db/client';
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
-import { CatalogRepository } from '../../../src/lib/catalog/repository';
-import { ScrapingRepository } from '../../../src/lib/scraping/repository';
+import { CatalogRepository } from '@/domain/catalog/repository';
+import { ScrapingRepository } from '@/domain/scraping/repository';
 import { APP_MIGRATIONS } from '../../lib/db/migrations';
 import { sqliteD1 } from '../../lib/db/sqlite-d1';
 
@@ -11,9 +12,11 @@ import { sqliteD1 } from '../../lib/db/sqlite-d1';
  * query. Seeds via ScrapingRepository so the joins are realistic.
  */
 let d1: D1Database;
+let db: Database;
 
 beforeEach(() => {
   d1 = sqliteD1(...APP_MIGRATIONS).d1;
+  db = createDatabase(d1);
 });
 
 /** Seed a release for the seeded `scnsrc` source. */
@@ -22,7 +25,7 @@ async function seedRelease(
   imdb: string,
   postedAt: string,
 ): Promise<void> {
-  const scraping = new ScrapingRepository(d1);
+  const scraping = new ScrapingRepository(db);
   const sourceId = (await scraping.findSource('scnsrc'))!.id;
   await scraping.upsertRelease(
     sourceId,
@@ -53,7 +56,7 @@ describe('CatalogRepository (SQLite-backed D1)', () => {
       .bind('tt2000001')
       .run();
 
-    const catalog = new CatalogRepository(d1);
+    const catalog = new CatalogRepository(db);
 
     const all = await catalog.loadMovies('all', 'date', 'catalog');
     expect(all.map((m) => m.imdb_id).sort()).toEqual([
@@ -101,7 +104,7 @@ describe('CatalogRepository (SQLite-backed D1)', () => {
         .bind('tt3000002'),
     ]);
 
-    const catalog = new CatalogRepository(d1);
+    const catalog = new CatalogRepository(db);
     const rows = await catalog.loadMovies('all', 'score', 'catalog');
 
     expect(rows.map((r) => r.imdb_id)).toEqual(['tt3000001', 'tt3000002']);
@@ -140,7 +143,7 @@ describe('CatalogRepository (SQLite-backed D1)', () => {
         .bind('tt4000002', big),
     ]);
 
-    const catalog = new CatalogRepository(d1);
+    const catalog = new CatalogRepository(db);
     const rows = await catalog.loadMovies('all', 'date', 'plan');
 
     expect(rows.map((r) => r.imdb_id)).toEqual(['tt4000001', 'tt4000002']);

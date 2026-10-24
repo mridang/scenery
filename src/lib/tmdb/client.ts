@@ -1,4 +1,4 @@
-import { safeJsonParse } from '../util';
+import { safeJsonParse } from '@/utils/json';
 import type {
   TmdbFindResponse,
   TmdbGenre,

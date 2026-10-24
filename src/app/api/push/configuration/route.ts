@@ -1,4 +1,4 @@
-import { getEnv } from '../../../../lib/util';
+import { getEnv } from '@/core/runtime';
 
 export const dynamic = 'force-dynamic';
 

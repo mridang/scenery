@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import type { NextRequest } from 'next/server';
 
-import { resetTrackerCache } from '../../../../src/lib/magnet/magnet';
+import { resetTrackerCache } from '@/lib/magnet/magnet';
 
 // The endpoint reaches the network via the transport layer; stub the
 // whole transport module so bestTrackers() reads a controlled body
@@ -12,7 +12,7 @@ const fakeFetch = (() =>
     new Response('udp://test-tracker:1337/announce\n'),
   )) as unknown as typeof fetch;
 
-jest.unstable_mockModule('../../../../src/lib/transport', () => ({
+jest.unstable_mockModule('@/lib/transport', () => ({
   genericTransport: () => fakeFetch,
   scrapingAntTransport: () => fakeFetch,
   browserTransport: () => fakeFetch,
@@ -21,7 +21,7 @@ jest.unstable_mockModule('../../../../src/lib/transport', () => ({
   isRetryableStatus: () => false,
 }));
 
-const { GET } = await import('../../../../src/app/magnet/[hash]/route');
+const { GET } = await import('@/app/magnet/[hash]/route');
 
 const VALID = 'a'.repeat(40);
 

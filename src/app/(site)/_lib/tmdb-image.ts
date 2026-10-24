@@ -6,7 +6,7 @@
  * keeps page weight tight: the smallest size that still looks crisp at the
  * slot wins.
  */
-import { imageSrc } from '../../../lib/images/address';
+import { imageSrc } from '@/lib/images/address';
 
 /** TMDB size token → integer pixel width the proxy understands. */
 const POSTER_WIDTHS = {

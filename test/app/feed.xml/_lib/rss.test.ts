@@ -1,12 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { MovieRow, ScoredMovie } from '../../../../src/lib/catalog';
+import type { MovieRow, ScoredMovie } from '@/domain/catalog';
 
-import {
-  buildFeed,
-  descriptionFor,
-  feedTitle,
-} from '../../../../src/app/feed.xml/_lib/rss';
+import { buildFeed, descriptionFor, feedTitle } from '@/app/feed.xml/_lib/rss';
 
 function row(overrides: Partial<MovieRow> = {}): MovieRow {
   return {

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-import { genericTransport } from '../../../../src/lib/transport/providers/generic';
+import { genericTransport } from '@/lib/transport/providers/generic';
 
 const realFetch = globalThis.fetch;
 

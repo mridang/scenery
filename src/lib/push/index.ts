@@ -11,9 +11,9 @@ export type { EncryptedPayload } from './encrypt';
 export { signVapidAuthHeader } from './vapid';
 export { sendPush } from './send';
 export type { VapidConfig } from './send';
-export { PushSubscriptionRepository } from './repository';
 export type {
   DeliveryResult,
   PushPayload,
   PushSubscriptionRecord,
+  PushSubscriptionStore,
 } from './types';

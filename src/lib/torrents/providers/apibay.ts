@@ -1,4 +1,4 @@
-import { safeJsonParse } from '../../util';
+import { safeJsonParse } from '@/utils/json';
 import { detectHdr, detectQuality, detectRemux } from '../parsing';
 import type { LookupResult, ParsedTorrent, TorrentProvider } from '../types';
 import type { ApibayOptions } from './types';

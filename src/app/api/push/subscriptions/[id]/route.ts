@@ -1,11 +1,8 @@
-import { problems } from '../../../../../lib/api/problem';
-import type { IdContext } from '../../../../../lib/api/route-context';
-import { PushSubscriptionRepository } from '../../../../../lib/push';
-import {
-  endpointForId,
-  isSubscriptionId,
-} from '../../../../../lib/push/subscription-id';
-import { getDB } from '../../../../../lib/util';
+import { problems } from '@/lib/rest-json/problem';
+import type { IdContext } from '@/core/api/route-context';
+import { PushSubscriptionRepository } from '@/domain/push';
+import { endpointForId, isSubscriptionId } from '@/lib/push/subscription-id';
+import { getDatabase } from '@/core/runtime';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +21,7 @@ export async function DELETE(
   if (!isSubscriptionId(id)) {
     return problems.notFound('push subscription');
   }
-  const repo = new PushSubscriptionRepository(getDB());
+  const repo = new PushSubscriptionRepository(getDatabase());
   const endpoint = await endpointForId(
     (await repo.listAll()).map((s) => s.endpoint),
     id,

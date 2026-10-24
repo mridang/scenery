@@ -1,7 +1,8 @@
+import { createDatabase } from '@/core/db/client';
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import { GET } from '../../../../../src/app/api/operations/[id]/route';
-import { OperationRepository } from '../../../../../src/lib/operations/repository';
+import { GET } from '@/app/api/operations/[id]/route';
+import { OperationRepository } from '@/domain/operations/repository';
 import { APP_MIGRATIONS } from '../../../../lib/db/migrations';
 import {
   installCloudflareContext,
@@ -16,7 +17,7 @@ const install = async (env: Record<string, unknown> = {}) => {
   restore?.();
   const { d1 } = sqliteD1(...APP_MIGRATIONS);
   restore = installCloudflareContext(d1, env);
-  const repository = new OperationRepository(d1);
+  const repository = new OperationRepository(createDatabase(d1));
   await repository.start({
     id: ID,
     type: 'push_trigger',

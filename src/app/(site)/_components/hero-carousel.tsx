@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import type { ScoredMovie } from '../../../lib/catalog';
+import type { ScoredMovie } from '@/domain/catalog';
 
 import { Hero } from './hero';
 

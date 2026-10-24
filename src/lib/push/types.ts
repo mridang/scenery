@@ -31,3 +31,19 @@ export interface DeliveryResult {
    */
   readonly gone: boolean;
 }
+
+/**
+ * Storage the push library needs but does not own: the set of registered
+ * subscriptions. The app implements this port (over D1, a test fake, etc.); the
+ * library stays free of any database. @public
+ */
+export interface PushSubscriptionStore {
+  /** Read every active subscription. */
+  listAll(): Promise<readonly PushSubscriptionRecord[]>;
+  /** Insert or replace a subscription keyed by `endpoint`. */
+  upsert(record: PushSubscriptionRecord, nowIso: string): Promise<void>;
+  /** Drop the subscription keyed by `endpoint`. Idempotent. */
+  remove(endpoint: string): Promise<void>;
+  /** Stamp the most-recent send time for a subscription. */
+  markSent(endpoint: string, nowIso: string): Promise<void>;
+}

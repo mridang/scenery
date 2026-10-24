@@ -4,7 +4,7 @@ import {
   endpointForId,
   isSubscriptionId,
   subscriptionId,
-} from '../../../src/lib/push/subscription-id';
+} from '@/lib/push/subscription-id';
 
 describe('subscriptionId', () => {
   it('is the lowercase hex SHA-256 of the endpoint', async () => {

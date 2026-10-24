@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import type { LangCount, PageViewOptions } from '../../../lib/catalog';
+import type { LangCount, PageViewOptions } from '@/domain/catalog';
 
 import { buildQuery } from '../_lib/format';
 

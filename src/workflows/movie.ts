@@ -4,10 +4,13 @@ import {
   type WorkflowStep,
 } from 'cloudflare:workers';
 
-import { OmdbEnricher } from '../lib/omdb';
-import { defaultProviders, lookupOneTorrent } from '../lib/torrents';
-import { buildEnricher } from '../lib/tmdb';
-import { genericTransport, proxyTransport, withRetry } from '../lib/transport';
+import { createDatabase } from '@/core/db/client';
+
+import { OmdbEnricher } from '@/domain/omdb';
+import { lookupOneTorrent } from '@/domain/torrents';
+import { buildEnricher } from '@/domain/tmdb';
+import { defaultProviders } from '@/lib/torrents';
+import { genericTransport, proxyTransport, withRetry } from '@/lib/transport';
 
 /**
  * Parameters accepted by {@link MovieWorkflow}.
@@ -50,7 +53,11 @@ export class MovieWorkflow extends WorkflowEntrypoint<
     const { imdbId, slot = 0 } = event.payload;
     const retry = { retries: { limit: 3, delay: '10 seconds' } } as const;
     const enricher = () =>
-      buildEnricher(this.env.DB, this.env, withRetry(genericTransport()));
+      buildEnricher(
+        createDatabase(this.env.DB),
+        this.env,
+        withRetry(genericTransport()),
+      );
 
     // 1. Enrich the movie itself (/find + /movie credits — ~2 calls).
     const verdict = await step.do('enrich-movie', retry, async () =>
@@ -72,7 +79,7 @@ export class MovieWorkflow extends WorkflowEntrypoint<
       //    this single movie. One OMDB call, direct fetch — Worker IPs
       //    aren't blocked there.
       await step.do('enrich-omdb', retry, async () => ({
-        status: await new OmdbEnricher(this.env.DB, {
+        status: await new OmdbEnricher(createDatabase(this.env.DB), {
           apiKey: this.env.OMDB_API_KEY,
           transport: withRetry(genericTransport()),
         }).enrichOne(imdbId),
@@ -98,7 +105,7 @@ export class MovieWorkflow extends WorkflowEntrypoint<
     //    proxied transport (blocks Worker IPs).
     const torrent = await step.do('torrent', retry, async () =>
       lookupOneTorrent(
-        this.env.DB,
+        createDatabase(this.env.DB),
         imdbId,
         defaultProviders(
           withRetry(proxyTransport(this.env.SCRAPINGANT_API_KEY)),

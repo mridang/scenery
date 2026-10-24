@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { DdlvalleySource } from '../../../../src/lib/sources/providers/ddlvalley';
+import { DdlvalleySource } from '@/lib/sources/providers/ddlvalley';
 
 /**
  * Build a single well-formed ddlvalley post chunk. The extractor keys off

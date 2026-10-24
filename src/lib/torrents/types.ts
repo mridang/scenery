@@ -1,8 +1,8 @@
-import type { LookupStatus, Quality, TorrentProviderName } from '../db/enums';
+import type { LookupStatus, Quality, TorrentProviderName } from '@/utils/enums';
 
 // The lookup/quality/provider value-sets are storage-constrained; re-export
 // so torrent consumers can keep importing them from this module.
-export type { LookupStatus, Quality, TorrentProviderName } from '../db/enums';
+export type { LookupStatus, Quality, TorrentProviderName } from '@/utils/enums';
 
 // Universal shape every provider must emit.
 export interface ParsedTorrent {

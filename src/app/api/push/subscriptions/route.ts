@@ -1,9 +1,9 @@
-import { absoluteLocation } from '../../../../lib/api/location';
-import { readJsonObject } from '../../../../lib/api/json';
-import { problems } from '../../../../lib/api/problem';
-import { PushSubscriptionRepository } from '../../../../lib/push';
-import { subscriptionId } from '../../../../lib/push/subscription-id';
-import { getDB } from '../../../../lib/util';
+import { absoluteLocation } from '@/lib/rest-json/location';
+import { readJsonObject } from '@/lib/rest-json/json';
+import { problems } from '@/lib/rest-json/problem';
+import { PushSubscriptionRepository } from '@/domain/push';
+import { subscriptionId } from '@/lib/push/subscription-id';
+import { getDatabase } from '@/core/runtime';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,7 +66,7 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
   const { endpoint, p256dh, auth } = checked;
-  const repo = new PushSubscriptionRepository(getDB());
+  const repo = new PushSubscriptionRepository(getDatabase());
   const existed = (await repo.listAll()).some((s) => s.endpoint === endpoint);
   await repo.upsert({ endpoint, p256dh, auth }, new Date().toISOString());
   const id = await subscriptionId(endpoint);

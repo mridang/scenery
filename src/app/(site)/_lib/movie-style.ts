@@ -4,7 +4,7 @@
  * availability. Plain functions so cards and the hero can read them
  * without pulling in a component.
  */
-import type { ScoredMovie, Tier } from '../../../lib/catalog';
+import type { ScoredMovie, Tier } from '@/domain/catalog';
 
 /** Score colour: green ≥ 85, amber ≥ 60, grey otherwise; sky for unknown. */
 export function scoreColor(score: number, tier: Tier): string {

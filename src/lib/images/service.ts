@@ -14,8 +14,8 @@
  * rest of the API, that nobody caches.
  */
 
-import { problems } from '../api/problem';
-import { isPublicWebUrl } from '../http/safe-fetch';
+import { problems } from '@/lib/rest-json/problem';
+import { isPublicWebUrl } from '@/lib/safe-fetch';
 import { isAllowedHost, snapWidth } from './address';
 import { fetchImage, type ImageFetch, type ImagesLike } from './proxy';
 import { DEFAULT_WIDTH } from './site';

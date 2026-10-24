@@ -9,12 +9,12 @@ import { NextResponse } from 'next/server';
 import {
   isOperationId,
   operationResource,
-} from '../../../../lib/api/operation-resource';
-import { operatorRefusal } from '../../../../lib/api/operator-auth';
-import { problems } from '../../../../lib/api/problem';
-import type { IdContext } from '../../../../lib/api/route-context';
-import { OperationRepository } from '../../../../lib/operations/repository';
-import { getDB, getEnv } from '../../../../lib/util';
+} from '@/domain/operations/operation-resource';
+import { operatorRefusal } from '@/core/api/operator-auth';
+import { problems } from '@/lib/rest-json/problem';
+import type { IdContext } from '@/core/api/route-context';
+import { OperationRepository } from '@/domain/operations/repository';
+import { getDatabase, getEnv } from '@/core/runtime';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +33,7 @@ export async function GET(
   }
   const { id } = await params;
   const row = isOperationId(id)
-    ? await new OperationRepository(getDB()).get(id)
+    ? await new OperationRepository(getDatabase()).get(id)
     : undefined;
   return row
     ? NextResponse.json(operationResource(row), {

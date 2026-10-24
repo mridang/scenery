@@ -1,0 +1,35 @@
+/**
+ * @packageDocumentation
+ *
+ * Who may use `/api/operations`. The operator proves it with the `CRON_SECRET`
+ * as a bearer token. Where no secret is set (local development) the endpoints
+ * are open, as the manual triggers always were. The pure rule is in
+ * `@/lib/operator-auth`; this wraps it with the problem response and logging.
+ */
+
+import type { NextResponse } from 'next/server';
+
+import { isOperator } from '@/lib/operator-auth';
+import { problem } from '@/lib/rest-json/problem';
+import { logError } from '@/utils/logging';
+
+/** The refusal to send when the caller is not the operator, or undefined when they are. */
+export function operatorRefusal(
+  request: Request,
+  env: Pick<CloudflareEnv, 'CRON_SECRET'>,
+): NextResponse | undefined {
+  if (isOperator(request.headers.get('authorization'), env.CRON_SECRET)) {
+    return undefined;
+  }
+  logError({
+    event: 'operations.unauthorized',
+    path: new URL(request.url).pathname,
+  });
+  return problem(
+    401,
+    '/problems/unauthorized',
+    'Unauthorized',
+    'Send the operator token as a Bearer Authorization header.',
+    { headers: { 'WWW-Authenticate': 'Bearer' } },
+  );
+}

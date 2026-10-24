@@ -4,7 +4,7 @@ import {
   labelsForPrestigeIds,
   PRESTIGE_IDS,
   PRESTIGE_LABELS,
-} from '../../../src/lib/catalog/prestige';
+} from '@/domain/catalog/prestige';
 
 describe('labelsForPrestigeIds', () => {
   it('returns [] for null', () => {

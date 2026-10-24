@@ -1,6 +1,7 @@
+import type { Database } from '@/core/db/client';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import type { OperationRequest } from '../../../src/lib/operations/types';
+import type { OperationRequest } from '@/domain/operations/types';
 
 const calls: string[] = [];
 
@@ -10,7 +11,7 @@ const sweepPending = jest.fn(async (limit: number) => ({
   notFound: 2,
   errored: 3,
 }));
-jest.unstable_mockModule('../../../src/lib/omdb', () => ({
+jest.unstable_mockModule('@/domain/omdb', () => ({
   OmdbEnricher: class {
     public sweepPending = sweepPending;
   },
@@ -25,16 +26,16 @@ const runPages = jest.fn(
     return [{ page: 1 }];
   },
 );
-jest.unstable_mockModule('../../../src/lib/scraping', () => ({
+jest.unstable_mockModule('@/domain/scraping', () => ({
   ScrapeOrchestrator: class {
     public run = runPages;
   },
   ScrapingRepository: class {},
 }));
-jest.unstable_mockModule('../../../src/lib/sources', () => ({
+jest.unstable_mockModule('@/lib/sources', () => ({
   buildSources: () => ({ scnsrc: {}, ddlvalley: {} }),
 }));
-jest.unstable_mockModule('../../../src/lib/tmdb', () => ({
+jest.unstable_mockModule('@/domain/tmdb', () => ({
   buildEnricher: () => ({
     ensureGenres: async () => calls.push('enrich'),
     listPendingMovieIds: async () => ['tt1', 'tt2'],
@@ -51,27 +52,29 @@ const lookups = jest.fn(
     return { looked_up: opts.providers.length };
   },
 );
-jest.unstable_mockModule('../../../src/lib/torrents', () => ({
+jest.unstable_mockModule('@/lib/torrents', () => ({
   ApibayProvider: class {},
   TorrentioProvider: class {},
   defaultProviders: () => [{}, {}, {}],
+}));
+jest.unstable_mockModule('@/domain/torrents', () => ({
   runTorrentLookups: lookups,
 }));
-jest.unstable_mockModule('../../../src/lib/transport', () => ({
+jest.unstable_mockModule('@/lib/transport', () => ({
   browserTransport: () => fetch,
   genericTransport: () => fetch,
   proxyTransport: () => fetch,
   withRetry: (transport: typeof fetch) => transport,
 }));
 
-const { runOperation } = await import('../../../src/lib/operations/run');
+const { runOperation } = await import('@/domain/operations/run');
 
 const create = jest.fn<(options: unknown) => Promise<unknown>>(async () => ({
   id: 'inst-1',
   status: async () => ({ status: 'queued' }),
 }));
 const deps = {
-  db: {} as D1Database,
+  db: {} as unknown as Database,
   env: {
     NOTIFY_WORKFLOW: { create },
     OMDB_API_KEY: 'k',

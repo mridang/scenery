@@ -11,7 +11,7 @@ import {
   fetchCapped,
   type FetchFailure,
   type SafeFetcher,
-} from '../http/safe-fetch';
+} from '@/lib/safe-fetch';
 import { snapWidth } from './address';
 
 /** The most a picture may weigh before we refuse it. */

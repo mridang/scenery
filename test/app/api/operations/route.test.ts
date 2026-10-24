@@ -8,18 +8,18 @@ import {
 } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import type { OperationRequest } from '../../../../src/lib/operations/types';
+import type { OperationRequest } from '@/domain/operations/types';
 import { APP_MIGRATIONS } from '../../../lib/db/migrations';
 import { installCloudflareContext, sqliteD1 } from '../../../lib/db/sqlite-d1';
 
 const runOperation = jest.fn<(request: OperationRequest) => Promise<unknown>>(
   async () => ({ done: true }),
 );
-jest.unstable_mockModule('../../../../src/lib/operations/run', () => ({
+jest.unstable_mockModule('@/domain/operations/run', () => ({
   runOperation,
 }));
 
-const { POST } = await import('../../../../src/app/api/operations/route');
+const { POST } = await import('@/app/api/operations/route');
 
 let raw: DatabaseSync;
 let restore: () => void;

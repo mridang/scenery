@@ -1,0 +1,113 @@
+/**
+ * @packageDocumentation
+ *
+ * Torrent lookup domain: the repository over the app's tables and the
+ * run-level helpers that walk candidates through the lookup manager
+ * (`@/lib/torrents`) and persist the results.
+ */
+
+import type { Database } from '@/core/db/client';
+import { TorrentLookupManager } from '@/lib/torrents';
+import type {
+  LookupStatus,
+  ResolvedLookup,
+  TorrentProvider,
+} from '@/lib/torrents';
+import { TorrentRepository } from './repository';
+import type { TorrentRunSummary } from './repository';
+
+export { TorrentRepository } from './repository';
+export type { TorrentRunSummary } from './repository';
+
+/** {@link TorrentRunSummary} plus whether more candidates remain. @public */
+export type TorrentRunResult = TorrentRunSummary & {
+  /** True if the per-run candidate cap was hit — more may remain. */
+  readonly exhausted: boolean;
+};
+
+/**
+ * IMDb ids past the 24h gate that still need a torrent lookup. Each
+ * becomes one granular workflow step.
+ *
+ * @public
+ */
+export async function listTorrentCandidates(
+  db: Database,
+  limit = 50,
+  force = false,
+): Promise<string[]> {
+  return new TorrentRepository(db).candidates(limit, force);
+}
+
+/**
+ * Look up + persist torrents for ONE movie via the provider chain. One
+ * step's worth of work (a handful of subrequests at most).
+ *
+ * @returns The provider that answered and the lookup status.
+ * @public
+ */
+export async function lookupOneTorrent(
+  db: Database,
+  imdbId: string,
+  providers: readonly TorrentProvider[],
+): Promise<{ readonly provider: string; readonly status: LookupStatus }> {
+  const manager = new TorrentLookupManager(providers);
+  const repo = new TorrentRepository(db);
+  const resolved = await manager.lookup(imdbId);
+  await repo.persist(imdbId, resolved);
+  return { provider: resolved.provider, status: resolved.result.status };
+}
+
+/**
+ * Top-level entry point. Walks up to `limit` candidates (each lookup is
+ * one or more provider subrequests), runs them through the manager,
+ * persists results, summarises. `limit` doubles as the per-invocation
+ * subrequest guard: keep it under the platform cap (50 on Free).
+ *
+ * @public
+ */
+export async function runTorrentLookups(
+  db: Database,
+  opts: {
+    readonly providers: readonly TorrentProvider[];
+    readonly limit?: number;
+  },
+): Promise<TorrentRunResult> {
+  const manager = new TorrentLookupManager(opts.providers);
+  const repo = new TorrentRepository(db);
+  const limit = opts.limit ?? 200;
+
+  const candidates = await repo.candidates(limit);
+  const skippedTooFresh = await repo.tooFreshCount();
+
+  // Sequential awaited IO: each lookup + persist runs in order (subrequest
+  // budget), accumulating the resolved outcomes immutably.
+  const resolvedList = await candidates.reduce<
+    Promise<readonly ResolvedLookup[]>
+  >(async (accP, imdbId) => {
+    const acc = await accP;
+    const resolved = await manager.lookup(imdbId);
+    await repo.persist(imdbId, resolved);
+    return [...acc, resolved];
+  }, Promise.resolve([]));
+
+  const countOf = (status: LookupStatus): number =>
+    resolvedList.filter((resolved) => resolved.result.status === status).length;
+  const byProvider = Object.fromEntries(
+    Object.entries(
+      Object.groupBy(resolvedList, (resolved) => resolved.provider),
+    ).map(([provider, group]) => [provider, group?.length ?? 0]),
+  );
+
+  return {
+    scanned: candidates.length,
+    success: countOf('success'),
+    empty: countOf('empty'),
+    errors: countOf('error'),
+    totalStored: await repo.totalStored(),
+    skippedTooFresh,
+    byProvider,
+    // If we filled the candidate page, assume more remain for the next step.
+    exhausted: candidates.length >= limit,
+  };
+}

@@ -1,3 +1,4 @@
+import { createDatabase } from '@/core/db/client';
 import { beforeAll, describe, expect, it, jest } from '@jest/globals';
 
 import type { NextRequest } from 'next/server';
@@ -11,8 +12,8 @@ beforeAll(() => {
   d1 = sqliteD1(...APP_MIGRATIONS).d1;
 });
 
-jest.unstable_mockModule('../../../src/lib/util', () => ({
-  getDB: () => d1,
+jest.unstable_mockModule('@/core/runtime', () => ({
+  getDatabase: () => createDatabase(d1),
   getEnv: () => ({}),
   logInfo: () => undefined,
   logWarn: () => undefined,
@@ -22,7 +23,7 @@ jest.unstable_mockModule('../../../src/lib/util', () => ({
 
 // Keep the feed hermetic: bestTrackers is handed a stub transport that
 // never touches the network, so it falls back to the static tracker list.
-jest.unstable_mockModule('../../../src/lib/transport', () => {
+jest.unstable_mockModule('@/lib/transport', () => {
   const stubFetch = (async () =>
     new Response('', { status: 500 })) as unknown as typeof fetch;
   return {
@@ -35,9 +36,8 @@ jest.unstable_mockModule('../../../src/lib/transport', () => {
   };
 });
 
-const { ScrapingRepository } =
-  await import('../../../src/lib/scraping/repository');
-const { GET } = await import('../../../src/app/feed.xml/route');
+const { ScrapingRepository } = await import('@/domain/scraping/repository');
+const { GET } = await import('@/app/feed.xml/route');
 
 function req(url: string): NextRequest {
   return { nextUrl: new URL(url) } as unknown as NextRequest;
@@ -62,7 +62,7 @@ describe('GET /feed.xml', () => {
       .prepare("SELECT id FROM sources WHERE slug = 'scnsrc'")
       .first()) as { id: number };
 
-    const repo = new ScrapingRepository(d1);
+    const repo = new ScrapingRepository(createDatabase(d1));
     await repo.upsertRelease(
       src.id,
       {

@@ -1,11 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { TorrentLookupManager } from '../../../src/lib/torrents/manager';
+import { TorrentLookupManager } from '@/lib/torrents/manager';
 import type {
   LookupResult,
   TorrentProvider,
   TorrentProviderName,
-} from '../../../src/lib/torrents/types';
+} from '@/lib/torrents/types';
 
 function fakeProvider(
   name: TorrentProviderName,

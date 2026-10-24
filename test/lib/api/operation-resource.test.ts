@@ -4,8 +4,8 @@ import {
   RUN_TIMEOUT_MS,
   isOperationId,
   operationResource,
-} from '../../../src/lib/api/operation-resource';
-import type { OperationRow } from '../../../src/lib/operations/repository';
+} from '@/domain/operations/operation-resource';
+import type { OperationRow } from '@/domain/operations/repository';
 
 const row = (over: Partial<OperationRow> = {}): OperationRow => ({
   id: '0b8a3f1e-5a53-4a5c-8a1c-0a6c8d8f6a11',

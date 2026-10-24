@@ -6,11 +6,8 @@ import {
   forwardedHeaders,
   newNonce,
   nonceOf,
-} from '../../../src/lib/http/csp';
-import {
-  EXTRA_DIRECTIVES,
-  EXTRA_IMG_SOURCES,
-} from '../../../src/lib/http/site';
+} from '@/core/http/csp';
+import { EXTRA_DIRECTIVES, EXTRA_IMG_SOURCES } from '@/core/http/site';
 
 describe('newNonce', () => {
   it('is base64 of 16 bytes, and different every time', () => {

@@ -1,4 +1,4 @@
-import type { SourceSlug } from '../db/enums';
+import type { SourceSlug } from '@/utils/enums';
 
 /**
  * Outcome of fetching one listing page from a release source.

@@ -14,7 +14,7 @@ import {
   imageCache,
   imagesBinding,
   runInBackground,
-} from '@/lib/images/runtime';
+} from '@/core/images/runtime';
 import { serveImage } from '@/lib/images/service';
 
 /**

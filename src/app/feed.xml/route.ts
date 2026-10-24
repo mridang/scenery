@@ -1,9 +1,9 @@
 import type { NextRequest } from 'next/server';
-import { getDB } from '../../lib/util';
-import { CatalogService, parseViewOptions } from '../../lib/catalog';
-import type { ScoredMovie } from '../../lib/catalog';
-import { bestTrackers } from '../../lib/magnet';
-import { genericTransport, withRetry } from '../../lib/transport';
+import { getDatabase } from '@/core/runtime';
+import { CatalogService, parseViewOptions } from '@/domain/catalog';
+import type { ScoredMovie } from '@/domain/catalog';
+import { bestTrackers } from '@/lib/magnet';
+import { genericTransport, withRetry } from '@/lib/transport';
 
 import { buildFeed } from './_lib/rss';
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       ? null
       : Math.max(0, Number(budgetGbRaw)) * 1_000_000_000;
 
-  const catalog = CatalogService.fromD1(getDB());
+  const catalog = CatalogService.fromDatabase(getDatabase());
   const { movies } = await catalog.view({ lang, sort, view });
   const trackers = await bestTrackers(withRetry(genericTransport()));
 

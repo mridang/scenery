@@ -10,15 +10,16 @@
 
 import { NextResponse } from 'next/server';
 
-import { readJsonObject } from '../../../lib/api/json';
-import { absoluteLocation } from '../../../lib/api/location';
-import { parseOperationInput } from '../../../lib/api/operation-input';
-import { operationResource } from '../../../lib/api/operation-resource';
-import { operatorRefusal } from '../../../lib/api/operator-auth';
-import { problems } from '../../../lib/api/problem';
-import { OperationRepository } from '../../../lib/operations/repository';
-import { runOperation } from '../../../lib/operations/run';
-import { errorMessage, getDB, getEnv, logError } from '../../../lib/util';
+import { readJsonObject } from '@/lib/rest-json/json';
+import { absoluteLocation } from '@/lib/rest-json/location';
+import { parseOperationInput } from '@/domain/operations/operation-input';
+import { operationResource } from '@/domain/operations/operation-resource';
+import { operatorRefusal } from '@/core/api/operator-auth';
+import { problems } from '@/lib/rest-json/problem';
+import { OperationRepository } from '@/domain/operations/repository';
+import { runOperation } from '@/domain/operations/run';
+import { getDatabase, getEnv } from '@/core/runtime';
+import { errorMessage, logError } from '@/utils/logging';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,7 +49,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     return problems.badRequest('The operation is not valid.', input.errors);
   }
 
-  const db = getDB();
+  const db = getDatabase();
   const repository = new OperationRepository(db);
   const id = crypto.randomUUID();
   const { type, parameters } = input.request;

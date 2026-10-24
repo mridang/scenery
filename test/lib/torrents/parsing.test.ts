@@ -1,10 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  detectHdr,
-  detectQuality,
-  detectRemux,
-} from '../../../src/lib/torrents/parsing';
+import { detectHdr, detectQuality, detectRemux } from '@/lib/torrents/parsing';
 
 describe('detectQuality', () => {
   it('detects 2160p, 4K and UHD as 2160p', () => {

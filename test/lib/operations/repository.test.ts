@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
-import { OperationRepository } from '../../../src/lib/operations/repository';
+import { createDatabase } from '@/core/db/client';
+import { OperationRepository } from '@/domain/operations/repository';
 import { APP_MIGRATIONS } from '../db/migrations';
 import { sqliteD1 } from '../db/sqlite-d1';
 
 let repository: OperationRepository;
 
 beforeEach(() => {
-  repository = new OperationRepository(sqliteD1(...APP_MIGRATIONS).d1);
+  repository = new OperationRepository(
+    createDatabase(sqliteD1(...APP_MIGRATIONS).d1),
+  );
 });
 
 const ID = '0b8a3f1e-5a53-4a5c-8a1c-0a6c8d8f6a11';

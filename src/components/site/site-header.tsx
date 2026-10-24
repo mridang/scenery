@@ -1,5 +1,5 @@
 import { timeAgo } from '@/app/(site)/_lib/format';
-import type { LastUpdate } from '@/lib/catalog';
+import type { LastUpdate } from '@/domain/catalog';
 
 import { InstallButton } from './install-button';
 import { Logo } from './logo';

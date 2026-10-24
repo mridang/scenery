@@ -1,7 +1,8 @@
+import { createDatabase, type Database } from '@/core/db/client';
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
-import { ScrapingRepository } from '../../../src/lib/scraping/repository';
-import type { ExtractedRelease } from '../../../src/lib/sources/types';
+import { ScrapingRepository } from '@/domain/scraping/repository';
+import type { ExtractedRelease } from '@/lib/sources/types';
 import { APP_MIGRATIONS } from '../../lib/db/migrations';
 import { sqliteD1 } from '../../lib/db/sqlite-d1';
 
@@ -11,14 +12,16 @@ import { sqliteD1 } from '../../lib/db/sqlite-d1';
  * source.
  */
 let d1: D1Database;
+let db: Database;
 
 beforeEach(() => {
   d1 = sqliteD1(...APP_MIGRATIONS).d1;
+  db = createDatabase(d1);
 });
 
 describe('ScrapingRepository (SQLite-backed D1)', () => {
   it('upserts movie + release and dedupes on re-scrape', async () => {
-    const repo = new ScrapingRepository(d1);
+    const repo = new ScrapingRepository(db);
 
     const source = await repo.findSource('scnsrc');
     expect(source).not.toBeNull();

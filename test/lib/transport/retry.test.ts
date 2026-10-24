@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { isRetryableStatus, withRetry } from '../../../src/lib/transport/retry';
+import { isRetryableStatus, withRetry } from '@/lib/transport/retry';
 
 const FAST = { baseDelayMs: 0, jitterMs: 0 } as const;
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { operatorRefusal } from '../../../src/lib/api/operator-auth';
+import { operatorRefusal } from '@/core/api/operator-auth';
 
 const request = (authorization?: string) =>
   new Request('https://app.test/api/operations', {

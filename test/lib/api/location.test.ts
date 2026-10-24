@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { absoluteLocation } from '../../../src/lib/api/location';
+import { absoluteLocation } from '@/lib/rest-json/location';
 
 describe('absoluteLocation', () => {
   it('puts the path on the origin the request came to', () => {

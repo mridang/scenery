@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { TmdbClient } from '../../../src/lib/tmdb/client';
-import type { TmdbFindResponse } from '../../../src/lib/tmdb/types';
+import { TmdbClient } from '@/lib/tmdb/client';
+import type { TmdbFindResponse } from '@/lib/tmdb/types';
 
 /** Returns the item at `index`, failing the test loudly when it is absent. */
 function nth<T>(items: readonly T[], index: number): T {

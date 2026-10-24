@@ -4,14 +4,16 @@ import {
   type WorkflowStep,
 } from 'cloudflare:workers';
 
-import { CatalogService, type ScoredMovie } from '../lib/catalog';
+import { createDatabase, type Database } from '@/core/db/client';
+
+import { CatalogService, type ScoredMovie } from '@/domain/catalog';
+import { PushSubscriptionRepository } from '@/domain/push';
 import {
-  PushSubscriptionRepository,
   sendPush,
   type PushPayload,
   type PushSubscriptionRecord,
   type VapidConfig,
-} from '../lib/push';
+} from '@/lib/push';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const SITE_URL = 'https://scenery.apps.mrida.ng';
@@ -43,7 +45,7 @@ export class NotifyWorkflow extends WorkflowEntrypoint<
     const retry = { retries: { limit: 3, delay: '10 seconds' } } as const;
 
     const picks = await step.do('pick-top-5', async () =>
-      pickTopFiveNew(this.env.DB),
+      pickTopFiveNew(createDatabase(this.env.DB)),
     );
     if (picks.length === 0) {
       // Empty catalog (nothing to ever send).
@@ -53,7 +55,7 @@ export class NotifyWorkflow extends WorkflowEntrypoint<
     const payload = buildPayload(picks);
 
     const subscriptions = await step.do('list-subscriptions', async () =>
-      new PushSubscriptionRepository(this.env.DB).listAll(),
+      new PushSubscriptionRepository(createDatabase(this.env.DB)).listAll(),
     );
     if (subscriptions.length === 0) {
       return { skipped: 'no subscribers', sent: 0 };
@@ -71,7 +73,13 @@ export class NotifyWorkflow extends WorkflowEntrypoint<
         const delivered = await step.do(
           `send:${shortKey(subscription.endpoint)}`,
           retry,
-          async () => deliverOne(this.env.DB, subscription, payload, vapid),
+          async () =>
+            deliverOne(
+              createDatabase(this.env.DB),
+              subscription,
+              payload,
+              vapid,
+            ),
         );
         return acc + (delivered ? 1 : 0);
       },
@@ -83,7 +91,7 @@ export class NotifyWorkflow extends WorkflowEntrypoint<
 }
 
 async function deliverOne(
-  db: D1Database,
+  db: Database,
   subscription: PushSubscriptionRecord,
   payload: PushPayload,
   vapid: VapidConfig,
@@ -101,8 +109,8 @@ async function deliverOne(
   return ok;
 }
 
-async function pickTopFiveNew(db: D1Database): Promise<readonly ScoredMovie[]> {
-  const catalog = CatalogService.fromD1(db);
+async function pickTopFiveNew(db: Database): Promise<readonly ScoredMovie[]> {
+  const catalog = CatalogService.fromDatabase(db);
   const view = await catalog.view({
     lang: 'all',
     sort: 'score',

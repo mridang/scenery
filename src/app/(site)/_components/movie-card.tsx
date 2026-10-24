@@ -1,5 +1,5 @@
-import type { ScoredMovie } from '../../../lib/catalog';
-import { magnetPath } from '../../../lib/magnet';
+import type { ScoredMovie } from '@/domain/catalog';
+import { magnetPath } from '@/lib/magnet';
 
 import { formatRuntime } from '../_lib/format';
 import {

@@ -7,7 +7,7 @@ import {
   MANIFEST_EXTRAS,
   PRIVATE_PATHS,
   SITEMAP_PAGES,
-} from '../../src/app/_brand';
+} from '@/app/_brand';
 
 describe('the brand', () => {
   it('is named and placed as the site says', () => {
