@@ -50,6 +50,23 @@ export function problem(
   });
 }
 
+/**
+ * A problem response raised as an error, so a controller endpoint can abandon
+ * a request from deep in its `decode`/`handle` and have the framework send the
+ * problem. Wraps a ready {@link problem} response (e.g. one of {@link problems}).
+ */
+export class Problem extends Error {
+  public constructor(public readonly response: NextResponse) {
+    super();
+    this.name = 'Problem';
+  }
+}
+
+/** Whether a caught value is a {@link Problem}. */
+export function isProblem(value: unknown): value is Problem {
+  return value instanceof Problem;
+}
+
 /** The standard problems, so every route words them the same way. */
 export const problems = {
   unauthorized: () =>

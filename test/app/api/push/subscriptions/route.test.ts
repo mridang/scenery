@@ -6,7 +6,7 @@ const store = new Map<string, { p256dh: string; auth: string }>();
 jest.unstable_mockModule('@/core/runtime', () => ({
   getDatabase: () => ({}),
 }));
-jest.unstable_mockModule('@/domain/push', () => ({
+jest.unstable_mockModule('@/domain/push/repository', () => ({
   PushSubscriptionRepository: class {
     public listAll() {
       return Promise.resolve(

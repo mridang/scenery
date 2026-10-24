@@ -41,7 +41,7 @@ function senderReturning(
   statusByEndpoint: Readonly<Record<string, number>>,
 ): WebPushSender {
   return {
-    send: (subscription): Promise<DeliveryResult> => {
+    send: (subscription: PushSubscriptionRecord): Promise<DeliveryResult> => {
       const status = statusByEndpoint[subscription.endpoint] ?? 201;
       return Promise.resolve({
         endpoint: subscription.endpoint,
