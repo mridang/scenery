@@ -6,7 +6,7 @@ import {
   WORKER_URL,
   type WorkerEnvironment,
 } from '@/components/site/service-worker';
-import { html } from '@test/components/render';
+import { html } from '../../components/render';
 
 /** A browser stand-in: production, with service workers, still loading. */
 function browser(

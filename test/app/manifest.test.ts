@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import { BACKGROUND_COLOR, THEME_COLOR } from '@/app/_brand';
 import manifest from '@/app/manifest';
-import { pngSize } from '@test/png';
+import { pngSize } from '../png';
 
 /** The names of the chunks a PNG file is made of, in order. */
 function pngChunks(file: string): readonly string[] {

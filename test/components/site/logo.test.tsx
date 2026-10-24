@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import { BRAND_NAME } from '@/app/_brand';
 import { BrandMark, Logo } from '@/components/site/logo';
-import { classOf, html } from '@test/components/render';
+import { classOf, html } from '../../components/render';
 
 describe('Logo', () => {
   it('is the mark and the name, linking home', () => {

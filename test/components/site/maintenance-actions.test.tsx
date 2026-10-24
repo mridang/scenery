@@ -4,7 +4,7 @@ import {
   MaintenanceActions,
   startPipelineRun,
 } from '@/components/site/maintenance-actions';
-import { html } from '@test/components/render';
+import { html } from '../../components/render';
 
 const realFetch = globalThis.fetch;
 afterEach(() => {

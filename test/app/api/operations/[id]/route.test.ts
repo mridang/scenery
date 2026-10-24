@@ -3,8 +3,11 @@ import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
 import { GET } from '@/app/api/operations/[id]/route';
 import { OperationRepository } from '@/domain/operations/repository';
-import { APP_MIGRATIONS } from '@test/lib/db/migrations';
-import { installCloudflareContext, sqliteD1 } from '@test/lib/db/sqlite-d1';
+import { APP_MIGRATIONS } from '../../../../lib/db/migrations';
+import {
+  installCloudflareContext,
+  sqliteD1,
+} from '../../../../lib/db/sqlite-d1';
 
 const ID = '0b8a3f1e-5a53-4a5c-8a1c-0a6c8d8f6a11';
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import { NOT_FOUND_LINK, NOT_FOUND_NOTE } from '@/app/_brand';
 import NotFound, { metadata } from '@/app/not-found';
-import { html } from '@test/components/render';
+import { html } from '../components/render';
 
 describe('NotFound', () => {
   const out = html(<NotFound />);

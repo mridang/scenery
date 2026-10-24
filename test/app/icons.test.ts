@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { BRAND_NAME } from '@/app/_brand';
-import { pngIsOpaque, pngSize } from '@test/png';
+import { pngIsOpaque, pngSize } from '../png';
 
 const app = (name: string) => path.join(process.cwd(), 'src/app', name);
 

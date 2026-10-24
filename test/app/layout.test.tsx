@@ -2,7 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import { BRAND_URL, COLOR_SCHEME, INDEX_BY_DEFAULT } from '@/app/_brand';
 import manifest from '@/app/manifest';
-import { html } from '@test/components/render';
+import { html } from '../components/render';
 
 // The stylesheet, the fonts (which only work inside the Next compiler) and the
 // two scripts are not what is under test: the frame around the page is.
