@@ -20,16 +20,18 @@ import {
   unique,
 } from 'drizzle-orm/sqlite-core';
 
+import { SOURCE_SLUGS } from '@/lib/sources/types';
+import {
+  LOOKUP_STATUSES,
+  QUALITIES,
+  TORRENT_PROVIDERS,
+} from '@/lib/torrents/types';
 import {
   FETCH_STATUSES,
-  LOOKUP_STATUSES,
   OPERATION_STATUSES,
   OPERATION_TYPES,
-  QUALITIES,
-  SOURCE_SLUGS,
   TMDB_STATUSES,
-  TORRENT_PROVIDERS,
-} from '@/utils/enums';
+} from './enums';
 
 /** A release tracker we ingest from. Seeded by the first migration. */
 export const sources = sqliteTable('sources', {

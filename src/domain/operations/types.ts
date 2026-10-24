@@ -6,7 +6,8 @@
  * has to re-check what it was given.
  */
 
-import type { SourceSlug, TorrentProviderName } from '@/utils/enums';
+import type { SourceSlug } from '@/lib/sources/types';
+import type { TorrentProviderName } from '@/lib/torrents/types';
 
 /** The steps of a pipeline run, in the order they happen. */
 export const PIPELINE_STEPS = ['scrape', 'enrich', 'torrents'] as const;

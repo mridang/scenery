@@ -6,12 +6,9 @@
  * typo is an error and not a silent default.
  */
 
-import {
-  OPERATION_TYPES,
-  SOURCE_SLUGS,
-  TORRENT_PROVIDERS,
-  type OperationType,
-} from '@/utils/enums';
+import { OPERATION_TYPES, type OperationType } from '@/domain/db/enums';
+import { SOURCE_SLUGS } from '@/lib/sources/types';
+import { TORRENT_PROVIDERS } from '@/lib/torrents/types';
 import {
   DEFAULT_OMDB_LIMIT,
   MAX_BACKFILL_PAGES,

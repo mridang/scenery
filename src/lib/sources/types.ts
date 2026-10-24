@@ -1,4 +1,10 @@
-import type { SourceSlug } from '@/utils/enums';
+/**
+ * Registered scrape sources (one provider class per slug). This is the sources
+ * library's own vocabulary; the app schema imports it to constrain the
+ * `sources.slug` column. @public
+ */
+export const SOURCE_SLUGS = ['scnsrc', 'ddlvalley'] as const;
+export type SourceSlug = (typeof SOURCE_SLUGS)[number];
 
 /**
  * Outcome of fetching one listing page from a release source.

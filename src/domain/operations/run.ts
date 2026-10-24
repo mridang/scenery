@@ -27,7 +27,7 @@ import {
   withRetry,
 } from '@/lib/transport';
 import { errorMessage, logInfo } from '@/utils/logging';
-import type { TorrentProviderName } from '@/utils/enums';
+import type { TorrentProviderName } from '@/lib/torrents/types';
 import type { OperationRequest, PipelineRunParameters } from './types';
 
 /** What an operation needs from the Worker. */

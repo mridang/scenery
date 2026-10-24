@@ -4,7 +4,7 @@
  * Operations on the wire: the representation `/api/operations` sends.
  */
 
-import type { OperationStatus, OperationType } from '@/utils/enums';
+import type { OperationStatus, OperationType } from '@/domain/db/enums';
 import type { OperationRow } from './repository';
 
 /** An operation as the API shows it. Absent members are unknown, never null. */

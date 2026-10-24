@@ -2,7 +2,7 @@
 // Used by every provider so the rest of the code can rely on a consistent
 // representation.
 
-import type { Quality } from '@/utils/enums';
+import type { Quality } from './types';
 
 export function detectQuality(haystack: string): Quality | null {
   if (/(?:^|\W)(?:2160p|4K|UHD)(?:\W|$)/i.test(haystack)) {

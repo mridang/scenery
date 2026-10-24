@@ -1,8 +1,19 @@
-import type { LookupStatus, Quality, TorrentProviderName } from '@/utils/enums';
+// The value-sets this torrent library owns. They are the codec's own
+// vocabulary (what a release name and a provider chain produce), so they live
+// here, not in the storage layer; the app schema imports them to constrain its
+// columns (the domain may depend on a library, never the other way round).
 
-// The lookup/quality/provider value-sets are storage-constrained; re-export
-// so torrent consumers can keep importing them from this module.
-export type { LookupStatus, Quality, TorrentProviderName } from '@/utils/enums';
+/** Detected video quality of a torrent (null when unknown). @public */
+export const QUALITIES = ['2160p', '1080p', '720p', '480p'] as const;
+export type Quality = (typeof QUALITIES)[number];
+
+/** Outcome of a torrent lookup for a movie. @public */
+export const LOOKUP_STATUSES = ['success', 'empty', 'error'] as const;
+export type LookupStatus = (typeof LOOKUP_STATUSES)[number];
+
+/** Torrent provider that answered a lookup. @public */
+export const TORRENT_PROVIDERS = ['apibay', 'torrentio'] as const;
+export type TorrentProviderName = (typeof TORRENT_PROVIDERS)[number];
 
 // Universal shape every provider must emit.
 export interface ParsedTorrent {
