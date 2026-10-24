@@ -3,8 +3,8 @@ import { beforeAll, describe, expect, it, jest } from '@jest/globals';
 
 import type { NextRequest } from 'next/server';
 
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { sqliteD1 } from '../../lib/db/sqlite-d1';
+import { APP_MIGRATIONS } from '@test/lib/db/migrations';
+import { sqliteD1 } from '@test/lib/db/sqlite-d1';
 
 let d1: D1Database;
 

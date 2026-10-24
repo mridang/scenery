@@ -5,8 +5,8 @@ import {
   buttonClass,
   ButtonLink,
   isApiHref,
-} from '../../../src/components/ui/button';
-import { classOf, html } from '../render';
+} from '@/components/ui/button';
+import { classOf, html } from '@test/components/render';
 
 describe('buttonClass', () => {
   it('is the filled button of the middle size by default', () => {

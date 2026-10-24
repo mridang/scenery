@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it } from '@jest/globals';
 import { ScrapingRepository } from '@/domain/scraping/repository';
 import { TorrentRepository } from '@/domain/torrents/repository';
 import type { ResolvedLookup } from '@/lib/torrents/types';
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { sqliteD1 } from '../../lib/db/sqlite-d1';
+import { APP_MIGRATIONS } from '@test/lib/db/migrations';
+import { sqliteD1 } from '@test/lib/db/sqlite-d1';
 
 /**
  * Tests for the torrent repository: the candidate gate (maturity +

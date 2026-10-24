@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import {
   MaintenanceActions,
   startPipelineRun,
-} from '../../../src/components/site/maintenance-actions';
-import { html } from '../render';
+} from '@/components/site/maintenance-actions';
+import { html } from '@test/components/render';
 
 const realFetch = globalThis.fetch;
 afterEach(() => {

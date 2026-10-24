@@ -4,8 +4,8 @@ import { describe, expect, it } from '@jest/globals';
 
 import { createDatabase } from '@/core/db/client';
 import * as schema from '@/domain/db/schema';
-import { APP_MIGRATIONS } from './migrations';
-import { sqliteD1 } from './sqlite-d1';
+import { APP_MIGRATIONS } from '@test/lib/db/migrations';
+import { sqliteD1 } from '@test/lib/db/sqlite-d1';
 
 describe('createDatabase', () => {
   it('wraps a D1 binding in a client that keeps the binding as $client', () => {

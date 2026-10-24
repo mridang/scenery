@@ -41,6 +41,9 @@ export default {
     '^(\\.{1,2}/.*)\\.js$': '$1',
     // The app's `@/` alias for src/, so components and pages can be tested.
     '^@/(.*)$': '<rootDir>/src/$1',
+    // `@test/` for shared test fixtures, so a test's own location (which
+    // mirrors its source) is independent of where the fixtures live.
+    '^@test/(.*)$': '<rootDir>/test/$1',
   },
   reporters: [
     'default',

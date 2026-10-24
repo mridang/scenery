@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { ERROR_REASSURANCE } from '../../src/app/_brand';
-import ErrorPage from '../../src/app/error';
-import { html } from '../components/render';
+import { ERROR_REASSURANCE } from '@/app/_brand';
+import ErrorPage from '@/app/error';
+import { html } from '@test/components/render';
 
 describe('ErrorPage', () => {
   const retry = () => undefined;
