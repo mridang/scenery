@@ -7,13 +7,9 @@
  */
 
 import type { Database } from '@/core/db/client';
-import { ApiController } from '@/core/api/controller';
-import type { RouteContext } from '@/core/api/route-context';
-import { operatorRefusal } from '@/core/api/operator-auth';
+import { ApiController, operatorRefusal, type RouteContext } from '@/core/api';
 import { getDatabase, getEnv } from '@/core/runtime';
-import { absoluteLocation } from '@/lib/rest-json/location';
-import { readJsonObject } from '@/lib/rest-json/json';
-import { problems } from '@/lib/rest-json/problem';
+import { absoluteLocation, problems, readJsonObject } from '@/lib/rest-json';
 import { errorMessage, logError } from '@/utils/logging';
 import { parseOperationInput } from './operation-input';
 import {

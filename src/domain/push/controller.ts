@@ -7,12 +7,9 @@
  */
 
 import type { Database } from '@/core/db/client';
-import { ApiController } from '@/core/api/controller';
-import type { RouteContext } from '@/core/api/route-context';
+import { ApiController, type RouteContext } from '@/core/api';
 import { getDatabase } from '@/core/runtime';
-import { absoluteLocation } from '@/lib/rest-json/location';
-import { readJsonObject } from '@/lib/rest-json/json';
-import { problems } from '@/lib/rest-json/problem';
+import { absoluteLocation, problems, readJsonObject } from '@/lib/rest-json';
 import {
   endpointForId,
   isSubscriptionId,

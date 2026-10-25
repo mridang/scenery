@@ -8,7 +8,7 @@
  */
 
 import { isOperator } from '@/lib/operator-auth';
-import { problem } from '@/lib/rest-json/problem';
+import { problem } from '@/lib/rest-json';
 import { logError } from '@/utils/logging';
 
 /** The refusal to send when the caller is not the operator, or undefined when they are. */

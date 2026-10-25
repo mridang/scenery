@@ -18,7 +18,7 @@ import {
   type OperationRequest,
   type PipelineRunParameters,
 } from './types';
-import { isObject } from '@/lib/rest-json/json';
+import { isObject } from '@/lib/rest-json';
 
 /** The checked request, or what was wrong with it. */
 export type OperationInput =
