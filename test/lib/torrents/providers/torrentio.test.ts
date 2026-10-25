@@ -25,15 +25,17 @@ function nth<T>(items: readonly T[], index: number): T {
 
 describe('TorrentioProvider', () => {
   it("returns 'empty' when streams array is empty", async () => {
-    const r = await new TorrentioProvider(transportOf({ streams: [] })).search(
-      'tt0000001',
-    );
+    const r = await new TorrentioProvider(
+      {},
+      transportOf({ streams: [] }),
+    ).search('tt0000001');
     expect(r.status).toBe('empty');
     expect(r.torrents).toEqual([]);
   });
 
   it('parses seeders, size, source, quality from the emoji-delimited title', async () => {
     const r = await new TorrentioProvider(
+      {},
       transportOf({
         streams: [
           {
@@ -58,6 +60,7 @@ describe('TorrentioProvider', () => {
 
   it("returns 'error' on non-2xx", async () => {
     const r = await new TorrentioProvider(
+      {},
       transportOf('oops', { status: 502 }),
     ).search('tt0000001');
     expect(r.status).toBe('error');
@@ -67,7 +70,7 @@ describe('TorrentioProvider', () => {
   it("returns 'error' on network failure without throwing", async () => {
     const transport = (() =>
       Promise.reject(new Error('ECONNRESET'))) as typeof fetch;
-    const r = await new TorrentioProvider(transport).search('tt0000001');
+    const r = await new TorrentioProvider({}, transport).search('tt0000001');
     expect(r.status).toBe('error');
     expect(r.error).toContain('ECONNRESET');
   });

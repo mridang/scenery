@@ -27,5 +27,5 @@ export function defaultProviders(
   proxied: typeof fetch,
   direct: typeof fetch = proxied,
 ): readonly TorrentProvider[] {
-  return [new TorrentioProvider(direct), new ApibayProvider(proxied)];
+  return [new TorrentioProvider({}, direct), new ApibayProvider({}, proxied)];
 }

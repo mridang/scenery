@@ -43,8 +43,8 @@ function providersFor(
 ): TorrentProvider[] {
   return names.map((name) =>
     name === 'torrentio'
-      ? new TorrentioProvider(transport)
-      : new ApibayProvider(transport),
+      ? new TorrentioProvider({}, transport)
+      : new ApibayProvider({}, transport),
   );
 }
 

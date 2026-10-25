@@ -1,17 +1,18 @@
-import { safeJsonParse } from '@/utils/json';
+/**
+ * @packageDocumentation
+ *
+ * Torrentio's stream addon as a torrent provider. The human `title` carries
+ * seeders/size/source in an emoji-delimited line that `parseStream` mines.
+ * Built on {@link JsonClient}: fetch + Zod-decode, then map to the provider's
+ * {@link LookupResult}.
+ */
+
+import { JsonClient } from '@/lib/http';
+
 import { detectHdr, detectQuality, detectRemux } from '../parsing';
 import type { LookupResult, ParsedTorrent, TorrentProvider } from '../types';
+import { torrentioResponseSchema, type TorrentioStream } from './models';
 import type { ProviderOptions } from './types';
-
-interface TorrentioStream {
-  readonly name?: string;
-  readonly title?: string;
-  readonly infoHash?: string;
-}
-
-interface TorrentioResponse {
-  readonly streams?: readonly TorrentioStream[];
-}
 
 // Multipliers for the size units Torrentio emits in its 💾 annotation.
 const SIZE_UNIT_BYTES: Record<string, number> = {
@@ -20,61 +21,45 @@ const SIZE_UNIT_BYTES: Record<string, number> = {
   MB: 1_000_000,
   KB: 1_000,
 };
+const ACCEPT_JSON: RequestInit = { headers: { Accept: 'application/json' } };
 
 export class TorrentioProvider implements TorrentProvider {
   readonly name = 'torrentio';
-  private readonly baseUrl: string;
+  private readonly http: JsonClient;
 
   constructor(
-    private readonly transport: typeof fetch,
     opts: ProviderOptions = {},
+    fetcher: typeof fetch = globalThis.fetch,
   ) {
-    this.baseUrl = opts.baseUrl ?? 'https://torrentio.strem.fun/stream/movie';
+    this.http = new JsonClient(
+      opts.baseUrl ?? 'https://torrentio.strem.fun/stream/movie',
+      fetcher,
+    );
   }
 
   async search(imdbId: string): Promise<LookupResult> {
-    try {
-      const resp = await this.transport(`${this.baseUrl}/${imdbId}.json`, {
-        headers: { Accept: 'application/json' },
-      });
-      if (!resp.ok) {
-        const text = await resp.text();
-        return {
-          status: 'error',
-          torrents: [],
-          rawResponse: text.slice(0, 4000),
-          httpStatus: resp.status,
-          error: `http ${resp.status}`,
-        };
-      }
-      const text = await resp.text();
-      const parsed = safeJsonParse<TorrentioResponse>(text);
-      if (!parsed.ok) {
-        return {
-          status: 'error',
-          torrents: [],
-          rawResponse: text.slice(0, 4000),
-          httpStatus: resp.status,
-          error: parsed.error,
-        };
-      }
-      const torrents = (parsed.value.streams ?? [])
-        .map((stream) => this.parseStream(stream))
-        .filter((torrent): torrent is ParsedTorrent => torrent !== null);
-      return {
-        status: torrents.length > 0 ? 'success' : 'empty',
-        torrents,
-        rawResponse: text,
-        httpStatus: resp.status,
-      };
-    } catch (err: unknown) {
+    const result = await this.http.request(
+      { path: `/${imdbId}.json`, init: ACCEPT_JSON },
+      torrentioResponseSchema,
+    );
+    if (!result.ok) {
       return {
         status: 'error',
         torrents: [],
-        rawResponse: '',
-        error: err instanceof Error ? err.message : String(err),
+        rawResponse: result.raw.slice(0, 4000),
+        ...(result.status === undefined ? {} : { httpStatus: result.status }),
+        error: result.error,
       };
     }
+    const torrents = (result.value.streams ?? [])
+      .map((stream) => this.parseStream(stream))
+      .filter((torrent): torrent is ParsedTorrent => torrent !== null);
+    return {
+      status: torrents.length > 0 ? 'success' : 'empty',
+      torrents,
+      rawResponse: result.raw,
+      httpStatus: result.status,
+    };
   }
 
   private parseStream(stream: TorrentioStream): ParsedTorrent | null {

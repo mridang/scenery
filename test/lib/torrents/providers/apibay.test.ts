@@ -28,6 +28,7 @@ function nth<T>(items: readonly T[], index: number): T {
 describe('ApibayProvider', () => {
   it('parses a canned apibay response into the provider result shape', async () => {
     const r = await new ApibayProvider(
+      {},
       transportOf([
         {
           id: '1',
@@ -84,6 +85,7 @@ describe('ApibayProvider', () => {
 
   it("returns 'empty' for the apibay no-results sentinel row", async () => {
     const r = await new ApibayProvider(
+      {},
       transportOf([
         {
           id: '0',
@@ -108,6 +110,7 @@ describe('ApibayProvider', () => {
 
   it('treats non-finite seeders and zero size as null', async () => {
     const r = await new ApibayProvider(
+      {},
       transportOf([
         {
           id: '1',
@@ -135,6 +138,7 @@ describe('ApibayProvider', () => {
 
   it("returns 'error' on a non-2xx response", async () => {
     const r = await new ApibayProvider(
+      {},
       transportOf('upstream down', { status: 503 }),
     ).search('tt0000001');
 
@@ -144,7 +148,7 @@ describe('ApibayProvider', () => {
   });
 
   it("returns 'error' on malformed JSON", async () => {
-    const r = await new ApibayProvider(transportOf('{not json')).search(
+    const r = await new ApibayProvider({}, transportOf('{not json')).search(
       'tt0000001',
     );
 
@@ -155,7 +159,7 @@ describe('ApibayProvider', () => {
   it("returns 'error' on a network failure without throwing", async () => {
     const transport = (() =>
       Promise.reject(new Error('ECONNRESET'))) as typeof fetch;
-    const r = await new ApibayProvider(transport).search('tt0000001');
+    const r = await new ApibayProvider({}, transport).search('tt0000001');
 
     expect(r.status).toBe('error');
     expect(r.error).toContain('ECONNRESET');
