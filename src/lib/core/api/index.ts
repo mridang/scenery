@@ -1,8 +1,10 @@
 /**
  * @packageDocumentation
  *
- * The framework-tier API glue: the controller framework over `@/lib/rest-json`,
- * the dynamic-segment route context, and the operator-auth response wrapper.
+ * The framework-tier API package: the controller framework, the pure
+ * REST/JSON primitives it builds on (problem responses, JSON body reading, the
+ * Location helper), the dynamic-segment route context, and the operator-auth
+ * wrapper. The ApiController is the single composition entry.
  */
 
 export { ApiController } from './controller';
@@ -15,3 +17,7 @@ export type {
 } from './controller';
 export type { IdContext, RouteContext } from './route-context';
 export { operatorRefusal } from './operator-auth';
+export * from './problem';
+export * from './json';
+export * from './location';
+export * from './body';

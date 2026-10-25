@@ -8,7 +8,7 @@
 
 import { database, type Database } from '@/domain/db/client';
 import { ApiController, type RouteContext } from '@/lib/core/api';
-import { absoluteLocation, problems, readJsonObject } from '@/lib/rest-json';
+import { absoluteLocation, problems, readJsonObject } from '@/lib/core/api';
 import {
   endpointForId,
   isSubscriptionId,

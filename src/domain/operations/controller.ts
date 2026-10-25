@@ -13,7 +13,7 @@ import {
   type RouteContext,
 } from '@/lib/core/api';
 import { getEnv } from '@/lib/core/runtime';
-import { absoluteLocation, problems, readJsonObject } from '@/lib/rest-json';
+import { absoluteLocation, problems, readJsonObject } from '@/lib/core/api';
 import { errorMessage, logError } from '@/utils/logging';
 import { parseOperationInput } from './operation-input';
 import {

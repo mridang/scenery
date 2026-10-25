@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { bestTrackers, buildMagnet, isValidInfoHash } from '@/lib/magnet';
-import { problems } from '@/lib/rest-json';
+import { problems } from '@/lib/core/api';
 import { genericTransport, withRetry } from '@/lib/transport';
 
 export const dynamic = 'force-dynamic';
