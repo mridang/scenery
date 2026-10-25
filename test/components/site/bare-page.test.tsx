@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import { BRAND_NAME } from '@/app/_brand';
 import { BarePage, MessagePage } from '@/components/site/bare-page';
-import { html } from '../../components/render';
+import { html } from '../render';
 
 describe('BarePage', () => {
   it('brings its own main landmark and a wordmark that links home', () => {

@@ -16,8 +16,8 @@ describe('access to pictures', () => {
     expect(await mayFetch()).toBe(true);
   });
 
-  it('does not sign addresses: the host allow-list is the rule', () => {
+  it('does not sign addresses: the host allow-list is the rule', async () => {
     expect(signatureFor()).toBeUndefined();
-    expect(signatureValid()).toBe(true);
+    expect(await signatureValid()).toBe(true);
   });
 });

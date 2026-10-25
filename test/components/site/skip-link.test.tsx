@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { SkipLink } from '@/components/site/skip-link';
-import { html } from '../../components/render';
+import { html } from '../render';
 
 describe('SkipLink', () => {
   it('jumps to the main landmark', () => {

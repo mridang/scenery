@@ -17,6 +17,9 @@ import { isPublicWebUrl } from '@/lib/safe-fetch';
 import { parseUrl } from '@/utils/url';
 import { ALLOWED_HOSTS, ALLOWED_WIDTHS } from './site';
 
+/** Re-exported so the render surface and the service read one width default. */
+export { DEFAULT_WIDTH } from './site';
+
 /** The path every app serves its pictures from. */
 export const IMAGE_PATH = '/img';
 

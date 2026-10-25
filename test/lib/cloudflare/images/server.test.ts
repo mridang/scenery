@@ -101,7 +101,7 @@ describe('ImageService', () => {
     const service = new ImageService({
       access: {
         authenticate: () => Promise.resolve(refusal),
-        signatureValid: () => true,
+        signatureValid: () => Promise.resolve(true),
         mayFetch: () => Promise.resolve(true),
       },
       background: () => undefined,

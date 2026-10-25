@@ -1,6 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { snapWidth } from '@/lib/cloudflare/images/address';
 import {
   fetchImage,
   isImagesBinding,
@@ -63,11 +62,11 @@ describe('fetchImage', () => {
 
     it('scales a large photo to the width we asked for and sends WebP', async () => {
       const seen: { width?: number } = {};
-      const result = await fetchImage('https://a.com/x.jpg', 700, {
+      const result = await fetchImage('https://a.com/x.jpg', 780, {
         fetcher: returning(big()),
         images: images(new Uint8Array(9_000).buffer, seen),
       });
-      expect(seen.width).toBe(snapWidth(700));
+      expect(seen.width).toBe(780);
       expect(result).toMatchObject({ ok: true, type: 'image/webp' });
       expect(result.ok && result.bytes.byteLength).toBe(9_000);
     });

@@ -18,7 +18,7 @@ export function signatureFor(): string | undefined {
 }
 
 /** This app does not sign its picture addresses, so there is nothing to check. */
-export function signatureValid(): boolean {
+export async function signatureValid(): Promise<boolean> {
   return true;
 }
 
