@@ -42,12 +42,11 @@ export function concatBytes(...parts: readonly Uint8Array[]): Uint8Array {
 }
 
 /**
- * Cast a `Uint8Array` (over any underlying buffer type, possibly
- * `SharedArrayBuffer`) to {@link BufferSource}. Web Crypto accepts every
- * typed array at runtime, but TypeScript's strict typing now models the
- * underlying buffer's variance so the runtime-fine call doesn't type-
- * check without the cast. @public
+ * A `Uint8Array` as a {@link BufferSource} for Web Crypto. The single assertion
+ * bridges a Web-types gap: a typed array is a BufferSource at runtime, but the
+ * lib models the underlying buffer's variance (it may be a `SharedArrayBuffer`),
+ * so the assignment needs it. @public
  */
 export function bs(input: Uint8Array): BufferSource {
-  return input as unknown as BufferSource;
+  return input as BufferSource;
 }
