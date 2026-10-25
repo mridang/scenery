@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { ApiModel } from '@/lib/http';
 
 /** Subset of `/person/{id}?append_to_response=movie_credits`. @public */
-export const tmdbPersonResponseSchema = z.object({
+export const TmdbPersonResponseSchema = z.object({
   id: z.number().optional(),
   name: z.string().optional(),
   popularity: z.number().optional(),
@@ -30,5 +30,5 @@ export const tmdbPersonResponseSchema = z.object({
     })
     .optional(),
 });
-export type TmdbPersonResponse = z.infer<typeof tmdbPersonResponseSchema> &
+export type TmdbPersonResponse = z.infer<typeof TmdbPersonResponseSchema> &
   ApiModel;

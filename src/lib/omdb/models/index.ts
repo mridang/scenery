@@ -5,4 +5,4 @@
  * scores into the numbers we keep.
  */
 
-export * from './response';
+export * from './omdb-response';

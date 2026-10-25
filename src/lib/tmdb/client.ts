@@ -9,10 +9,10 @@
 import { JsonClient, type Result } from '@/lib/http';
 
 import {
-  tmdbFindResponseSchema,
-  tmdbGenresResponseSchema,
-  tmdbMovieResponseSchema,
-  tmdbPersonResponseSchema,
+  TmdbFindResponseSchema,
+  TmdbGenresResponseSchema,
+  TmdbMovieResponseSchema,
+  TmdbPersonResponseSchema,
   type TmdbFindResponse,
   type TmdbGenre,
   type TmdbMovieResponse,
@@ -61,7 +61,7 @@ export class TmdbClient {
   public async getMovieGenres(): Promise<Result<TmdbGenre[]>> {
     const result = await this.http.request(
       { path: '/genre/movie/list', query: this.query(), init: ACCEPT_JSON },
-      tmdbGenresResponseSchema,
+      TmdbGenresResponseSchema,
     );
     return result.ok ? { ...result, value: result.value.genres ?? [] } : result;
   }
@@ -74,7 +74,7 @@ export class TmdbClient {
         query: this.query({ external_source: 'imdb_id' }),
         init: ACCEPT_JSON,
       },
-      tmdbFindResponseSchema,
+      TmdbFindResponseSchema,
     );
   }
 
@@ -88,7 +88,7 @@ export class TmdbClient {
         query: this.query({ append_to_response: 'credits' }),
         init: ACCEPT_JSON,
       },
-      tmdbMovieResponseSchema,
+      TmdbMovieResponseSchema,
     );
   }
 
@@ -102,7 +102,7 @@ export class TmdbClient {
         query: this.query({ append_to_response: 'movie_credits' }),
         init: ACCEPT_JSON,
       },
-      tmdbPersonResponseSchema,
+      TmdbPersonResponseSchema,
     );
   }
 }

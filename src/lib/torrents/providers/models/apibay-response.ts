@@ -7,14 +7,14 @@ import type { ApiModel } from '@/lib/http';
  * counts and epochs included); the schema models that quirk as strings and the
  * provider does the numeric mapping with its null guards. @public
  */
-export const apibayStreamSchema = z.object({
+export const ApibayStreamSchema = z.object({
   info_hash: z.string(),
   name: z.string(),
   size: z.string().optional(),
   seeders: z.string().optional(),
 });
-export type ApibayStream = z.infer<typeof apibayStreamSchema> & ApiModel;
+export type ApibayStream = z.infer<typeof ApibayStreamSchema> & ApiModel;
 
 /** apibay's `q.php` response: a bare array of streams. @public */
-export const apibayResponseSchema = z.array(apibayStreamSchema);
-export type ApibayResponse = z.infer<typeof apibayResponseSchema>;
+export const ApibayResponseSchema = z.array(ApibayStreamSchema);
+export type ApibayResponse = z.infer<typeof ApibayResponseSchema>;

@@ -11,7 +11,7 @@ import { JsonClient } from '@/lib/http';
 
 import { detectHdr, detectQuality, detectRemux } from '../parsing';
 import type { LookupResult, ParsedTorrent, TorrentProvider } from '../types';
-import { apibayResponseSchema, type ApibayStream } from './models';
+import { ApibayResponseSchema, type ApibayStream } from './models';
 import type { ApibayOptions } from './types';
 
 const EMPTY_HASH = '0000000000000000000000000000000000000000';
@@ -36,7 +36,7 @@ export class ApibayProvider implements TorrentProvider {
   async search(imdbId: string): Promise<LookupResult> {
     const result = await this.http.request(
       { path: '', query: { q: imdbId, cat: this.category }, init: ACCEPT_JSON },
-      apibayResponseSchema,
+      ApibayResponseSchema,
     );
     if (!result.ok) {
       return {

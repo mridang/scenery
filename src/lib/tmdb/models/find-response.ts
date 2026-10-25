@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { ApiModel } from '@/lib/http';
 
 /** The movie-level fields we capture from TMDB's `/find` endpoint. @public */
-export const tmdbFindMovieSchema = z.object({
+export const TmdbFindMovieSchema = z.object({
   id: z.number(),
   title: z.string().optional(),
   original_title: z.string().optional(),
@@ -16,11 +16,11 @@ export const tmdbFindMovieSchema = z.object({
   vote_average: z.number().optional(),
   vote_count: z.number().optional(),
 });
-export type TmdbFindMovie = z.infer<typeof tmdbFindMovieSchema> & ApiModel;
+export type TmdbFindMovie = z.infer<typeof TmdbFindMovieSchema> & ApiModel;
 
 /** Response shape of `/find/{imdb_id}?external_source=imdb_id`. @public */
-export const tmdbFindResponseSchema = z.object({
-  movie_results: z.array(tmdbFindMovieSchema).optional(),
+export const TmdbFindResponseSchema = z.object({
+  movie_results: z.array(TmdbFindMovieSchema).optional(),
 });
-export type TmdbFindResponse = z.infer<typeof tmdbFindResponseSchema> &
+export type TmdbFindResponse = z.infer<typeof TmdbFindResponseSchema> &
   ApiModel;

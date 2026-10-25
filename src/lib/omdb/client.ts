@@ -8,7 +8,7 @@
 
 import { JsonClient, type Result } from '@/lib/http';
 
-import { omdbResponseSchema, type OmdbResponse } from './models';
+import { OmdbResponseSchema, type OmdbResponse } from './models';
 
 /** Construction options for {@link OmdbClient}. @public */
 export interface OmdbClientOptions {
@@ -39,7 +39,7 @@ export class OmdbClient {
   public fetchByImdb(imdbId: string): Promise<Result<OmdbResponse>> {
     return this.http.request(
       { path: '', query: { i: imdbId, apikey: this.apiKey } },
-      omdbResponseSchema,
+      OmdbResponseSchema,
     );
   }
 }

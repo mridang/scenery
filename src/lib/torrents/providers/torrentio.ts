@@ -11,7 +11,7 @@ import { JsonClient } from '@/lib/http';
 
 import { detectHdr, detectQuality, detectRemux } from '../parsing';
 import type { LookupResult, ParsedTorrent, TorrentProvider } from '../types';
-import { torrentioResponseSchema, type TorrentioStream } from './models';
+import { TorrentioResponseSchema, type TorrentioStream } from './models';
 import type { ProviderOptions } from './types';
 
 // Multipliers for the size units Torrentio emits in its 💾 annotation.
@@ -40,7 +40,7 @@ export class TorrentioProvider implements TorrentProvider {
   async search(imdbId: string): Promise<LookupResult> {
     const result = await this.http.request(
       { path: `/${imdbId}.json`, init: ACCEPT_JSON },
-      torrentioResponseSchema,
+      TorrentioResponseSchema,
     );
     if (!result.ok) {
       return {
