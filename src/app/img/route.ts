@@ -14,9 +14,9 @@ import {
   access,
   imageCache,
   imagesBinding,
+  ImageService,
   runInBackground,
-  serveImage,
-} from '@/lib/cloudflare/images';
+} from '@/lib/cloudflare/images/server';
 
 /**
  * `GET /img?url=…&w=…`: the picture at `url`, scaled to the nearest
@@ -27,10 +27,11 @@ import {
  * and 502 when its site fails. Errors are short plain text that no cache keeps.
  */
 export async function GET(request: Request): Promise<Response> {
-  return serveImage(request, {
+  const service = new ImageService({
     access,
     cache: imageCache(),
     images: imagesBinding(),
     background: runInBackground,
   });
+  return service.serve(request);
 }
