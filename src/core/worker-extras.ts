@@ -8,7 +8,11 @@
  * Worker, so they are re-exported here.
  */
 
-import { ScrapeWorkflow, MovieWorkflow, NotifyWorkflow } from '../workflows';
+import {
+  ScrapeWorkflow,
+  MovieWorkflow,
+  NotifyWorkflow,
+} from '@/lib/cloudflare/workflows';
 import { errorMessage, logError, logInfo } from '@/utils/logging';
 
 export { ScrapeWorkflow, MovieWorkflow, NotifyWorkflow };

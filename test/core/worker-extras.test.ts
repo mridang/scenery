@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-jest.unstable_mockModule('@/workflows', () => ({
+jest.unstable_mockModule('@/lib/cloudflare/workflows', () => ({
   ScrapeWorkflow: class ScrapeWorkflow {},
   MovieWorkflow: class MovieWorkflow {},
   NotifyWorkflow: class NotifyWorkflow {},
