@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { InstallIosHint } from '@/components/site/install-ios-hint';
-import { html } from '../../components/render';
+import { html } from '../render';
 
 describe('InstallIosHint', () => {
   // Rendered on the server there is no browser to ask, so it is never shown

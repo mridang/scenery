@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it } from '@jest/globals';
 
 import { ScrapingRepository } from '@/domain/scraping/repository';
 import type { ExtractedRelease } from '@/lib/sources/types';
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { sqliteD1 } from '../../lib/db/sqlite-d1';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 
 /**
  * Runs against a SQLite-backed D1 stand-in with the migrations applied, so it

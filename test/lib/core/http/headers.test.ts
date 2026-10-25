@@ -8,8 +8,9 @@ import {
   openerPolicyFor,
   replacingHeaders,
   resourcePolicyFor,
-} from '@/lib/core/http/headers';
-import { PUBLIC_PAGES, RARELY_CHANGING } from '@/lib/core/http/site';
+  PUBLIC_PAGES,
+  RARELY_CHANGING,
+} from '@/lib/core/http';
 
 const at = (pathname: string) => new Request(`https://app.test${pathname}`);
 

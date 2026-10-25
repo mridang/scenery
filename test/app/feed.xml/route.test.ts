@@ -3,8 +3,11 @@ import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals';
 
 import type { NextRequest } from 'next/server';
 
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import {
+  installCloudflareContext,
+  sqliteD1,
+} from '../../lib/core/db/sqlite-d1';
 
 let d1: D1Database;
 let restore: (() => void) | undefined;

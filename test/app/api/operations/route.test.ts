@@ -9,8 +9,11 @@ import {
 import type { DatabaseSync } from 'node:sqlite';
 
 import type { OperationRequest } from '@/domain/operations/types';
-import { APP_MIGRATIONS } from '../../../lib/db/migrations';
-import { installCloudflareContext, sqliteD1 } from '../../../lib/db/sqlite-d1';
+import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
+import {
+  installCloudflareContext,
+  sqliteD1,
+} from '../../../lib/core/db/sqlite-d1';
 
 const runOperation = jest.fn<(request: OperationRequest) => Promise<unknown>>(
   async () => ({ done: true }),

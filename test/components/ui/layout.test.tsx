@@ -4,7 +4,7 @@ import path from 'node:path';
 import { describe, expect, it } from '@jest/globals';
 
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
-import { classOf, html } from '../../components/render';
+import { classOf, html } from '../render';
 
 describe('Eyebrow', () => {
   it('is a tracked-caps paragraph in the accent colour by default', () => {

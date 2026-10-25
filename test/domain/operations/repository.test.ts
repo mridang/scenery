@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it } from '@jest/globals';
 
 import { databaseFrom } from '@/domain/db/client';
 import { OperationRepository } from '@/domain/operations/repository';
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { sqliteD1 } from '../../lib/db/sqlite-d1';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 
 let repository: OperationRepository;
 

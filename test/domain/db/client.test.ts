@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it } from '@jest/globals';
 
 import { database, databaseFrom } from '@/domain/db/client';
-import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
+import {
+  installCloudflareContext,
+  sqliteD1,
+} from '../../lib/core/db/sqlite-d1';
 
 let restore: (() => void) | undefined;
 

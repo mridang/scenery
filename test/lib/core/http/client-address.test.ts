@@ -4,7 +4,7 @@ import {
   UNKNOWN_ADDRESS,
   addressSubject,
   clientSubject,
-} from '@/lib/core/http/client-address';
+} from '@/lib/core/http';
 
 describe('addressSubject', () => {
   it('leaves an IPv4 address as it is', () => {
