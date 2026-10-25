@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { TmdbClient } from '@/lib/tmdb/client';
-import type { TmdbFindResponse } from '@/lib/tmdb/types';
+import type { TmdbFindResponse } from '@/lib/tmdb';
 
 /** Returns the item at `index`, failing the test loudly when it is absent. */
 function nth<T>(items: readonly T[], index: number): T {
@@ -46,7 +46,7 @@ const FOUND_MOVIE: TmdbFindResponse = {
 describe('TmdbClient', () => {
   it('throws when constructed without an api key', () => {
     const { transport } = stubTransport(() => ({ status: 200, body: '{}' }));
-    expect(() => new TmdbClient(transport, { apiKey: '' })).toThrow(/apiKey/);
+    expect(() => new TmdbClient({ apiKey: '' }, transport)).toThrow(/apiKey/);
   });
 
   it('builds the find request URL with the imdb id, external_source and api key', async () => {
@@ -54,7 +54,7 @@ describe('TmdbClient', () => {
       status: 200,
       body: JSON.stringify(FOUND_MOVIE),
     }));
-    const client = new TmdbClient(transport, { apiKey: 'secret-key' });
+    const client = new TmdbClient({ apiKey: 'secret-key' }, transport);
 
     await client.findByImdb('tt1375666');
 
@@ -72,10 +72,13 @@ describe('TmdbClient', () => {
       status: 200,
       body: '{"genres":[]}',
     }));
-    const client = new TmdbClient(transport, {
-      apiKey: 'k',
-      baseUrl: 'https://proxy.example/tmdb',
-    });
+    const client = new TmdbClient(
+      {
+        apiKey: 'k',
+        baseUrl: 'https://proxy.example/tmdb',
+      },
+      transport,
+    );
 
     await client.getMovieGenres();
 
@@ -90,13 +93,13 @@ describe('TmdbClient', () => {
       status: 200,
       body: JSON.stringify(FOUND_MOVIE),
     }));
-    const client = new TmdbClient(transport, { apiKey: 'k' });
+    const client = new TmdbClient({ apiKey: 'k' }, transport);
 
     const res = await client.findByImdb('tt1375666');
 
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.httpStatus).toBe(200);
+      expect(res.status).toBe(200);
       expect(res.value.movie_results?.[0]?.id).toBe(27205);
       expect(res.value.movie_results?.[0]?.title).toBe('Inception');
     }
@@ -107,7 +110,7 @@ describe('TmdbClient', () => {
       status: 200,
       body: '{"runtime":148}',
     }));
-    const client = new TmdbClient(transport, { apiKey: 'k' });
+    const client = new TmdbClient({ apiKey: 'k' }, transport);
 
     const res = await client.getMovieWithCredits(27205);
 
@@ -127,13 +130,13 @@ describe('TmdbClient', () => {
       status: 404,
       body: '{"status_message":"not found"}',
     }));
-    const client = new TmdbClient(transport, { apiKey: 'k' });
+    const client = new TmdbClient({ apiKey: 'k' }, transport);
 
     const res = await client.findByImdb('tt0000000');
 
     expect(res.ok).toBe(false);
     if (!res.ok) {
-      expect(res.httpStatus).toBe(404);
+      expect(res.status).toBe(404);
       expect(res.error).toBe('http 404');
       expect(res.raw).toContain('not found');
     }
@@ -143,14 +146,14 @@ describe('TmdbClient', () => {
     const transport = (async () => {
       throw new Error('network down');
     }) as unknown as typeof fetch;
-    const client = new TmdbClient(transport, { apiKey: 'k' });
+    const client = new TmdbClient({ apiKey: 'k' }, transport);
 
     const res = await client.findByImdb('tt1');
 
     expect(res.ok).toBe(false);
     if (!res.ok) {
       expect(res.error).toBe('network down');
-      expect(res.httpStatus).toBeUndefined();
+      expect(res.status).toBeUndefined();
     }
   });
 
@@ -159,13 +162,13 @@ describe('TmdbClient', () => {
       status: 200,
       body: 'not json{',
     }));
-    const client = new TmdbClient(transport, { apiKey: 'k' });
+    const client = new TmdbClient({ apiKey: 'k' }, transport);
 
     const res = await client.findByImdb('tt1');
 
     expect(res.ok).toBe(false);
     if (!res.ok) {
-      expect(res.httpStatus).toBe(200);
+      expect(res.status).toBe(200);
       expect(res.raw).toBe('not json{');
     }
   });

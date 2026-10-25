@@ -1,10 +1,10 @@
 /**
  * @packageDocumentation
  *
- * TMDB client library. The enrichment orchestration, its repository and the
- * `buildEnricher` composition helper live in `@/domain/tmdb`.
+ * TMDB client library: the {@link TmdbClient} and its request/response models.
+ * The enrichment orchestration and repository live in `@/domain/tmdb`.
  */
 
-export type { TmdbClientOptions, TmdbResult } from './client';
 export { TmdbClient } from './client';
-export type * from './types';
+export type { TmdbClientOptions, TmdbResult } from './client';
+export * from './models';

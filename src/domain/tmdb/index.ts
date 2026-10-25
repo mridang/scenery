@@ -27,7 +27,7 @@ export function buildEnricher(
   transport: typeof fetch,
 ): TmdbEnricher {
   return new TmdbEnricher(
-    new TmdbClient(transport, { apiKey: env.TMDB_API_KEY }),
+    new TmdbClient({ apiKey: env.TMDB_API_KEY }, transport),
     new TmdbRepository(db),
   );
 }

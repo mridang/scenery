@@ -1,16 +1,25 @@
-import { safeJsonParse } from '@/utils/json';
-import type {
-  TmdbFindResponse,
-  TmdbGenre,
-  TmdbMovieResponse,
-  TmdbPersonResponse,
-} from './types';
-
 /**
- * Options for {@link TmdbClient}.
+ * @packageDocumentation
  *
- * @public
+ * Thin client for TMDB's REST API, built on {@link JsonClient}: each method
+ * picks a path, query and response schema and returns a {@link Result}. It
+ * knows nothing about D1 or enrichment policy — that lives in the enricher.
  */
+
+import { JsonClient, type Result } from '@/lib/http';
+
+import {
+  tmdbFindResponseSchema,
+  tmdbGenresResponseSchema,
+  tmdbMovieResponseSchema,
+  tmdbPersonResponseSchema,
+  type TmdbFindResponse,
+  type TmdbGenre,
+  type TmdbMovieResponse,
+  type TmdbPersonResponse,
+} from './models';
+
+/** Options for {@link TmdbClient}. @public */
 export interface TmdbClientOptions {
   /** TMDB v3 API key. Required. */
   readonly apiKey: string;
@@ -18,107 +27,82 @@ export interface TmdbClientOptions {
   readonly baseUrl?: string;
 }
 
-/**
- * Either the parsed response, or a typed failure record. The enricher
- * uses the failure path to persist HTTP errors without retrying.
- *
- * @public
- */
-export type TmdbResult<T> =
-  | { ok: true; value: T; raw: string; httpStatus: number }
-  | { ok: false; error: string; raw: string; httpStatus?: number };
+/** The outcome of a TMDB call (the shared {@link Result}). @public */
+export type TmdbResult<T> = Result<T>;
 
-/**
- * Thin wrapper around TMDB's REST API. Knows nothing about D1 or
- * enrichment policy — that lives in {@link TmdbEnricher}.
- *
- * @public
- */
+const ACCEPT_JSON: RequestInit = { headers: { Accept: 'application/json' } };
+
+/** Client for TMDB's REST API. @public */
 export class TmdbClient {
+  private readonly http: JsonClient;
   private readonly apiKey: string;
-  private readonly baseUrl: string;
 
   /** @throws When no API key is provided. */
   public constructor(
-    private readonly transport: typeof fetch,
-    opts: TmdbClientOptions,
+    options: TmdbClientOptions,
+    fetcher: typeof fetch = globalThis.fetch,
   ) {
-    if (!opts.apiKey) {
+    if (!options.apiKey) {
       throw new Error('TmdbClient requires apiKey');
     }
-    this.apiKey = opts.apiKey;
-    this.baseUrl = opts.baseUrl ?? 'https://api.themoviedb.org/3';
-  }
-
-  /** Fetch the full movie-genre dictionary. */
-  public async getMovieGenres(): Promise<TmdbResult<TmdbGenre[]>> {
-    return this.callJson<{ genres: TmdbGenre[] }>(
-      `${this.baseUrl}/genre/movie/list`,
-      {},
-    ).then((result) =>
-      result.ok ? { ...result, value: result.value.genres ?? [] } : result,
+    this.apiKey = options.apiKey;
+    this.http = new JsonClient(
+      options.baseUrl ?? 'https://api.themoviedb.org/3',
+      fetcher,
     );
   }
 
+  /** The query for a request, always carrying the api key. */
+  private query(extra: Record<string, string> = {}): Record<string, string> {
+    return { ...extra, api_key: this.apiKey };
+  }
+
+  /** Fetch the full movie-genre dictionary. */
+  public async getMovieGenres(): Promise<Result<TmdbGenre[]>> {
+    const result = await this.http.request(
+      { path: '/genre/movie/list', query: this.query(), init: ACCEPT_JSON },
+      tmdbGenresResponseSchema,
+    );
+    return result.ok ? { ...result, value: result.value.genres ?? [] } : result;
+  }
+
   /** Look up a movie by IMDb id (returns the first movie match, if any). */
-  public findByImdb(imdbId: string): Promise<TmdbResult<TmdbFindResponse>> {
-    return this.callJson<TmdbFindResponse>(
-      `${this.baseUrl}/find/${encodeURIComponent(imdbId)}`,
-      { external_source: 'imdb_id' },
+  public findByImdb(imdbId: string): Promise<Result<TmdbFindResponse>> {
+    return this.http.request(
+      {
+        path: `/find/${encodeURIComponent(imdbId)}`,
+        query: this.query({ external_source: 'imdb_id' }),
+        init: ACCEPT_JSON,
+      },
+      tmdbFindResponseSchema,
     );
   }
 
   /** Fetch a movie with its credits appended in one round-trip. */
   public getMovieWithCredits(
     tmdbId: number,
-  ): Promise<TmdbResult<TmdbMovieResponse>> {
-    return this.callJson<TmdbMovieResponse>(`${this.baseUrl}/movie/${tmdbId}`, {
-      append_to_response: 'credits',
-    });
+  ): Promise<Result<TmdbMovieResponse>> {
+    return this.http.request(
+      {
+        path: `/movie/${tmdbId}`,
+        query: this.query({ append_to_response: 'credits' }),
+        init: ACCEPT_JSON,
+      },
+      tmdbMovieResponseSchema,
+    );
   }
 
   /** Fetch a person with their full filmography. */
   public getPersonWithCredits(
     personId: number,
-  ): Promise<TmdbResult<TmdbPersonResponse>> {
-    return this.callJson<TmdbPersonResponse>(
-      `${this.baseUrl}/person/${personId}`,
-      { append_to_response: 'movie_credits' },
+  ): Promise<Result<TmdbPersonResponse>> {
+    return this.http.request(
+      {
+        path: `/person/${personId}`,
+        query: this.query({ append_to_response: 'movie_credits' }),
+        init: ACCEPT_JSON,
+      },
+      tmdbPersonResponseSchema,
     );
-  }
-
-  private async callJson<T>(
-    url: string,
-    query: Record<string, string>,
-  ): Promise<TmdbResult<T>> {
-    const parsedUrl = new URL(url);
-    parsedUrl.search = new URLSearchParams({
-      ...query,
-      api_key: this.apiKey,
-    }).toString();
-    try {
-      const resp = await this.transport(parsedUrl, {
-        headers: { Accept: 'application/json' },
-      });
-      const raw = await resp.text();
-      if (!resp.ok) {
-        return {
-          ok: false,
-          error: `http ${resp.status}`,
-          raw,
-          httpStatus: resp.status,
-        };
-      }
-      const parsed = safeJsonParse<T>(raw);
-      return parsed.ok
-        ? { ok: true, value: parsed.value, raw, httpStatus: resp.status }
-        : { ok: false, error: parsed.error, raw, httpStatus: resp.status };
-    } catch (err) {
-      return {
-        ok: false,
-        error: err instanceof Error ? err.message : String(err),
-        raw: '',
-      };
-    }
   }
 }

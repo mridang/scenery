@@ -7,7 +7,7 @@ import type {
   TmdbFindResponse,
   TmdbMovieResponse,
   TmdbPersonResponse,
-} from '@/lib/tmdb/types';
+} from '@/lib/tmdb';
 
 /** Returns the item at `index`, failing the test loudly when it is absent. */
 function nth<T>(items: readonly T[], index: number): T {
@@ -53,13 +53,13 @@ const ok = <T>(value: T, raw = '{}'): TmdbResult<T> => ({
   ok: true,
   value,
   raw,
-  httpStatus: 200,
+  status: 200,
 });
 const fail = (error: string, raw = ''): TmdbResult<never> => ({
   ok: false,
   error,
   raw,
-  httpStatus: 500,
+  status: 500,
 });
 
 /** A fake client returning whatever the test stubs each method to. */
