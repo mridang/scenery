@@ -2,7 +2,7 @@
  * @packageDocumentation
  *
  * A small controller framework for the REST API, built on the pure
- * the JSON/problem primitives primitives. A route registers typed endpoints — each with an
+ * the pure JSON/problem primitives in this package. A route registers typed endpoints — each with an
  * optional `decode` (request → input), a `handle` (input → output) and an
  * optional `encode` (output → response) — and the controller wires the
  * pipeline: build the per-request context, decode (a thrown problem becomes the
@@ -17,7 +17,7 @@
  */
 
 import { problem } from './problem';
-import type { RouteContext } from '@/lib/core/api/route-context';
+import type { RouteContext } from './route-context';
 
 /** The HTTP methods an endpoint may answer. */
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
