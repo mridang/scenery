@@ -9,7 +9,7 @@
  *
  * These build plain `Response`s, so the module is a pure library with no
  * framework dependency; the controller framework in `core/api` returns them
- * unchanged (an endpoint throws one to abandon a request with that problem).
+ * unchanged.
  */
 
 /** The members of a problem document. */
@@ -57,6 +57,11 @@ export const problems = {
   unauthorized: () =>
     problem(401, '/problems/unauthorized', 'Unauthorized', 'Sign in first.'),
 
+  rateLimited: (detail: string, retryAfterSeconds: number) =>
+    problem(429, '/problems/rate-limited', 'Too many requests', detail, {
+      headers: { 'Retry-After': String(retryAfterSeconds) },
+    }),
+
   forbidden: (detail: string) =>
     problem(403, '/problems/forbidden', 'Forbidden', detail),
 
@@ -72,5 +77,13 @@ export const problems = {
       '/problems/unsupported-media-type',
       'Unsupported media type',
       `Send the request body as ${expected}.`,
+    ),
+
+  preconditionFailed: () =>
+    problem(
+      412,
+      '/problems/precondition-failed',
+      'Precondition failed',
+      'The resource changed since you last read it. Fetch it again and retry.',
     ),
 };

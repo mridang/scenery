@@ -1,23 +1,19 @@
 /**
  * @packageDocumentation
  *
- * The framework-tier API package: the controller framework, the pure
- * REST/JSON primitives it builds on (problem responses, JSON body reading, the
- * Location helper), the dynamic-segment route context, and the operator-auth
- * wrapper. The ApiController is the single composition entry.
+ * The server-side REST/JSON layer for the API, in one package: the pure
+ * primitives — RFC 9457 problem responses and the standard catalogue, size-
+ * and type-checked body reading, and the cursor-pagination primitives — the
+ * success vocabulary (`ok`/`created`/`noContent`/`page`) a handler returns, and
+ * the Next-aware ApiController that wires typed endpoints to them and renders
+ * the response. The browser-side helper for reading these responses lives in
+ * `@/components/api`, not here.
  */
-
-export { ApiController } from './controller';
-export type {
-  ApiControllerOptions,
-  ApiResponse,
-  Endpoint,
-  HttpMethod,
-  RouteHandler,
-} from './controller';
-export type { IdContext, RouteContext } from './route-context';
-export { operatorRefusal } from './operator-auth';
 export * from './problem';
 export * from './json';
-export * from './location';
 export * from './body';
+export * from './pagination';
+export * from './etag';
+export * from './results';
+export * from './controller';
+export * from './route-context';

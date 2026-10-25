@@ -6,7 +6,10 @@
  * schema and the D1 binding meet, so `lib/core` stays schema-agnostic.
  */
 
-import { createDatabase, type GenericDatabase } from '@/lib/core/db/client';
+import {
+  createDatabase,
+  type Database as GenericDatabase,
+} from '@/lib/core/db/client';
 import { getDB } from '@/lib/core/runtime';
 import * as schema from './schema';
 

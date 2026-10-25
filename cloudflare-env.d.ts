@@ -10,4 +10,9 @@ interface CloudflareEnv extends Cloudflare.Env {
   TMDB_API_KEY: string;
   VAPID_PRIVATE_KEY: string;
   OMDB_API_KEY: string;
+  /**
+   * Public origin, e.g. https://scenery.apps.mrida.ng. Optional; derived
+   * from the request when unset (local dev).
+   */
+  APP_URL?: string;
 }

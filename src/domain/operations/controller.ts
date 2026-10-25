@@ -7,13 +7,10 @@
  */
 
 import { database, type Database } from '@/domain/db/client';
-import {
-  ApiController,
-  operatorRefusal,
-  type RouteContext,
-} from '@/lib/core/api';
+import { ApiController, type RouteContext } from '@/lib/core/api';
+import { operatorRefusal } from '@/lib/core/api/operator-auth';
 import { getEnv } from '@/lib/core/runtime';
-import { absoluteLocation, problems, readJsonObject } from '@/lib/core/api';
+import { created, problems, readJsonObject } from '@/lib/core/api';
 import { errorMessage, logError } from '@/utils/logging';
 import { parseOperationInput } from './operation-input';
 import {
@@ -104,14 +101,10 @@ export const operationsCollection = new ApiController<OperationsCtx>({
     }
     return operationResource((await repository.get(id))!);
   },
-  encode: (resource, ctx) => ({
-    status: 201,
-    body: resource,
-    headers: {
-      Location: absoluteLocation(ctx.request, `/api/operations/${resource.id}`),
+  encode: (resource) =>
+    created(resource, `/api/operations/${resource.id}`, {
       'Cache-Control': 'no-store',
-    },
-  }),
+    }),
 });
 
 /** `GET /api/operations/:id`: the operation and, once ended, its result. */

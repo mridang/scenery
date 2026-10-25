@@ -8,7 +8,7 @@
 
 import { database, type Database } from '@/domain/db/client';
 import { ApiController, type RouteContext } from '@/lib/core/api';
-import { absoluteLocation, problems, readJsonObject } from '@/lib/core/api';
+import { created, ok, problems, readJsonObject } from '@/lib/core/api';
 import {
   endpointForId,
   isSubscriptionId,
@@ -101,16 +101,12 @@ export const subscriptionsCollection = new ApiController<PushCtx>({
     await repo.upsert(subscription, new Date().toISOString());
     return { id: await subscriptionId(subscription.endpoint), existed };
   },
-  encode: (created, ctx) => ({
-    status: created.existed ? 200 : 201,
-    body: { id: created.id },
-    headers: {
-      Location: absoluteLocation(
-        ctx.request,
-        `/api/push/subscriptions/${created.id}`,
-      ),
-    },
-  }),
+  encode: (result) => {
+    const location = `/api/push/subscriptions/${result.id}`;
+    return result.existed
+      ? ok({ id: result.id }, { location })
+      : created({ id: result.id }, location);
+  },
 });
 
 /**
