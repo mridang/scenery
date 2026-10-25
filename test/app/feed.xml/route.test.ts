@@ -1,25 +1,24 @@
-import { createDatabase } from '@/core/db/client';
-import { beforeAll, describe, expect, it, jest } from '@jest/globals';
+import { databaseFrom } from '@/domain/db/client';
+import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals';
 
 import type { NextRequest } from 'next/server';
 
 import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { sqliteD1 } from '../../lib/db/sqlite-d1';
+import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
 
 let d1: D1Database;
+let restore: (() => void) | undefined;
 
 beforeAll(() => {
   d1 = sqliteD1(...APP_MIGRATIONS).d1;
+  // The route reads the binding from the request context; install a real one
+  // over the seeded database so `database()` resolves to it.
+  restore = installCloudflareContext(d1);
 });
 
-jest.unstable_mockModule('@/core/runtime', () => ({
-  getDatabase: () => createDatabase(d1),
-  getEnv: () => ({}),
-  logInfo: () => undefined,
-  logWarn: () => undefined,
-  logError: () => undefined,
-  safeJsonParse: () => ({ ok: false, error: 'stub' }),
-}));
+afterAll(() => {
+  restore?.();
+});
 
 // Keep the feed hermetic: bestTrackers is handed a stub transport that
 // never touches the network, so it falls back to the static tracker list.
@@ -62,7 +61,7 @@ describe('GET /feed.xml', () => {
       .prepare("SELECT id FROM sources WHERE slug = 'scnsrc'")
       .first()) as { id: number };
 
-    const repo = new ScrapingRepository(createDatabase(d1));
+    const repo = new ScrapingRepository(databaseFrom(d1));
     await repo.upsertRelease(
       src.id,
       {

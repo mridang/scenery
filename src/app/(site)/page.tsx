@@ -4,7 +4,7 @@ import {
   parsePageViewOptions,
   type ScoredMovie,
 } from '@/domain/catalog';
-import { getDatabase } from '@/core/runtime';
+import { database } from '@/domain/db/client';
 
 import { SiteFooter } from '@/components/site/site-footer';
 import { SiteHeader } from '@/components/site/site-header';
@@ -33,7 +33,7 @@ export default async function Home({
 }) {
   const opts = parsePageViewOptions(await searchParams);
 
-  const catalog = CatalogService.fromDatabase(getDatabase());
+  const catalog = CatalogService.fromDatabase(database());
   const [viewResult, langs, lastUpdate] = await Promise.all([
     catalog.view({ lang: opts.lang, sort: opts.sort, view: opts.view }),
     catalog.languageCounts(),

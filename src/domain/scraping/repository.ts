@@ -1,6 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm';
 
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import type { ExtractedRelease, SourceSlug } from '@/lib/sources/types';
 import {
   fetchAttempts,

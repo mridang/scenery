@@ -4,7 +4,7 @@ import {
   type WorkflowStep,
 } from 'cloudflare:workers';
 
-import { createDatabase } from '@/core/db/client';
+import { databaseFrom } from '@/domain/db/client';
 
 import { OmdbEnricher } from '@/domain/omdb';
 import { lookupOneTorrent } from '@/domain/torrents';
@@ -54,7 +54,7 @@ export class MovieWorkflow extends WorkflowEntrypoint<
     const retry = { retries: { limit: 3, delay: '10 seconds' } } as const;
     const enricher = () =>
       buildEnricher(
-        createDatabase(this.env.DB),
+        databaseFrom(this.env.DB),
         this.env,
         withRetry(genericTransport()),
       );
@@ -79,7 +79,7 @@ export class MovieWorkflow extends WorkflowEntrypoint<
       //    this single movie. One OMDB call, direct fetch — Worker IPs
       //    aren't blocked there.
       await step.do('enrich-omdb', retry, async () => ({
-        status: await new OmdbEnricher(createDatabase(this.env.DB), {
+        status: await new OmdbEnricher(databaseFrom(this.env.DB), {
           apiKey: this.env.OMDB_API_KEY,
           transport: withRetry(genericTransport()),
         }).enrichOne(imdbId),
@@ -105,7 +105,7 @@ export class MovieWorkflow extends WorkflowEntrypoint<
     //    proxied transport (blocks Worker IPs).
     const torrent = await step.do('torrent', retry, async () =>
       lookupOneTorrent(
-        createDatabase(this.env.DB),
+        databaseFrom(this.env.DB),
         imdbId,
         defaultProviders(
           withRetry(proxyTransport(this.env.SCRAPINGANT_API_KEY)),

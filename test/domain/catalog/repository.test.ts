@@ -1,4 +1,4 @@
-import { createDatabase, type Database } from '@/core/db/client';
+import { databaseFrom, type Database } from '@/domain/db/client';
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
 import { CatalogRepository } from '@/domain/catalog/repository';
@@ -16,7 +16,7 @@ let db: Database;
 
 beforeEach(() => {
   d1 = sqliteD1(...APP_MIGRATIONS).d1;
-  db = createDatabase(d1);
+  db = databaseFrom(d1);
 });
 
 /** Seed a release for the seeded `scnsrc` source. */

@@ -1,14 +1,13 @@
 /**
  * @packageDocumentation
  *
- * The `/api/push/subscriptions` controllers, built on the `@/core/api`
+ * The `/api/push/subscriptions` controllers, built on the `@/lib/core/api`
  * framework: register a Web Push subscription (the collection) and forget one
  * (the item). The route files just mount their handlers.
  */
 
-import type { Database } from '@/core/db/client';
-import { ApiController, type RouteContext } from '@/core/api';
-import { getDatabase } from '@/core/runtime';
+import { database, type Database } from '@/domain/db/client';
+import { ApiController, type RouteContext } from '@/lib/core/api';
 import { absoluteLocation, problems, readJsonObject } from '@/lib/rest-json';
 import {
   endpointForId,
@@ -36,7 +35,7 @@ function pushContext(request: Request, route: RouteContext): PushCtx {
   return {
     request,
     params: route.params ?? Promise.resolve({}),
-    db: getDatabase(),
+    db: database(),
   };
 }
 

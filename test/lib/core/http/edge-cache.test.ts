@@ -6,12 +6,12 @@ import {
   isEdgeCacheable,
   storableCopy,
   withFreshNonce,
-} from '@/core/http/edge-cache';
+} from '@/lib/core/http/edge-cache';
 import {
   CACHED_QUERY_PARAMS,
   EDGE_CACHED_PAGES,
   EDGE_TTL_SECONDS,
-} from '@/core/http/site';
+} from '@/lib/core/http/site';
 
 /** The pages these tests let the edge keep a copy of. */
 const pages: ReadonlySet<string> = new Set(['/', '/privacy']);

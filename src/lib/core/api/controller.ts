@@ -17,7 +17,7 @@
  */
 
 import { problem } from '@/lib/rest-json';
-import type { RouteContext } from '@/core/api/route-context';
+import type { RouteContext } from '@/lib/core/api/route-context';
 
 /** The HTTP methods an endpoint may answer. */
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';

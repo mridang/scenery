@@ -9,7 +9,7 @@ import {
   OPEN_FILES,
   PUBLIC_PAGES,
   RARELY_CHANGING,
-} from '@/core/http/site';
+} from '@/lib/core/http/site';
 
 describe('site settings', () => {
   it('lets the edge keep the catalog page and its feed, though nothing is indexed', () => {

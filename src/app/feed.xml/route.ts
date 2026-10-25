@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { getDatabase } from '@/core/runtime';
+import { database } from '@/domain/db/client';
 import { CatalogService, parseViewOptions } from '@/domain/catalog';
 import type { ScoredMovie } from '@/domain/catalog';
 import { bestTrackers } from '@/lib/magnet';
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       ? null
       : Math.max(0, Number(budgetGbRaw)) * 1_000_000_000;
 
-  const catalog = CatalogService.fromDatabase(getDatabase());
+  const catalog = CatalogService.fromDatabase(database());
   const { movies } = await catalog.view({ lang, sort, view });
   const trackers = await bestTrackers(withRetry(genericTransport()));
 

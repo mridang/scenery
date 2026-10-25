@@ -8,7 +8,7 @@
  * (snake_case, as the API shows it).
  */
 
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import { OmdbEnricher } from '../omdb';
 import { ScrapeOrchestrator, ScrapingRepository } from '../scraping';
 import { buildSources } from '@/lib/sources';

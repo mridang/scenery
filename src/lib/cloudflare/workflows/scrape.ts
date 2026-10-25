@@ -4,7 +4,7 @@ import {
   type WorkflowStep,
 } from 'cloudflare:workers';
 
-import { createDatabase } from '@/core/db/client';
+import { databaseFrom } from '@/domain/db/client';
 
 import { ScrapeOrchestrator, ScrapingRepository } from '@/domain/scraping';
 import { buildSources } from '@/lib/sources';
@@ -63,7 +63,7 @@ export class ScrapeWorkflow extends WorkflowEntrypoint<
         retry,
         async () => {
           const orchestrator = new ScrapeOrchestrator(
-            new ScrapingRepository(createDatabase(this.env.DB)),
+            new ScrapingRepository(databaseFrom(this.env.DB)),
             sources,
           );
           const [pageResult] = await orchestrator.run({
@@ -80,7 +80,7 @@ export class ScrapeWorkflow extends WorkflowEntrypoint<
     // Seed the genre dictionary once (idempotent, one TMDB call at most).
     await step.do('ensure-genres', retry, async () => {
       await buildEnricher(
-        createDatabase(this.env.DB),
+        databaseFrom(this.env.DB),
         this.env,
         withRetry(genericTransport()),
       ).ensureGenres();
@@ -92,7 +92,7 @@ export class ScrapeWorkflow extends WorkflowEntrypoint<
     // second dispatch for a movie already in flight is a harmless no-op.
     const pending = await step.do('list-pending', retry, async () =>
       buildEnricher(
-        createDatabase(this.env.DB),
+        databaseFrom(this.env.DB),
         this.env,
         withRetry(genericTransport()),
       ).listPendingMovieIds(40),

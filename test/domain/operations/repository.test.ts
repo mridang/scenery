@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
-import { createDatabase } from '@/core/db/client';
+import { databaseFrom } from '@/domain/db/client';
 import { OperationRepository } from '@/domain/operations/repository';
 import { APP_MIGRATIONS } from '../../lib/db/migrations';
 import { sqliteD1 } from '../../lib/db/sqlite-d1';
@@ -9,7 +9,7 @@ let repository: OperationRepository;
 
 beforeEach(() => {
   repository = new OperationRepository(
-    createDatabase(sqliteD1(...APP_MIGRATIONS).d1),
+    databaseFrom(sqliteD1(...APP_MIGRATIONS).d1),
   );
 });
 

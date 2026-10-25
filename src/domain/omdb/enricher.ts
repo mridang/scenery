@@ -5,7 +5,7 @@
  * for one (or many) imdb_ids and persists them.
  */
 
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import { OmdbClient, type OmdbClientOptions } from '@/lib/omdb';
 import { OmdbRepository } from './repository';
 

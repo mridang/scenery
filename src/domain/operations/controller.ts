@@ -1,14 +1,18 @@
 /**
  * @packageDocumentation
  *
- * The `/api/operations` controllers, built on the `@/core/api` framework: the
+ * The `/api/operations` controllers, built on the `@/lib/core/api` framework: the
  * collection (run an operation now) and the item (read one back). Both are
  * guarded by the operator token; the route files just mount their handlers.
  */
 
-import type { Database } from '@/core/db/client';
-import { ApiController, operatorRefusal, type RouteContext } from '@/core/api';
-import { getDatabase, getEnv } from '@/core/runtime';
+import { database, type Database } from '@/domain/db/client';
+import {
+  ApiController,
+  operatorRefusal,
+  type RouteContext,
+} from '@/lib/core/api';
+import { getEnv } from '@/lib/core/runtime';
 import { absoluteLocation, problems, readJsonObject } from '@/lib/rest-json';
 import { errorMessage, logError } from '@/utils/logging';
 import { parseOperationInput } from './operation-input';
@@ -40,7 +44,7 @@ function operatorContext(request: Request, route: RouteContext): OperationsCtx {
     request,
     params: route.params ?? Promise.resolve({}),
     env,
-    db: getDatabase(),
+    db: database(),
   };
 }
 

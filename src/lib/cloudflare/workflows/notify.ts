@@ -4,7 +4,7 @@ import {
   type WorkflowStep,
 } from 'cloudflare:workers';
 
-import { createDatabase, type Database } from '@/core/db/client';
+import { databaseFrom, type Database } from '@/domain/db/client';
 
 import { CatalogService, type ScoredMovie } from '@/domain/catalog';
 import { PushSubscriptionRepository } from '@/domain/push';
@@ -45,7 +45,7 @@ export class NotifyWorkflow extends WorkflowEntrypoint<
     const retry = { retries: { limit: 3, delay: '10 seconds' } } as const;
 
     const picks = await step.do('pick-top-5', async () =>
-      pickTopFiveNew(createDatabase(this.env.DB)),
+      pickTopFiveNew(databaseFrom(this.env.DB)),
     );
     if (picks.length === 0) {
       // Empty catalog (nothing to ever send).
@@ -55,7 +55,7 @@ export class NotifyWorkflow extends WorkflowEntrypoint<
     const payload = buildPayload(picks);
 
     const subscriptions = await step.do('list-subscriptions', async () =>
-      new PushSubscriptionRepository(createDatabase(this.env.DB)).listAll(),
+      new PushSubscriptionRepository(databaseFrom(this.env.DB)).listAll(),
     );
     if (subscriptions.length === 0) {
       return { skipped: 'no subscribers', sent: 0 };
@@ -79,7 +79,7 @@ export class NotifyWorkflow extends WorkflowEntrypoint<
           async () => {
             const notifier = new PushNotifier(
               sender,
-              new PushSubscriptionRepository(createDatabase(this.env.DB)),
+              new PushSubscriptionRepository(databaseFrom(this.env.DB)),
             );
             const outcome = await notifier.deliver(subscription, payload);
             return outcome.delivered;

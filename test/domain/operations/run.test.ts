@@ -1,4 +1,4 @@
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import type { OperationRequest } from '@/domain/operations/types';

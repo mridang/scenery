@@ -7,7 +7,7 @@
 
 import { and, eq, isNull, or } from 'drizzle-orm';
 
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import { tmdbMovies } from '../db/schema';
 import type { OmdbEnrichResult } from '@/lib/omdb';
 

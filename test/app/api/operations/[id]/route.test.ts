@@ -1,4 +1,4 @@
-import { createDatabase } from '@/core/db/client';
+import { databaseFrom } from '@/domain/db/client';
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
 import { GET } from '@/app/api/operations/[id]/route';
@@ -17,7 +17,7 @@ const install = async (env: Record<string, unknown> = {}) => {
   restore?.();
   const { d1 } = sqliteD1(...APP_MIGRATIONS);
   restore = installCloudflareContext(d1, env);
-  const repository = new OperationRepository(createDatabase(d1));
+  const repository = new OperationRepository(databaseFrom(d1));
   await repository.start({
     id: ID,
     type: 'push_trigger',

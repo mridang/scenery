@@ -1,4 +1,4 @@
-import { createDatabase, type Database } from '@/core/db/client';
+import { databaseFrom, type Database } from '@/domain/db/client';
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
 import { ScrapingRepository } from '@/domain/scraping/repository';
@@ -23,7 +23,7 @@ const recent = (): string =>
 
 beforeEach(() => {
   d1 = sqliteD1(...APP_MIGRATIONS).d1;
-  db = createDatabase(d1);
+  db = databaseFrom(d1);
 });
 
 /** Seed a movie + release for the seeded `scnsrc` source with a posted_at. */

@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-jest.unstable_mockModule('@/core/runtime', () => ({
+jest.unstable_mockModule('@/lib/core/runtime', () => ({
   getEnv: () => ({ VAPID_PUBLIC_KEY: 'pub-key' }),
 }));
 

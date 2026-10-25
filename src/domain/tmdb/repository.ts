@@ -1,6 +1,6 @@
 import { and, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
 
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import { movies, tmdbGenres, tmdbMovies, tmdbPeople } from '../db/schema';
 import type {
   TmdbCastEntry,

@@ -7,7 +7,7 @@
 
 import { eq } from 'drizzle-orm';
 
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import type { OperationStatus, OperationType } from '@/domain/db/enums';
 import { operations } from '../db/schema';
 

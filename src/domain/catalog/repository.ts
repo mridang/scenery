@@ -1,6 +1,6 @@
 import { count, desc, eq, isNull, max, sql, type SQL } from 'drizzle-orm';
 
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import {
   fetchAttempts,
   movies,

@@ -6,7 +6,7 @@ jest.unstable_mockModule('@/lib/cloudflare/workflows', () => ({
   NotifyWorkflow: class NotifyWorkflow {},
 }));
 
-const { default: extraHandlers } = await import('@/core/worker-extras');
+const { default: extraHandlers } = await import('@/lib/core/worker-extras');
 
 /** A workflow binding that records the parameters of each instance it is asked to start. */
 function binding(fails = false) {

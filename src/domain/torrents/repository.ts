@@ -1,6 +1,6 @@
 import { and, asc, count, eq, gt, lte, ne, notExists, sql } from 'drizzle-orm';
 
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import { movies, releases, torrentLookups, torrents } from '../db/schema';
 import type {
   LookupResult,

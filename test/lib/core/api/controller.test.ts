@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { ApiController } from '@/core/api/controller';
+import { ApiController } from '@/lib/core/api/controller';
 import { problems } from '@/lib/rest-json/problem';
 
 /** Read a response's JSON body as a record. */

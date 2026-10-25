@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { subscriptionId } from '@/lib/push/subscription-id';
 
 const store = new Set<string>();
-jest.unstable_mockModule('@/core/runtime', () => ({
-  getDatabase: () => ({}),
+jest.unstable_mockModule('@/domain/db/client', () => ({
+  database: () => ({}),
 }));
 jest.unstable_mockModule('@/domain/push/repository', () => ({
   PushSubscriptionRepository: class {
