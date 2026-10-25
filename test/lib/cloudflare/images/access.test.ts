@@ -5,7 +5,7 @@ import {
   mayFetch,
   signatureFor,
   signatureValid,
-} from '@/lib/images/access';
+} from '@/lib/cloudflare/images/access';
 
 describe('access to pictures', () => {
   it('turns nobody away before the address is looked at', async () => {

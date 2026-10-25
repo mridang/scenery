@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { backdropUrl, posterUrl } from '@/app/(site)/_lib/tmdb-image';
-import { ALLOWED_WIDTHS } from '@/lib/images/site';
+import { ALLOWED_WIDTHS } from '@/lib/cloudflare/images/site';
 
 const ORIGINAL = 'https://image.tmdb.org/t/p/original';
 

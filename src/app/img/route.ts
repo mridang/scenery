@@ -1,21 +1,22 @@
 /**
  * Pictures from other websites, served from our own address (see
- * `lib/images/address.ts` for why).
+ * `lib/cloudflare/images/address.ts` for why).
  *
  *   GET /img?url=<picture address>&w=<width>
  *
- * Who may ask, and for what, is each app's own rule (`lib/images/access.ts`),
- * so it can't become a free image proxy for the web. Answers come from the
- * edge cache when they can, and a browser keeps them for a month.
+ * Who may ask, and for what, is each app's own rule
+ * (`lib/cloudflare/images/access.ts`), so it can't become a free image proxy
+ * for the web. Answers come from the edge cache when they can, and a browser
+ * keeps them for a month.
  */
 
-import * as access from '@/lib/images/access';
 import {
+  access,
   imageCache,
   imagesBinding,
   runInBackground,
-} from '@/core/images/runtime';
-import { serveImage } from '@/lib/images/service';
+  serveImage,
+} from '@/lib/cloudflare/images';
 
 /**
  * `GET /img?url=…&w=…`: the picture at `url`, scaled to the nearest
