@@ -133,6 +133,19 @@
     "VAPID_PUBLIC_KEY": "BCr55yfhMisowNEJX1YOvwc6yTeVi5iv8D-zmMleYMby0nz0nDHsfo5h5EVN4UfZGl60dzr2pWfOWgf-dU5xgVQ",
     "VAPID_SUBJECT": "mailto:mridang.agarwalla@gmail.com",
   },
-  // SCRAPINGANT_API_KEY, TMDB_API_KEY, CRON_SECRET, VAPID_PRIVATE_KEY are
-  // Worker secrets (set via `wrangler secret put`), not plaintext vars.
+  // Worker secrets (set via `wrangler secret put`), not plaintext vars. A deploy
+  // fails if one is missing, and only these names are typed and loaded from .env.
+  // CRON_SECRET is left out on purpose: the operator endpoint is open without it,
+  // which local development relies on.
+  "secrets": {
+    "required": [
+      "SCRAPINGANT_API_KEY",
+      "TMDB_API_KEY",
+      "OMDB_API_KEY",
+      "VAPID_PRIVATE_KEY",
+    ],
+  },
+  // Uploads source maps with the Worker so stack traces in logs and traces
+  // point at the original source.
+  "upload_source_maps": true,
 }
