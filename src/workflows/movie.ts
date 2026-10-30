@@ -5,6 +5,7 @@ import {
 } from 'cloudflare:workers';
 
 import { databaseFrom } from '@/domain/db/client';
+import { setErrorContext } from '@/lib/core/observability/context';
 
 import { OmdbEnricher } from '@/domain/omdb';
 import { lookupOneTorrent } from '@/domain/torrents';
@@ -50,6 +51,10 @@ export class MovieWorkflow extends WorkflowEntrypoint<
     event: WorkflowEvent<MovieWorkflowParams>,
     step: WorkflowStep,
   ) {
+    await setErrorContext({
+      'job.name': 'movie',
+      'workflow.instance_id': event.instanceId,
+    });
     const { imdbId, slot = 0 } = event.payload;
     const retry = { retries: { limit: 3, delay: '10 seconds' } } as const;
     const enricher = () =>

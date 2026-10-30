@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
+import { installFakeTracing } from './observability/fake-tracing';
+
+const tracing = installFakeTracing();
+
 jest.unstable_mockModule('@/workflows', () => ({
   ScrapeWorkflow: class ScrapeWorkflow {},
   MovieWorkflow: class MovieWorkflow {},
@@ -31,7 +35,7 @@ async function fire(cron: string, env: Record<string, unknown>) {
       pending.push(promise);
     },
   };
-  Reflect.apply(extraHandlers.scheduled as never, undefined, [
+  await Reflect.apply(extraHandlers.scheduled as never, undefined, [
     { cron },
     env,
     ctx,
@@ -41,6 +45,21 @@ async function fire(cron: string, env: Record<string, unknown>) {
 
 afterEach(() => {
   jest.restoreAllMocks();
+  for (const key of Object.keys(tracing.attributes)) {
+    delete tracing.attributes[key];
+  }
+});
+
+describe('error context', () => {
+  it.each([
+    ['0 6 * * *', 'scrape'],
+    ['0 17 * * *', 'notify'],
+    ['5 5 * * *', 'unknown'],
+  ])('names the job fired by %s', async (cron, job) => {
+    jest.spyOn(console, 'log').mockImplementation(() => undefined);
+    await fire(cron, {});
+    expect(tracing.attributes).toEqual({ 'job.name': job });
+  });
 });
 
 describe('scheduled', () => {

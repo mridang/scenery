@@ -8,6 +8,7 @@
  */
 
 import { isOperator } from '@/lib/operator-auth';
+import { setErrorContext } from '@/lib/core/observability/context';
 import { problem } from './problem';
 import { logError } from '@/utils/logging';
 
@@ -17,6 +18,8 @@ export function operatorRefusal(
   env: Pick<CloudflareEnv, 'CRON_SECRET'>,
 ): Response | undefined {
   if (isOperator(request.headers.get('authorization'), env.CRON_SECRET)) {
+    // Not awaited: this is called from a synchronous guard.
+    void setErrorContext({ 'auth.method': 'operator' });
     return undefined;
   }
   logError({

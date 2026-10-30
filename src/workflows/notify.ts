@@ -5,6 +5,7 @@ import {
 } from 'cloudflare:workers';
 
 import { databaseFrom, type Database } from '@/domain/db/client';
+import { setErrorContext } from '@/lib/core/observability/context';
 
 import { CatalogService, type ScoredMovie } from '@/domain/catalog';
 import { PushSubscriptionRepository } from '@/domain/push';
@@ -39,9 +40,13 @@ export class NotifyWorkflow extends WorkflowEntrypoint<
   NotifyWorkflowParams
 > {
   public override async run(
-    _event: WorkflowEvent<NotifyWorkflowParams>,
+    event: WorkflowEvent<NotifyWorkflowParams>,
     step: WorkflowStep,
   ) {
+    await setErrorContext({
+      'job.name': 'notify',
+      'workflow.instance_id': event.instanceId,
+    });
     const retry = { retries: { limit: 3, delay: '10 seconds' } } as const;
 
     const picks = await step.do('pick-top-5', async () =>

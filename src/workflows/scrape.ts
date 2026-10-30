@@ -5,6 +5,7 @@ import {
 } from 'cloudflare:workers';
 
 import { databaseFrom } from '@/domain/db/client';
+import { setErrorContext } from '@/lib/core/observability/context';
 
 import { ScrapeOrchestrator, ScrapingRepository } from '@/domain/scraping';
 import { buildSources } from '@/lib/sources';
@@ -38,6 +39,10 @@ export class ScrapeWorkflow extends WorkflowEntrypoint<
     event: WorkflowEvent<ScrapeWorkflowParams>,
     step: WorkflowStep,
   ) {
+    await setErrorContext({
+      'job.name': 'scrape',
+      'workflow.instance_id': event.instanceId,
+    });
     const sources = buildSources(
       browserTransport(this.env.SCRAPINGANT_API_KEY),
       'scrapingant-browser',

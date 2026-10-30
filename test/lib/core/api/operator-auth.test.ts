@@ -1,6 +1,9 @@
-import { describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import { operatorRefusal } from '@/lib/core/api/operator-auth';
+import { installFakeTracing } from '../observability/fake-tracing';
+
+const tracing = installFakeTracing();
+const { operatorRefusal } = await import('@/lib/core/api/operator-auth');
 
 const request = (authorization?: string) =>
   new Request('https://app.test/api/operations', {
@@ -9,6 +12,25 @@ const request = (authorization?: string) =>
   });
 
 describe('operatorRefusal', () => {
+  beforeEach(() => {
+    for (const key of Object.keys(tracing.attributes)) {
+      delete tracing.attributes[key];
+    }
+  });
+
+  it('marks the invocation as the operator once authorised', async () => {
+    operatorRefusal(request('Bearer shh'), { CRON_SECRET: 'shh' });
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(tracing.attributes).toEqual({ 'auth.method': 'operator' });
+  });
+
+  it('does not mark a refused caller', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    operatorRefusal(request('Bearer nope'), { CRON_SECRET: 'shh' });
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(tracing.attributes).toEqual({});
+  });
+
   it('lets anyone in where no secret is set', () => {
     expect(operatorRefusal(request(), {})).toBeUndefined();
     expect(operatorRefusal(request(), { CRON_SECRET: '' })).toBeUndefined();

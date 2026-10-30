@@ -9,6 +9,7 @@
  */
 
 import { ScrapeWorkflow, MovieWorkflow, NotifyWorkflow } from '@/workflows';
+import { setErrorContext } from '@/lib/core/observability/context';
 import { errorMessage, logError, logInfo } from '@/utils/logging';
 
 export { ScrapeWorkflow, MovieWorkflow, NotifyWorkflow };
@@ -54,17 +55,20 @@ async function safeCreate(
  * crash.
  */
 const extraHandlers: Partial<ExportedHandler<CloudflareEnv>> = {
-  scheduled(event, env, ctx) {
+  async scheduled(event, env, ctx) {
     switch (event.cron) {
       case '0 6 * * *':
+        await setErrorContext({ 'job.name': 'scrape' });
         ctx.waitUntil(
           safeCreate('scrape', env.SCRAPE_WORKFLOW, { pageNumbers: [1] }),
         );
         break;
       case '0 17 * * *':
+        await setErrorContext({ 'job.name': 'notify' });
         ctx.waitUntil(safeCreate('notify', env.NOTIFY_WORKFLOW, {}));
         break;
       default:
+        await setErrorContext({ 'job.name': 'unknown' });
         logInfo({ event: 'cron.unknown', cron: event.cron });
     }
   },
