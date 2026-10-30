@@ -50,12 +50,7 @@ export function posterUrl(
  * @public
  */
 export type BackdropSize =
-  | 'w300'
-  | 'w780'
-  | 'w1280'
-  | 'w1920'
-  | 'w2560'
-  | 'w3840';
+  'w300' | 'w780' | 'w1280' | 'w1920' | 'w2560' | 'w3840';
 
 const BACKDROP_WIDTHS: Record<BackdropSize, number> = {
   w300: 342, // closest poster width — also one the proxy permits

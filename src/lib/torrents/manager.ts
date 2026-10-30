@@ -28,14 +28,14 @@ export class TorrentLookupManager {
       >
     >(async (accP, provider) => {
       const acc = await accP;
-      const result = await provider.search(imdbId).catch(
-        (err: unknown): LookupResult => ({
+      const result = await provider
+        .search(imdbId)
+        .catch((err: unknown): LookupResult => ({
           status: 'error',
           torrents: [],
           rawResponse: '',
           error: err instanceof Error ? err.message : String(err),
-        }),
-      );
+        }));
       return [...acc, { provider: provider.name, result }];
     }, Promise.resolve([]));
 
