@@ -18,7 +18,7 @@ export const SITE_DESCRIPTION =
   'A scored, ranked tracker of new movie releases — with TMDB enrichment, ' +
   'prestige/quality signals, torrents and a 1 TB download plan.';
 
-/** Where the source lives, linked from the terms. */
+/** Where the source code lives. */
 export const SOURCE_URL = 'https://github.com/mridang/scenery';
 /** Where people write to about their data or these terms. */
 export const CONTACT_EMAIL = 'mridang.agarwalla@gmail.com';

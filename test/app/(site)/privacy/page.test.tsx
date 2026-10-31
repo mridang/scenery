@@ -17,14 +17,14 @@ describe('PrivacyPage', () => {
 
   it('has a section for each part of the policy', () => {
     for (const heading of [
+      'What we access',
       'What we store',
       'Notifications',
-      'Cookies and storage',
       'Pictures and downloads',
-      'Logs',
-      'Who we share it with',
-      'Your choices',
-      'Changes',
+      'Cookies and logs',
+      'What we don’t do',
+      'Deleting your data',
+      'Contact',
     ]) {
       expect(out).toMatch(new RegExp(`<h2[^>]*>${heading}</h2>`));
     }

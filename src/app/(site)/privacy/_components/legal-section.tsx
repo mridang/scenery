@@ -1,7 +1,12 @@
+import Link from 'next/link';
 import type { ReactElement, ReactNode } from 'react';
 
-import { Logo } from '@/components/site/logo';
-import { Container, Heading } from '@/components/ui/layout';
+import { BRAND_NAME } from '@/app/_brand';
+import { Eyebrow, Heading } from '@/components/ui/layout';
+
+/** How a link inside a legal page looks: underlined, in the accent colour. */
+const LINK =
+  'focus-ring rounded-control text-accent underline underline-offset-4 hover:text-ink';
 
 /** A day as people write it, from an ISO date: "1 November 2026". */
 export function longDate(isoDay: string): string {
@@ -14,24 +19,44 @@ export function longDate(isoDay: string): string {
 }
 
 /**
- * The frame of a legal page: the wordmark linking home, then the page's own
- * `<main>`. The catalog's header and footer show the catalog's counts, which a
- * legal page has no use for, so it draws this lighter strip instead.
+ * A legal page (the privacy policy or the terms): its eyebrow, title and the
+ * day it last changed, then its sections, then the way back home. Every app
+ * lays its legal pages out with this, inside its own page frame.
  */
-export function LegalFrame({
+export function LegalPage({
+  eyebrow,
+  title,
+  updated,
   children,
-}: Readonly<{ children: ReactNode }>): ReactElement {
+}: Readonly<{
+  eyebrow: string;
+  title: string;
+  /** The ISO day the page last changed. */
+  updated: string;
+  children: ReactNode;
+}>): ReactElement {
   return (
-    <>
-      <header className="border-b border-line">
-        <div className="flex w-full items-center p-4 sm:px-7 2xl:px-12">
-          <Logo />
-        </div>
-      </header>
-      <main id="main">
-        <Container className="py-10 sm:py-16">{children}</Container>
-      </main>
-    </>
+    <div className="max-w-2xl">
+      <Eyebrow>{eyebrow}</Eyebrow>
+      <Heading as="h1" variant="h1" className="mt-2">
+        {title}
+      </Heading>
+      <p className="mt-3 text-sm text-muted">
+        Last updated: {longDate(updated)}
+      </p>
+
+      <div className="mt-8 space-y-9 text-lg leading-relaxed text-muted">
+        {children}
+      </div>
+
+      <Link
+        href="/"
+        className="focus-ring mt-12 inline-flex h-10 items-center gap-1 text-sm font-semibold text-muted hover:text-ink"
+      >
+        <span aria-hidden="true">←</span>
+        Back to {BRAND_NAME}
+      </Link>
+    </div>
   );
 }
 
@@ -45,9 +70,7 @@ export function LegalSection({
 }>): ReactElement {
   return (
     <section>
-      <Heading variant="h3" className="text-ink">
-        {title}
-      </Heading>
+      <Heading variant="h3">{title}</Heading>
       <div className="mt-3">{children}</div>
     </section>
   );
@@ -66,4 +89,34 @@ export function LegalItem({
       <span>{children}</span>
     </li>
   );
+}
+
+/**
+ * A link inside a legal page. An address on another site opens in a new tab
+ * without handing it a reference to this window; a page of this site is an
+ * ordinary link.
+ */
+export function LegalLink({
+  href,
+  children,
+}: Readonly<{ href: string; children: ReactNode }>): ReactElement {
+  if (/^https?:\/\//i.test(href)) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={LINK}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link href={href} className={LINK}>
+      {children}
+    </Link>
+  );
+}
+
+/** A name in code type inside a legal page, such as a cookie's name. */
+export function LegalCode({
+  children,
+}: Readonly<{ children: ReactNode }>): ReactElement {
+  return <code className="font-mono text-base">{children}</code>;
 }
