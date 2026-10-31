@@ -13,10 +13,12 @@
 import type { MetadataRoute } from 'next';
 
 import {
+  PRIVACY_LAST_UPDATED,
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_TITLE,
   SITE_URL,
+  TERMS_LAST_UPDATED,
 } from '@/utils/site';
 
 /** The name of the app, as the wordmark, the tab title suffix and the home-screen label. */
@@ -67,7 +69,7 @@ export const INDEX_BY_DEFAULT = false;
  * The paths a crawler may fetch. Pages stay readable so that a crawler sees
  * their `noindex` (a page it may not fetch can still be listed by address).
  */
-export const CRAWLABLE_PATHS: readonly string[] = ['/'];
+export const CRAWLABLE_PATHS: readonly string[] = ['/', '/privacy', '/terms'];
 
 /**
  * The paths crawlers must stay out of: the API, the magnet redirect, the picture
@@ -82,11 +84,14 @@ export const PRIVATE_PATHS: readonly string[] = [
   '/magnet/',
 ];
 
-/** The pages worth listing in the sitemap. None: nothing here is meant to be indexed. */
+/** The pages worth listing in the sitemap: only the legal pages are meant to be indexed. */
 export const SITEMAP_PAGES: readonly Readonly<{
   path: string;
   lastModified?: string;
-}>[] = [];
+}>[] = [
+  { path: '/privacy', lastModified: PRIVACY_LAST_UPDATED },
+  { path: '/terms', lastModified: TERMS_LAST_UPDATED },
+];
 
 /** The name of the installed app, where there is room for more than the short name. */
 export const MANIFEST_NAME = `${BRAND_NAME} — new movie releases`;

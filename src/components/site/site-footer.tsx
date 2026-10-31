@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { timeAgo } from '@/app/(site)/_lib/format';
 import { BRAND_NAME } from '@/app/_brand';
 import type { LastUpdate } from '@/domain/catalog';
@@ -19,6 +21,12 @@ const DATA_SOURCES: ReadonlyArray<{ label: string; domain: string }> = [
   { label: 'apibay', domain: 'apibay.org' },
   { label: '1337x', domain: '1337x.to' },
   { label: 'YTS', domain: 'yts.mx' },
+];
+
+/** The legal pages, linked beside the copyright line. */
+export const LEGAL_LINKS: ReadonlyArray<{ label: string; href: string }> = [
+  { label: 'Privacy', href: '/privacy' },
+  { label: 'Terms', href: '/terms' },
 ];
 
 /**
@@ -74,7 +82,18 @@ export function SiteFooter({
       </div>
       <div className="border-t border-white/6">
         <div className="flex w-full flex-wrap justify-between gap-4 px-4 pt-4 pb-9 font-mono text-[11px] text-[#6e6e78] sm:px-7 2xl:px-12">
-          <span>© 2026 {BRAND_NAME}</span>
+          <span className="flex flex-wrap gap-4">
+            <span>© 2026 {BRAND_NAME}</span>
+            {LEGAL_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="focus-ring rounded-sm hover:text-[#cfcfd4]"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </span>
           <span>
             <span className="font-semibold text-[#cfcfd4]">{count}</span> of{' '}
             {total} shown · avg{' '}

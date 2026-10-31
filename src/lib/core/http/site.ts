@@ -10,8 +10,11 @@
  * needs. Everything else in those files is the same in every app.
  */
 
-/** The pages search engines may index. The whole site is private, so none. */
-export const PUBLIC_PAGES: ReadonlySet<string> = new Set();
+/** The pages search engines may index. The site is private, so only the legal pages. */
+export const PUBLIC_PAGES: ReadonlySet<string> = new Set([
+  '/privacy',
+  '/terms',
+]);
 
 /**
  * The pages the Worker may keep a copy of at the edge and answer without waking

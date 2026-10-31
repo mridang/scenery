@@ -17,3 +17,12 @@ export const SITE_TITLE = 'scenery';
 export const SITE_DESCRIPTION =
   'A scored, ranked tracker of new movie releases — with TMDB enrichment, ' +
   'prestige/quality signals, torrents and a 1 TB download plan.';
+
+/** Where the source lives, linked from the terms. */
+export const SOURCE_URL = 'https://github.com/mridang/scenery';
+/** Where people write to about their data or these terms. */
+export const CONTACT_EMAIL = 'mridang.agarwalla@gmail.com';
+/** The day the privacy policy last changed, for the page and the sitemap. */
+export const PRIVACY_LAST_UPDATED = '2026-11-01';
+/** The day the terms of service last changed, for the page and the sitemap. */
+export const TERMS_LAST_UPDATED = '2026-11-01';

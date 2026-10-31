@@ -31,8 +31,8 @@ describe('site settings', () => {
     expect(EDGE_TTL_SECONDS).toBe(1800);
   });
 
-  it('lets search engines index nothing: the whole site is private', () => {
-    expect([...PUBLIC_PAGES]).toEqual([]);
+  it('lets search engines index only the legal pages: the rest is private', () => {
+    expect([...PUBLIC_PAGES]).toEqual(['/privacy', '/terms']);
   });
 
   it.each([

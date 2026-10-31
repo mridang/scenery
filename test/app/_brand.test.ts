@@ -18,7 +18,7 @@ describe('the brand', () => {
 
 describe('what crawlers may read', () => {
   it('lets them read the pages, so that they see each page’s noindex', () => {
-    expect(CRAWLABLE_PATHS).toEqual(['/']);
+    expect(CRAWLABLE_PATHS).toEqual(['/', '/privacy', '/terms']);
   });
 
   it('keeps them out of the API and the magnet redirect', () => {
@@ -31,8 +31,11 @@ describe('what crawlers may read', () => {
     ]);
   });
 
-  it('lists no page in the sitemap, as nothing here is meant to be indexed', () => {
-    expect(SITEMAP_PAGES).toEqual([]);
+  it('lists only the legal pages in the sitemap, as nothing else is meant to be indexed', () => {
+    expect(SITEMAP_PAGES).toEqual([
+      { path: '/privacy', lastModified: '2026-11-01' },
+      { path: '/terms', lastModified: '2026-11-01' },
+    ]);
   });
 });
 
