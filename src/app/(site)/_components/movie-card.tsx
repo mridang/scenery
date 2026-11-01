@@ -1,3 +1,4 @@
+import { formatSize } from '@/lib/intl';
 import type { ScoredMovie } from '@/domain/catalog';
 import { magnetPath } from '@/lib/magnet';
 
@@ -17,10 +18,7 @@ function fmtSizeShort(bytes: number | null): string | null {
   if (bytes === null || bytes <= 0) {
     return null;
   }
-  const gb = bytes / 1_000_000_000;
-  return gb >= 1
-    ? `${gb.toFixed(1)} GB`
-    : `${Math.round(bytes / 1_000_000)} MB`;
+  return formatSize(bytes);
 }
 
 interface CardProps {

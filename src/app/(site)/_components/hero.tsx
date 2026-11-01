@@ -1,3 +1,4 @@
+import { formatSize } from '@/lib/intl';
 import type { ScoredMovie } from '@/domain/catalog';
 
 import { formatRuntime } from '../_lib/format';
@@ -53,7 +54,7 @@ export function Hero({ movie }: { movie: ScoredMovie | null }) {
         : 'Pending';
   const sizeText =
     row.best_size_bytes && row.best_size_bytes > 0
-      ? `${(row.best_size_bytes / 1_000_000_000).toFixed(1)} GB`
+      ? formatSize(row.best_size_bytes)
       : null;
   const language = (row.original_language ?? 'en').toUpperCase();
   const footerBits = [status, sizeText, language].filter(Boolean).join('  ·  ');

@@ -10,6 +10,8 @@
  * parallelogram) so the markup stays small and the icons render at any
  * size.
  */
+
+import { formatRating } from '@/lib/intl';
 export interface RatingsInput {
   /** Scenery's composite score (0-100ish, may exceed). Null hides the chip. */
   readonly sceneryScore: number | null;
@@ -83,7 +85,7 @@ export function RatingsRow({
             width={big ? 28 : 22}
             height={big ? 16 : 12}
           />
-          <span className="font-semibold">{imdbRating!.toFixed(1)}</span>
+          <span className="font-semibold">{formatRating(imdbRating!)}</span>
         </span>
       ) : null}
       {mcScore !== null ? (

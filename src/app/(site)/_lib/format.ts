@@ -3,6 +3,8 @@
  * string/number helpers, colocated with the page that uses them.
  */
 
+import { relativeTime } from '@/lib/intl';
+
 /** Minutes → `1h 30m` / `45m`. Null for missing/zero runtimes. */
 export function formatRuntime(min: number | null): string | null {
   if (!min) {
@@ -13,29 +15,12 @@ export function formatRuntime(min: number | null): string | null {
   return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 }
 
-/** Coarse "x ago" label (`never` when missing/unparseable). */
+/** "3 hours ago" style label (`never` when missing/unparseable). */
 export function timeAgo(at: string | null, nowMs: number): string {
-  if (!at) {
-    return 'never';
-  }
-  const parsed = Date.parse(at);
-  if (!Number.isFinite(parsed)) {
-    return 'never';
-  }
-  const seconds = Math.max(0, Math.floor((nowMs - parsed) / 1000));
-  if (seconds < 60) {
-    return `${seconds}s ago`;
-  }
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) {
-    return `${minutes}m ago`;
-  }
-  const hours = Math.floor(minutes / 60);
-  if (hours < 48) {
-    return `${hours}h ago`;
-  }
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  const parsed = at ? Date.parse(at) : NaN;
+  return Number.isFinite(parsed)
+    ? relativeTime(new Date(parsed), new Date(nowMs))
+    : 'never';
 }
 
 /** Build a `?key=value` query string, dropping empty values. */

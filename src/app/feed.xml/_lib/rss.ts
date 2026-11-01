@@ -4,6 +4,7 @@
  * this module only maps our domain rows into feed items and builds the
  * human-readable `<description>` body.
  */
+import { countOf, formatRating, formatSize } from '@/lib/intl';
 import { Feed } from 'feed';
 
 import type { ScoredMovie } from '@/domain/catalog';
@@ -13,10 +14,7 @@ function fmtSize(bytes: number | null): string {
   if (bytes == null || bytes <= 0) {
     return '';
   }
-  const gb = bytes / 1_000_000_000;
-  return gb >= 1
-    ? `${gb.toFixed(1)} GB`
-    : `${Math.round(bytes / 1_000_000)} MB`;
+  return formatSize(bytes);
 }
 
 /** The multi-line `<description>` body for one movie (labelled fields). */
@@ -32,8 +30,8 @@ export function descriptionFor(movie: ScoredMovie): string {
       : null;
   const rating =
     row.vote_average != null
-      ? `${row.vote_average.toFixed(1)}${
-          row.vote_count != null ? ` (${row.vote_count} votes)` : ''
+      ? `${formatRating(row.vote_average)}${
+          row.vote_count != null ? ` (${countOf(row.vote_count, 'vote')})` : ''
         }`
       : null;
   const torrent = row.best_torrent_title
@@ -51,7 +49,7 @@ export function descriptionFor(movie: ScoredMovie): string {
       : null;
 
   const parts: readonly (readonly [string, string | null])[] = [
-    ['Score', score.toFixed(1)],
+    ['Score', formatRating(score)],
     ['Year', row.tmdb_year ? String(row.tmdb_year) : null],
     ['Genres', genres.length ? genres.join(', ') : null],
     ['Runtime', runtime],
@@ -113,7 +111,7 @@ export function buildFeed(channel: FeedChannel): string {
       ? Date.parse(row.latest_release_at)
       : NaN;
     feed.addItem({
-      title: `${title}${year} — ${movie.score.toFixed(1)}`,
+      title: `${title}${year} — ${formatRating(movie.score)}`,
       id: row.best_info_hash
         ? `${row.imdb_id}:${row.best_info_hash}`
         : row.imdb_id,

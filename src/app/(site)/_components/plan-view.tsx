@@ -1,3 +1,4 @@
+import { formatGigabytes, formatPercent, formatSize } from '@/lib/intl';
 import type { ScoredMovie } from '@/domain/catalog';
 
 import { posterUrl } from '../_lib/tmdb-image';
@@ -5,11 +6,7 @@ import { scoreColor } from '../_lib/movie-style';
 
 /** Compact size formatter used by the plan rows. */
 function fmtSize(bytes: number | null): string {
-  if (bytes === null || bytes <= 0) {
-    return '';
-  }
-  const gb = bytes / 1_000_000_000;
-  return `${gb.toFixed(1)} GB`;
+  return bytes === null || bytes <= 0 ? '' : formatSize(bytes);
 }
 
 /**
@@ -53,12 +50,14 @@ export function PlanView({
         <div className="mb-3 flex items-end justify-between">
           <div className="font-mono text-[13px] text-[#c7c7cf]">
             <span className="text-[22px] font-semibold text-[#f3f3f6]">
-              {usedGb.toFixed(0)} GB
+              {formatGigabytes(usedGb)}
             </span>{' '}
-            <span className="text-[#8a8a94]">/ {budgetGb.toFixed(0)} GB</span>
+            <span className="text-[#8a8a94]">
+              / {formatGigabytes(budgetGb)}
+            </span>
           </div>
           <div className="font-mono text-[12px] text-[#8a8a94]">
-            {eligible.length} titles · {pct.toFixed(0)}% of budget
+            {eligible.length} titles · {formatPercent(pct / 100)} of budget
           </div>
         </div>
         <div className="h-[9px] overflow-hidden rounded-[6px] bg-[#26262d]">
@@ -151,7 +150,7 @@ function PlanRow({
           {fmtSize(row.best_size_bytes)}
         </div>
         <div className="text-[10px] text-[#6e6e78]">
-          Σ {cumGb.toFixed(1)} GB
+          Σ {formatGigabytes(cumGb)}
         </div>
       </div>
     </a>
