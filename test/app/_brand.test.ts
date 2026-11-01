@@ -11,7 +11,7 @@ import {
 
 describe('the brand', () => {
   it('is named and placed as the site says', () => {
-    expect(BRAND_NAME).toBe('scenery');
+    expect(BRAND_NAME).toBe('Scenery');
     expect(BRAND_URL).toBe('https://scenery.apps.mrida.ng');
   });
 });

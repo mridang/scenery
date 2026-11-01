@@ -19,13 +19,13 @@ import { LegalFrame } from '@/app/(site)/privacy/_components/legal-frame';
 export const metadata: Metadata = pageMetadata({
   title: 'Privacy',
   description:
-    'What scenery keeps about you: no accounts, no tracking, and only the push subscription you choose to give it.',
+    'What Scenery keeps about you: no accounts, no tracking, and only the push subscription you choose to give it.',
   path: '/privacy',
   index: true,
 });
 
 /**
- * Privacy policy: a plain statement of what scenery keeps about the people who
+ * Privacy policy: a plain statement of what Scenery keeps about the people who
  * use it, which is very little, as it has no accounts. Kept short and concrete.
  */
 export default function PrivacyPage(): ReactElement {
@@ -37,14 +37,14 @@ export default function PrivacyPage(): ReactElement {
         updated={PRIVACY_LAST_UPDATED}
       >
         <p>
-          scenery is a personal tracker of new movie releases. It has no
+          Scenery is a personal tracker of new movie releases. It has no
           accounts and no sign-in: everyone sees the same catalog. This policy
           explains the little it keeps about the people who use it.
         </p>
 
         <LegalSection title="What we access">
           <p>
-            Nothing about you. scenery has no accounts and no sign-in, and asks
+            Nothing about you. Scenery has no accounts and no sign-in, and asks
             no other service for anything about the people who use it.
           </p>
         </LegalSection>
@@ -78,31 +78,31 @@ export default function PrivacyPage(): ReactElement {
 
         <LegalSection title="Pictures and downloads">
           <p>
-            Posters and other pictures are fetched by scenery’s server and
+            Posters and other pictures are fetched by Scenery’s server and
             passed on to you, so the sites they come from see a request from
-            scenery rather than from your browser. A download link opens a
+            Scenery rather than from your browser. A download link opens a
             magnet link in your own torrent client: from then on your client
-            talks to other people directly, and scenery is not involved.
+            talks to other people directly, and Scenery is not involved.
           </p>
         </LegalSection>
 
         <LegalSection title="Cookies and logs">
           <ul className="space-y-2">
             <LegalItem>
-              scenery sets no cookies, and has no advertising, analytics or
+              Scenery sets no cookies, and has no advertising, analytics or
               trackers.
             </LegalItem>
             <LegalItem>
               On an iPhone or iPad, your browser remembers in its own storage
-              that you dismissed the tip on adding scenery to the home screen.
+              that you dismissed the tip on adding Scenery to the home screen.
               That stays on your device and is never sent to us.
             </LegalItem>
             <LegalItem>
-              A service worker lets scenery be installed and show notifications.
+              A service worker lets Scenery be installed and show notifications.
               It keeps only the page shown when you are offline.
             </LegalItem>
             <LegalItem>
-              Cloudflare, which hosts scenery, records each request (the address
+              Cloudflare, which hosts Scenery, records each request (the address
               it came from, the page asked for, the time and the result) in logs
               that we use to keep the service running and secure. Search text is
               stripped from the addresses before they are logged. The logs are
@@ -122,7 +122,7 @@ export default function PrivacyPage(): ReactElement {
 
         <LegalSection title="What we don’t do">
           <p>
-            We don’t sell or share anything about you, or show ads. scenery runs
+            We don’t sell or share anything about you, or show ads. Scenery runs
             on Cloudflare, which processes the data above for us. Looking up
             movies sends only their titles and identifiers to The Movie
             Database, OMDb and the torrent indexes, never anything about you.
@@ -134,7 +134,7 @@ export default function PrivacyPage(): ReactElement {
             Turn notifications off in your browser at any time: the push service
             tells us the next time we send, and we delete your subscription
             then. There is nothing else about you to delete. The terms of using
-            scenery are in the{' '}
+            Scenery are in the{' '}
             <LegalLink href="/terms">terms of service</LegalLink>.
           </p>
         </LegalSection>

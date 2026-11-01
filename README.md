@@ -1,4 +1,4 @@
-# scenery
+# Scenery
 
 A self-hosted movie-release tracker that scrapes release sites, enriches each title from TMDB and OMDB, scores it into a ranked download queue, and finds the best torrent for it. It runs on Cloudflare Workers and D1, driven by Cloudflare Workflows on a daily cron.
 

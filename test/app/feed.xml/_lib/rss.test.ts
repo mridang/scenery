@@ -62,10 +62,10 @@ function scored(overrides: Partial<MovieRow> = {}): ScoredMovie {
 describe('feedTitle', () => {
   it('reflects view, language and sort', () => {
     expect(feedTitle('plan', 'all', 'date')).toBe(
-      'scenery — 1 TB plan (all languages, newest first)',
+      'Scenery — 1 TB plan (all languages, newest first)',
     );
     expect(feedTitle('catalog', 'en', 'score')).toBe(
-      'scenery — Catalog (EN, best first)',
+      'Scenery — Catalog (EN, best first)',
     );
   });
 });
@@ -104,7 +104,7 @@ describe('buildFeed', () => {
     expect(xml.startsWith('<?xml')).toBe(true);
     expect(xml).toContain('<rss');
     expect(xml).toContain('<channel>');
-    expect(xml).toContain('scenery — Catalog (EN, newest first)');
+    expect(xml).toContain('Scenery — Catalog (EN, newest first)');
     expect(xml).toContain('rel="self"');
     expect(xml).toContain('<item>');
   });

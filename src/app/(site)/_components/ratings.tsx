@@ -55,7 +55,7 @@ export function RatingsRow({
         <span className={itemCls}>
           <img
             src="/icon.svg"
-            alt="scenery"
+            alt="Scenery"
             className={`inline-block ${big ? 'size-4' : 'size-3'}`}
             width={big ? 16 : 12}
             height={big ? 16 : 12}

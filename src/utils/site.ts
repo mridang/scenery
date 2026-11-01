@@ -7,12 +7,12 @@
  */
 
 /** The name of the site, as it appears in titles and structured data. */
-export const SITE_NAME = 'scenery';
+export const SITE_NAME = 'Scenery';
 /** The site's public address, with no trailing slash. */
 export const SITE_URL = 'https://scenery.apps.mrida.ng';
 
 /** The site's default page title. */
-export const SITE_TITLE = 'scenery';
+export const SITE_TITLE = 'Scenery';
 /** The site's default description, for page metadata and structured data. */
 export const SITE_DESCRIPTION =
   'A scored, ranked tracker of new movie releases — with TMDB enrichment, ' +

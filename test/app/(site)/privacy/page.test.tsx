@@ -32,7 +32,7 @@ describe('PrivacyPage', () => {
 
   it('says there are no accounts and no cookies', () => {
     expect(out).toContain('It has no accounts and no sign-in');
-    expect(out).toContain('scenery sets no cookies');
+    expect(out).toContain('Scenery sets no cookies');
   });
 
   it('names what a push subscription keeps and when it is deleted', () => {
@@ -46,7 +46,7 @@ describe('PrivacyPage', () => {
 
   it('links the terms and back home', () => {
     expect(out).toMatch(/<a [^>]*href="\/terms"[^>]*>terms of service<\/a>/);
-    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Back to scenery<\/a>/);
+    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Back to Scenery<\/a>/);
   });
 });
 
@@ -59,6 +59,6 @@ describe('the privacy page’s metadata', () => {
   it('has its own social card', () => {
     expect(metadata.openGraph?.url).toBe('/privacy');
     expect(metadata.title).toBe('Privacy');
-    expect(metadata.twitter?.title).toBe('Privacy · scenery');
+    expect(metadata.twitter?.title).toBe('Privacy · Scenery');
   });
 });

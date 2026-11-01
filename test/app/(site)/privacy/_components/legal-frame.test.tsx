@@ -12,7 +12,7 @@ describe('LegalFrame', () => {
 
   it('heads the page with the wordmark linking home', () => {
     expect(out).toMatch(/^<header[^>]*>.*<a href="\/"/);
-    expect(out).toContain('scenery');
+    expect(out).toContain('Scenery');
   });
 
   it('puts its content in the main landmark the skip link jumps to', () => {

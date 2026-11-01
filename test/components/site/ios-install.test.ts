@@ -152,6 +152,10 @@ describe('readInstallEnvironment', () => {
     expect(readInstallEnvironment(host()).standalone).toBe(false);
   });
 
+  it('keeps the storage key lowercase, whatever the display name', () => {
+    expect(IOS_HINT_STORAGE_KEY).toBe(IOS_HINT_STORAGE_KEY.toLowerCase());
+  });
+
   it('reads a remembered dismissal', () => {
     expect(
       readInstallEnvironment(host({ stored: { [IOS_HINT_STORAGE_KEY]: '1' } }))

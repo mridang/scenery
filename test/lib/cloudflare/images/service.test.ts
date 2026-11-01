@@ -151,6 +151,17 @@ describe('serveImage', () => {
     );
   });
 
+  it('introduces itself with the lowercase site name', async () => {
+    const fetcher = jest.fn(serving);
+    await serveImage(ask(), {
+      access: open,
+      fetcher,
+      background: () => undefined,
+    });
+    const init = fetcher.mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(JSON.stringify(init?.headers)).toMatch(/"scenery\/1\.0 /);
+  });
+
   it('works without any cache', async () => {
     const background = jest.fn();
     const response = await serveImage(ask(), {

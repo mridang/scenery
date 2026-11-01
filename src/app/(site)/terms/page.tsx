@@ -19,7 +19,7 @@ import { LegalFrame } from '@/app/(site)/privacy/_components/legal-frame';
 export const metadata: Metadata = pageMetadata({
   title: 'Terms',
   description:
-    'The terms for using scenery: it lists what others publish, hosts no files, and comes without warranty.',
+    'The terms for using Scenery: it lists what others publish, hosts no files, and comes without warranty.',
   path: '/terms',
   index: true,
 });
@@ -36,14 +36,14 @@ export default function TermsPage(): ReactElement {
         updated={TERMS_LAST_UPDATED}
       >
         <p>
-          scenery is a free tracker of new movie releases. By using it you agree
+          Scenery is a free tracker of new movie releases. By using it you agree
           to these terms. If you don’t, please don’t use it.
         </p>
 
-        <LegalSection title="Using scenery">
+        <LegalSection title="Using Scenery">
           <ul className="space-y-2">
             <LegalItem>
-              scenery lists what others publish: ratings and details from public
+              Scenery lists what others publish: ratings and details from public
               databases, and links that torrent indexes make public. It hosts no
               files, and it neither makes nor checks what those links point to.
             </LegalItem>
@@ -53,7 +53,7 @@ export default function TermsPage(): ReactElement {
               what you download is your responsibility.
             </LegalItem>
             <LegalItem>
-              Don’t use scenery to attack or overload it or the sites it reads
+              Don’t use Scenery to attack or overload it or the sites it reads
               from, or to get around its limits. The server limits how often
               anyone can call it.
             </LegalItem>
@@ -70,7 +70,7 @@ export default function TermsPage(): ReactElement {
 
         <LegalSection title="The service">
           <p>
-            scenery is provided as it is, without warranty of any kind. It may
+            Scenery is provided as it is, without warranty of any kind. It may
             change, be unavailable or stop at any time, and as far as the law
             allows we are not liable for any loss from using it.
           </p>
@@ -78,7 +78,7 @@ export default function TermsPage(): ReactElement {
 
         <LegalSection title="Open source">
           <p>
-            scenery’s code is open source under the Apache 2.0 licence, and is
+            Scenery’s code is open source under the Apache 2.0 licence, and is
             on <LegalLink href={SOURCE_URL}>GitHub</LegalLink>. That licence,
             not these terms, covers the code.
           </p>
@@ -86,7 +86,7 @@ export default function TermsPage(): ReactElement {
 
         <LegalSection title="Your data">
           <p>
-            What scenery keeps, and how to delete it, is in the{' '}
+            What Scenery keeps, and how to delete it, is in the{' '}
             <LegalLink href="/privacy">privacy policy</LegalLink>.
           </p>
         </LegalSection>

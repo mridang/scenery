@@ -1,4 +1,4 @@
-scenery security policy
+Scenery security policy
 
 Report a vulnerability in https://scenery.apps.mrida.ng by email to
 mridang.agarwalla@gmail.com. Please include what you found, the address or
@@ -18,7 +18,7 @@ In scope
 - https://scenery.apps.mrida.ng and its API.
 
 Out of scope
-- Cloudflare's platform, and the third-party sources scenery reads from
+- Cloudflare's platform, and the third-party sources Scenery reads from
   (TMDB, OMDb and the torrent indexes).
 - Denial of service by volume, spam, social engineering, and physical attacks.
 - Missing headers or settings with no demonstrable impact.

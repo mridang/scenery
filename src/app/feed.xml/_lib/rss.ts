@@ -73,7 +73,7 @@ export function feedTitle(view: string, lang: string, sort: string): string {
   const viewLabel = view === 'plan' ? '1 TB plan' : 'Catalog';
   const langPart = lang === 'all' ? 'all languages' : lang.toUpperCase();
   const sortPart = sort === 'date' ? 'newest first' : 'best first';
-  return `scenery — ${viewLabel} (${langPart}, ${sortPart})`;
+  return `Scenery — ${viewLabel} (${langPart}, ${sortPart})`;
 }
 
 /** Everything needed to render one feed document. */
@@ -97,10 +97,10 @@ export function buildFeed(channel: FeedChannel): string {
     id: channel.altHref,
     title: feedTitle(channel.view, channel.lang, channel.sort),
     link: channel.altHref,
-    description: `Scored movie releases from scenery, sorted ${channel.sort === 'date' ? 'by date' : 'by score'}.`,
+    description: `Scored movie releases from Scenery, sorted ${channel.sort === 'date' ? 'by date' : 'by score'}.`,
     language: 'en-us',
-    generator: 'scenery',
-    copyright: 'scenery',
+    generator: 'Scenery',
+    copyright: 'Scenery',
     updated: channel.updated,
     feedLinks: { rss: channel.selfHref },
   });

@@ -17,7 +17,7 @@ describe('TermsPage', () => {
 
   it('has a section for each part of the terms', () => {
     for (const heading of [
-      'Using scenery',
+      'Using Scenery',
       'The scores',
       'The service',
       'Open source',
@@ -28,7 +28,7 @@ describe('TermsPage', () => {
     }
   });
 
-  it('says scenery hosts no files and downloads are the reader’s responsibility', () => {
+  it('says Scenery hosts no files and downloads are the reader’s responsibility', () => {
     expect(out).toContain('It hosts no files');
     expect(out).toContain('what you download is your responsibility');
   });
@@ -48,7 +48,7 @@ describe('TermsPage', () => {
   });
 
   it('links back home', () => {
-    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Back to scenery<\/a>/);
+    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Back to Scenery<\/a>/);
   });
 });
 
@@ -61,6 +61,6 @@ describe('the terms page’s metadata', () => {
   it('has its own social card', () => {
     expect(metadata.openGraph?.url).toBe('/terms');
     expect(metadata.title).toBe('Terms');
-    expect(metadata.twitter?.title).toBe('Terms · scenery');
+    expect(metadata.twitter?.title).toBe('Terms · Scenery');
   });
 });
