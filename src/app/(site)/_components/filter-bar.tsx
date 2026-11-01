@@ -3,6 +3,8 @@ import Link from 'next/link';
 import type { LangCount, PageViewOptions } from '@/domain/catalog';
 
 import { buildQuery } from '../_lib/format';
+import { Popover } from '@/components/ui/popover';
+import { languageLabel } from '@/domain/catalog/language';
 
 const PILL_GROUP =
   'inline-flex items-center gap-[2px] rounded-[10px] bg-white/5 p-[4px]';
@@ -143,10 +145,9 @@ export function FilterBar({
 }
 
 /**
- * Native-`<details>` language picker. The current language is the
- * summary label; clicking opens the full list of available languages
- * (plus 'All') as plain anchor pills. No client JS — the popover state
- * is the browser's.
+ * Language picker on the browser's own popover. The current language is the
+ * button label; opening it lists the available languages (plus 'All') as plain
+ * links. The browser closes it on Escape and a click outside.
  */
 function LanguageDropdown({
   opts,
@@ -165,21 +166,26 @@ function LanguageDropdown({
     ...langs.filter((langCount) => langCount.code === '?'),
   ];
   return (
-    <details className="relative">
-      <summary className="flex cursor-pointer list-none items-center gap-[6px] text-[13.5px] font-medium text-[#9a9aa4] [&::-webkit-details-marker]:hidden">
-        {label}
-        <svg
-          width="11"
-          height="11"
-          viewBox="0 0 12 12"
-          fill="none"
-          stroke="#8a8a92"
-          strokeWidth="1.6"
-        >
-          <path d="M2.5 4.5 L6 8 L9.5 4.5" strokeLinecap="round" />
-        </svg>
-      </summary>
-      <div className="absolute top-[calc(100%+8px)] right-0 z-40 flex max-h-[260px] w-[180px] flex-col gap-1 overflow-y-auto rounded-xl border border-white/10 bg-[#26262d] p-2 shadow-2xl">
+    <Popover
+      buttonClassName="flex items-center gap-[6px] text-[13.5px] font-medium text-[#9a9aa4]"
+      panelClassName="p-2"
+      button={
+        <>
+          {label}
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="#8a8a92"
+            strokeWidth="1.6"
+          >
+            <path d="M2.5 4.5 L6 8 L9.5 4.5" strokeLinecap="round" />
+          </svg>
+        </>
+      }
+    >
+      <div className="flex max-h-[260px] w-[180px] flex-col gap-1 overflow-y-auto">
         <Link
           href={`/${buildQuery({ lang: 'all', sort: opts.pageSort, view: opts.view, status: opts.status, layout: opts.layout, q: opts.q })}`}
           className={`flex items-center justify-between rounded-md px-3 py-2 text-[12.5px] hover:bg-white/5 ${current === 'all' ? 'text-white' : 'text-[#d4d4d8]'}`}
@@ -192,6 +198,7 @@ function LanguageDropdown({
         {ordered.map((langCount) => (
           <Link
             key={langCount.code}
+            title={languageLabel(langCount.code)}
             href={`/${buildQuery({ lang: langCount.code, sort: opts.pageSort, view: opts.view, status: opts.status, layout: opts.layout, q: opts.q })}`}
             className={`flex items-center justify-between rounded-md px-3 py-2 text-[12.5px] hover:bg-white/5 ${current === langCount.code ? 'text-white' : 'text-[#d4d4d8]'}`}
           >
@@ -206,6 +213,6 @@ function LanguageDropdown({
           </Link>
         ))}
       </div>
-    </details>
+    </Popover>
   );
 }

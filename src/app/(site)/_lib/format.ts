@@ -3,16 +3,14 @@
  * string/number helpers, colocated with the page that uses them.
  */
 
-import { relativeTime } from '@/lib/intl';
+import { formatDuration, relativeTime } from '@/lib/intl';
 
 /** Minutes → `1h 30m` / `45m`. Null for missing/zero runtimes. */
 export function formatRuntime(min: number | null): string | null {
   if (!min) {
     return null;
   }
-  const hours = Math.floor(min / 60);
-  const mins = min % 60;
-  return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  return formatDuration({ hours: Math.floor(min / 60), minutes: min % 60 });
 }
 
 /** "3 hours ago" style label (`never` when missing/unparseable). */

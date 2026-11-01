@@ -4,6 +4,7 @@ import type { LastUpdate } from '@/domain/catalog';
 import { InstallButton } from './install-button';
 import { Logo } from './logo';
 import { MaintenanceActions } from './maintenance-actions';
+import { Popover } from '@/components/ui/popover';
 
 /** Beyond this gap, the bell's red dot signals "last scrape is stale". */
 const STALE_THRESHOLD_MS = 48 * 60 * 60 * 1000;
@@ -123,13 +124,17 @@ export function SiteHeader({
 
 /**
  * Kebab popover holding the scrape / enrich / backfill nudges that used
- * to live in the header. `<details>` gives us the click-toggled popover;
- * the buttons inside are a small client component that call the operations API.
+ * to live in the header. The browser's own popover opens it, closes it on
+ * Escape and a click outside, and keeps it above the sticky header; the
+ * buttons inside are a small client component that call the operations API.
  */
 function MaintenanceMenu() {
   return (
-    <details className="group relative">
-      <summary className="flex size-[42px] cursor-pointer list-none items-center justify-center rounded-full border border-transparent bg-[#26262d] [&::-webkit-details-marker]:hidden">
+    <Popover
+      label="More actions"
+      buttonClassName="flex size-[42px] items-center justify-center rounded-full border border-transparent bg-[#26262d]"
+      panelClassName="p-2"
+      button={
         <svg
           width="18"
           height="18"
@@ -141,10 +146,11 @@ function MaintenanceMenu() {
           <circle cx="12" cy="12" r="1.6" />
           <circle cx="12" cy="19" r="1.6" />
         </svg>
-      </summary>
+      }
+    >
       <MaintenanceActions>
         <InstallButton />
       </MaintenanceActions>
-    </details>
+    </Popover>
   );
 }

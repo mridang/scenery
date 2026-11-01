@@ -180,7 +180,7 @@ function applyPageFilters(
     return true;
   });
   if (opts.pageSort === 'rating') {
-    return [...filtered].sort(
+    return filtered.toSorted(
       (a, b) => (b.row.vote_average ?? 0) - (a.row.vote_average ?? 0),
     );
   }
@@ -213,7 +213,7 @@ function pickHeroSlate(
   const withPoster = movies.filter(
     (movie) => movie.row.poster_path || movie.row.backdrop_path,
   );
-  const byNewest = [...withPoster].sort(
+  const byNewest = withPoster.toSorted(
     (a, b) => Date.parse(b.row.first_seen_at) - Date.parse(a.row.first_seen_at),
   );
   const recentWithTorrent = byNewest.filter(

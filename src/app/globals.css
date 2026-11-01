@@ -263,3 +263,76 @@ input::placeholder {
   grid-column: span 2;
   grid-row: span 2;
 }
+
+/*
+ * Popover panels (the account menu, the phone menu, "More actions"). The
+ * browser puts an open popover in the top layer, above everything, so it is
+ * never clipped by or stacked under the sticky header; it also supplies Escape,
+ * clicking outside and focus return. What it does not do is place the panel,
+ * which is done here, in three tiers (the last of which is written first,
+ * because the others take over from it).
+ *
+ * Tier 3, a browser with no Popover API at all (before Safari 17, Firefox 125,
+ * Chrome 114): the panel is an ordinary box under its button, shown while the
+ * component marks it `data-open`, which is how it worked before popovers.
+ */
+[data-popover] {
+  display: none;
+  position: absolute;
+  inset: auto;
+  top: 100%;
+  right: 0;
+  z-index: 50;
+  margin: 0.5rem 0 0;
+}
+
+[data-popover][data-open] {
+  display: block;
+}
+
+@supports selector(:popover-open) {
+  /* With popovers, the browser decides whether the panel shows (`revert` hands
+   * `display` back to it) and puts it in the top layer; undo the box above. */
+  [data-popover],
+  [data-popover][data-open] {
+    display: revert;
+  }
+
+  [data-popover] {
+    position: fixed;
+    inset: auto;
+    z-index: auto;
+    margin: 0;
+  }
+
+  /* Tier 2, no anchor positioning (Safari before 26, Firefox before 147): the
+   * component measures the button when the panel opens and passes where the
+   * panel goes in two custom properties. */
+  @supports not (position-area: bottom) {
+    [data-popover] {
+      top: var(--popover-top, 4rem);
+      right: var(--popover-right, 1rem);
+    }
+  }
+}
+
+/* Tier 1, CSS anchor positioning: hang the panel under its button with their
+ * right edges together, flipping it above the button when there is no room
+ * below. Only the button whose panel is open is the anchor, so one fixed name
+ * serves every popover on the page (an inline style per instance is not
+ * allowed by the content security policy, and only one `popover="auto"` is
+ * open at a time). */
+@supports selector(:popover-open) and selector(:has(*)) and (anchor-name: --a)
+  and (position-anchor: --a) and (position-area: bottom) and
+  (position-try-fallbacks: flip-block) {
+  [popovertarget]:has(+ [data-popover]:popover-open) {
+    anchor-name: --popover-anchor;
+  }
+
+  [data-popover] {
+    position-anchor: --popover-anchor;
+    position-area: bottom span-left;
+    margin-top: 0.5rem;
+    position-try-fallbacks: flip-block;
+  }
+}

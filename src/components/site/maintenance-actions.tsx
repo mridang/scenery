@@ -69,7 +69,7 @@ export function MaintenanceActions({
   }
 
   return (
-    <div className="absolute top-[calc(100%+8px)] right-0 z-40 flex w-[180px] flex-col gap-1 rounded-xl border border-white/10 bg-[#26262d] p-2 shadow-2xl">
+    <div className="flex w-[180px] flex-col gap-1">
       <button
         type="button"
         disabled={busy}
