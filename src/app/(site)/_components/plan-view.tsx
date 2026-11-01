@@ -1,4 +1,9 @@
-import { formatGigabytes, formatPercent, formatSize } from '@/lib/intl';
+import {
+  countOf,
+  formatGigabytes,
+  formatPercent,
+  formatSize,
+} from '@/lib/intl';
 import type { ScoredMovie } from '@/domain/catalog';
 
 import { posterUrl } from '../_lib/tmdb-image';
@@ -57,7 +62,8 @@ export function PlanView({
             </span>
           </div>
           <div className="font-mono text-[12px] text-[#8a8a94]">
-            {eligible.length} titles · {formatPercent(pct / 100)} of budget
+            {countOf(eligible.length, 'title')} · {formatPercent(pct / 100)} of
+            budget
           </div>
         </div>
         <div className="h-[9px] overflow-hidden rounded-[6px] bg-[#26262d]">
