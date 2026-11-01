@@ -15,6 +15,7 @@ import {
   type PushPayload,
   type VapidConfig,
 } from '@/lib/push';
+import { countOf } from '@/lib/intl';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const SITE_URL = 'https://scenery.apps.mrida.ng';
@@ -139,7 +140,7 @@ function buildPayload(picks: readonly ScoredMovie[]): PushPayload {
       : undefined;
   const count = picks.length;
   return {
-    title: count === 1 ? '1 new movie today' : `${count} new movies today`,
+    title: `${countOf(count, 'new movie')} today`,
     body: titles,
     image,
     tag: `daily-${today}`,
