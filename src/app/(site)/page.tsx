@@ -6,6 +6,8 @@ import {
 } from '@/domain/catalog';
 import { database } from '@/domain/db/client';
 
+import { jsonLdText, landingJsonLd } from '@/lib/core/seo';
+
 import { SiteFooter } from '@/components/site/site-footer';
 import { SiteHeader } from '@/components/site/site-header';
 
@@ -62,6 +64,10 @@ export default async function Home({
   if (opts.view === 'plan') {
     return (
       <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdText(landingJsonLd()) }}
+        />
         <SiteHeader
           lastUpdate={lastUpdate}
           nowMs={nowMs}
@@ -99,6 +105,10 @@ export default async function Home({
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdText(landingJsonLd()) }}
+      />
       <SiteHeader
         lastUpdate={lastUpdate}
         nowMs={nowMs}

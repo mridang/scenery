@@ -61,7 +61,7 @@ export const COLOR_SCHEME = 'dark';
  * Whether pages may be indexed unless they say otherwise. The whole site is a
  * private tool, so crawlers are told to keep it out of search indexes while
  * social scrapers, which ignore this, still read the share card. robots.txt
- * and an `X-Robots-Tag` header (see `lib/http/headers.ts`) say the same thing.
+ * and an `X-Robots-Tag` header (see `lib/core/http/headers.ts`) say the same thing.
  */
 export const INDEX_BY_DEFAULT = false;
 

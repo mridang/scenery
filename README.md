@@ -49,7 +49,7 @@ The home page ranks everything top to bottom by score as a download queue, with 
 | `/img`                                                                | Image proxy: scales and caches TMDB images (`?url=&w=`)                                                                         |
 | `/csp/reports`                                                        | Receives Content Security Policy violation reports                                                                              |
 
-The REST contract is everything under `/api`, described by [`openapi.json`](openapi.json) (a test fails when it and the route files disagree); the other routes follow their own protocols. The security headers and the nonce-based Content Security Policy are added by the Worker itself (`src/lib/http`), not by Next.js.
+The REST contract is everything under `/api`, described by [`openapi.json`](openapi.json) (a test fails when it and the route files disagree); the other routes follow their own protocols. The security headers and the nonce-based Content Security Policy are added by the Worker itself (`src/lib/core/http`), not by Next.js.
 
 ## Local development
 

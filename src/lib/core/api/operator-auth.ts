@@ -1,13 +1,13 @@
 /**
  * @packageDocumentation
  *
- * Who may use `/api/operations`. The operator proves it with the `CRON_SECRET`
+ * Who may use the operator endpoints. The operator proves it with the `CRON_SECRET`
  * as a bearer token. Where no secret is set (local development) the endpoints
  * are open, as the manual triggers always were. The pure rule is in
- * `@/lib/operator-auth`; this wraps it with the problem response and logging.
+ * `./operator-rule`; this wraps it with the problem response and logging.
  */
 
-import { isOperator } from '@/lib/operator-auth';
+import { isOperator } from './operator-rule';
 import { setErrorContext } from '@/lib/core/observability/context';
 import { problem } from './problem';
 import { logError } from '@/utils/logging';

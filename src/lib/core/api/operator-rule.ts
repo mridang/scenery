@@ -3,8 +3,8 @@
  *
  * The rule for who may use the operator API, with no framework knowledge: the
  * caller proves it with a shared secret as a bearer token. Where no secret is
- * set (local development) the endpoints are open. The framework wrapper that
- * turns a refusal into an HTTP response lives in `core/api/operator-auth.ts`.
+ * set (local development) the endpoints are open. The wrapper that turns a
+ * refusal into an HTTP response is `operator-auth.ts`.
  */
 
 /**
