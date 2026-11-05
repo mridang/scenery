@@ -1,0 +1,585 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Scenery API",
+    "version": "1.0.0",
+    "description": "The REST contract of Scenery, a self-hosted movie-release tracker, under `/api`. Errors are RFC 9457 `application/problem+json`; JSON properties are snake_case and timestamps are RFC 3339. Everything outside `/api` (the pages, `/feed.xml`, `/magnet/{hash}`, `/img`, `/health`, `/csp/reports` and `/.well-known/*`) follows its own protocol and is not part of this contract. Every `/api` route is rate limited by the platform and answers 429 with `Retry-After` when a caller is over the limit.",
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://scenery.apps.mrida.ng"
+    },
+    {
+      "url": "http://localhost:3737"
+    }
+  ],
+  "tags": [
+    {
+      "name": "operations",
+      "description": "Manual runs of the pipeline, the OMDB backfill and the daily notification."
+    },
+    {
+      "name": "push",
+      "description": "Web Push (VAPID) configuration and subscriptions."
+    }
+  ],
+  "paths": {
+    "/api/operations": {
+      "post": {
+        "operationId": "createOperation",
+        "tags": ["operations"],
+        "summary": "Run an operation now",
+        "description": "Runs the operation inside the request and records it. The answer is 201 even when the run itself failed: read `status` and `result`.",
+        "security": [
+          {
+            "operatorToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The operation, as recorded.",
+            "headers": {
+              "Location": {
+                "description": "The new operation, `/api/operations/{id}`.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/operations/{id}": {
+      "get": {
+        "operationId": "getOperation",
+        "tags": ["operations"],
+        "summary": "Read one operation",
+        "security": [
+          {
+            "operatorToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OperationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The operation and, once ended, its result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/push/configuration": {
+      "get": {
+        "operationId": "getPushConfiguration",
+        "tags": ["push"],
+        "summary": "Read the Web Push configuration",
+        "description": "The VAPID public key to pass to `pushManager.subscribe({ applicationServerKey })`. It is not a secret and may be cached for an hour.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The public key.",
+            "headers": {
+              "Cache-Control": {
+                "description": "`public, max-age=3600`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushConfiguration"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/push/subscriptions": {
+      "post": {
+        "operationId": "createPushSubscription",
+        "tags": ["push"],
+        "summary": "Register a Web Push subscription",
+        "description": "Send the JSON of a browser `PushSubscription`. A repeated call for the same `endpoint` replaces its keys (browsers rotate them) and answers 200.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSubscription"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The subscription was already registered; its keys are replaced.",
+            "headers": {
+              "Location": {
+                "description": "The subscription, `/api/push/subscriptions/{id}`.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushSubscriptionReference"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "The subscription was registered.",
+            "headers": {
+              "Location": {
+                "description": "The new subscription, `/api/push/subscriptions/{id}`.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushSubscriptionReference"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/push/subscriptions/{id}": {
+      "delete": {
+        "operationId": "deletePushSubscription",
+        "tags": ["push"],
+        "summary": "Forget a Web Push subscription",
+        "security": [],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SubscriptionId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The subscription is forgotten."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "operatorToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "The operator capability: the deployment's `CRON_SECRET` sent as `Authorization: Bearer <token>`. There are no user accounts, so this token is how a caller is granted the operations scope; the operator hands it to a test user as they would any API key. Where the deployment has no `CRON_SECRET` (local development) the operations are open and the header is ignored. The push operations need no credentials: a subscription endpoint is itself the secret."
+      }
+    },
+    "parameters": {
+      "OperationId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "An operation id, a lowercase UUID.",
+        "schema": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        }
+      },
+      "SubscriptionId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "The lowercase hex SHA-256 of the subscription's endpoint.",
+        "schema": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "The request is not valid; `errors` names each failing field.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Send the operator token as a Bearer `Authorization` header.",
+        "headers": {
+          "WWW-Authenticate": {
+            "description": "`Bearer`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "No such resource, or an id that cannot be one.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "PayloadTooLarge": {
+        "description": "The request body is over 256 KiB.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "UnsupportedMediaType": {
+        "description": "The body must be sent as `application/json`.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "The caller is over the rate limit.",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds to wait before trying again.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "description": "An RFC 9457 problem document.",
+        "required": ["type", "title", "status"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "A relative URI naming the kind of problem."
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599
+          },
+          "detail": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "description": "One message per failing field.",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "OperationRequest": {
+        "description": "An operation to run: a `type` from a closed list and the `parameters` that type takes.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PipelineRunRequest"
+          },
+          {
+            "$ref": "#/components/schemas/OmdbBackfillRequest"
+          },
+          {
+            "$ref": "#/components/schemas/PushTriggerRequest"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type"
+        }
+      },
+      "PipelineRunRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "const": "pipeline_run"
+          },
+          "parameters": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "type": "string",
+                "enum": ["scnsrc", "ddlvalley"],
+                "description": "Run just this source; every registered source otherwise."
+              },
+              "backfill_pages": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100,
+                "default": 0,
+                "description": "Listing pages to scrape per source (1 when 0)."
+              },
+              "steps": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "enum": ["scrape", "enrich", "torrents"]
+                },
+                "description": "Which steps to run; all three by default."
+              },
+              "torrent_providers": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "enum": ["apibay", "torrentio"]
+                },
+                "description": "Which torrent providers to ask; the defaults when absent."
+              }
+            }
+          }
+        }
+      },
+      "OmdbBackfillRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "const": "omdb_backfill"
+          },
+          "parameters": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 200,
+                "default": 25
+              }
+            }
+          }
+        }
+      },
+      "PushTriggerRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "const": "push_trigger"
+          },
+          "parameters": {
+            "type": "object",
+            "additionalProperties": false,
+            "maxProperties": 0
+          }
+        }
+      },
+      "Operation": {
+        "type": "object",
+        "required": ["id", "type", "status", "parameters", "created_at"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["pipeline_run", "omdb_backfill", "push_trigger"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["running", "succeeded", "failed"],
+            "description": "A run unfinished after 15 minutes shows as failed."
+          },
+          "parameters": {
+            "type": "object",
+            "description": "The checked parameters the run was given."
+          },
+          "result": {
+            "description": "What the run produced, or `{ \"error\": \"...\" }` when it failed. Absent while running."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PushConfiguration": {
+        "type": "object",
+        "required": ["vapid_public_key"],
+        "properties": {
+          "vapid_public_key": {
+            "type": "string",
+            "description": "URL-safe base64 of the application server key."
+          }
+        }
+      },
+      "PushSubscription": {
+        "type": "object",
+        "description": "The JSON of a browser `PushSubscription`. The members are named by the Push API, not by this API, so `expirationTime` is camelCase. Members not listed are ignored.",
+        "required": ["endpoint", "keys"],
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://"
+          },
+          "expirationTime": {
+            "type": ["integer", "null"]
+          },
+          "keys": {
+            "type": "object",
+            "required": ["p256dh", "auth"],
+            "properties": {
+              "p256dh": {
+                "type": "string",
+                "minLength": 1
+              },
+              "auth": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      },
+      "PushSubscriptionReference": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    }
+  }
+}

@@ -49,7 +49,7 @@ The home page ranks everything top to bottom by score as a download queue, with 
 | `/img`                                                                | Image proxy: scales and caches TMDB images (`?url=&w=`)                                                                         |
 | `/csp/reports`                                                        | Receives Content Security Policy violation reports                                                                              |
 
-The REST contract is everything under `/api`; the other routes follow their own protocols. The security headers and the nonce-based Content Security Policy are added by the Worker itself (`src/lib/http`), not by Next.js.
+The REST contract is everything under `/api`, described by [`openapi.json`](openapi.json) (a test fails when it and the route files disagree); the other routes follow their own protocols. The security headers and the nonce-based Content Security Policy are added by the Worker itself (`src/lib/http`), not by Next.js.
 
 ## Local development
 
@@ -93,6 +93,16 @@ devbox run -- npm run deploy                             # opennextjs-cloudflare
 The custom domain `scenery.apps.mrida.ng` requires the `apps.mrida.ng` zone on the Cloudflare account; the `workers.dev` subdomain is disabled. The public VAPID key and subject are plain `vars` in `wrangler.jsonc`.
 
 GitHub Actions (`deploy.yml`) applies the D1 migrations and deploys on pushes to `master`.
+
+## Testing the API with Schemathesis
+
+`openapi.json` at the repository root describes every operation under `/api`. To fuzz a running instance against it:
+
+```sh
+schemathesis run openapi.json --url http://localhost:3737 --header "Authorization: Bearer $OPERATOR_TOKEN"
+```
+
+There are no user accounts and no session cookie. The push operations are public. The operations need the operator capability, which is the deployment's `CRON_SECRET` sent as a bearer token; put the value for the instance under test in `OPERATOR_TOKEN` in your shell (never in a file in the repository). A local instance with no `CRON_SECRET` set accepts the header and ignores it. Note that `POST /api/operations` runs real work (a scrape, an OMDB sweep, a push to every subscriber), so point the run at a local or throwaway instance.
 
 ## Operations
 

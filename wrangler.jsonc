@@ -51,7 +51,7 @@
     },
   ],
   // Scales remote pictures down (and re-encodes them as WebP) in the Worker, for
-  // the /api/img proxy. Needs no zone setting. Free monthly allowance; see
+  // the /img proxy. Needs no zone setting. Free monthly allowance; see
   // src/lib/images/proxy.ts.
   "images": {
     "binding": "IMAGES",
@@ -69,7 +69,7 @@
   // namespace_id is account-wide and shared by every Worker that uses the same
   // number, hence the distinctive 72xx range.
   "ratelimits": [
-    // pictures through /api/img, per person: a grid loads dozens, cache hits are cheap
+    // pictures through /img, per person: a grid loads dozens, cache hits are cheap
     {
       "name": "RL_COVER",
       "namespace_id": "7201",
