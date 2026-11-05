@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { is } from 'drizzle-orm';
 import { SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core';
 import { describe, expect, it } from '@jest/globals';
@@ -55,4 +57,37 @@ describe('the schema file and the migrations', () => {
       );
     },
   );
+});
+
+describe('migration 0016_movie_newest_posted', () => {
+  it('backfills the newest release time of every existing movie', () => {
+    const before = APP_MIGRATIONS.filter((file) => file < '0016');
+    const { raw: old } = sqliteD1(...before);
+    old.exec(`
+      INSERT INTO movies (imdb_id, first_seen_at, last_seen_at) VALUES
+        ('tt1', '2026-01-01', '2026-01-01'), ('tt2', '2026-01-01', '2026-01-01');
+      INSERT INTO releases (source_id, external_id, imdb_id, title, url, posted_at, first_seen_at, last_seen_at) VALUES
+        (1, 'a', 'tt1', 't', 'u', '2026-03-01', '2026-04-01', '2026-04-01'),
+        (1, 'b', 'tt1', 't', 'u', NULL, '2026-05-01', '2026-05-01'),
+        (1, 'c', 'tt1', 't', 'u', '2026-02-01', '2026-06-01', '2026-06-01');
+    `);
+    old.exec(
+      readFileSync(
+        path.join(
+          process.cwd(),
+          'migrations',
+          APP_MIGRATIONS.find((file) => file.startsWith('0016'))!,
+        ),
+        'utf8',
+      ),
+    );
+    const rows = old
+      .prepare('SELECT imdb_id, newest_posted_at FROM movies ORDER BY imdb_id')
+      .all()
+      .map((row) => [row['imdb_id'], row['newest_posted_at']]);
+    expect(rows).toEqual([
+      ['tt1', '2026-05-01'],
+      ['tt2', null],
+    ]);
+  });
 });

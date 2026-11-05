@@ -18,6 +18,7 @@ import {
   sqliteTable,
   text,
   unique,
+  uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
 
 import { SOURCE_SLUGS } from '@/lib/sources/types';
@@ -45,11 +46,20 @@ export const sources = sqliteTable('sources', {
  * shares. Everything else about a film is fetched later and lives in
  * `tmdb_movies`.
  */
-export const movies = sqliteTable('movies', {
-  imdb_id: text('imdb_id').primaryKey(),
-  first_seen_at: text('first_seen_at').notNull(),
-  last_seen_at: text('last_seen_at').notNull(),
-});
+export const movies = sqliteTable(
+  'movies',
+  {
+    imdb_id: text('imdb_id').primaryKey(),
+    first_seen_at: text('first_seen_at').notNull(),
+    last_seen_at: text('last_seen_at').notNull(),
+    /**
+     * MAX(COALESCE(posted_at, first_seen_at)) over the movie's releases, kept
+     * in step by `ScrapingRepository.upsertRelease`; null while it has none.
+     */
+    newest_posted_at: text('newest_posted_at'),
+  },
+  (table) => [index('movies_newest_posted_idx').on(table.newest_posted_at)],
+);
 
 /**
  * Every release post seen on a source. The same film can have several
@@ -82,7 +92,6 @@ export const releases = sqliteTable(
   (table) => [
     unique().on(table.source_id, table.external_id),
     index('releases_imdb_idx').on(table.imdb_id),
-    index('releases_first_seen_idx').on(table.first_seen_at),
   ],
 );
 
@@ -109,6 +118,7 @@ export const pageSnapshots = sqliteTable(
       table.page_number,
       table.fetched_at,
     ),
+    index('page_snapshots_fetched_idx').on(table.fetched_at),
   ],
 );
 
@@ -138,7 +148,7 @@ export const fetchAttempts = sqliteTable(
     index('fetch_attempts_src_page_idx').on(
       table.source_id,
       table.page_number,
-      table.started_at,
+      table.attempt_number,
     ),
     index('fetch_attempts_status_idx').on(table.status, table.started_at),
   ],
@@ -206,6 +216,13 @@ export const tmdbMovies = sqliteTable(
       .where(sql`${table.credits_fetched_at} IS NULL`),
     index('tmdb_movies_talent_idx').on(table.talent_score),
     index('tmdb_movies_lang_idx').on(table.original_language),
+    index('tmdb_movies_fetched_idx').on(table.fetched_at),
+    // Found movies still missing OMDB ratings (or whose OMDB lookup failed).
+    index('tmdb_movies_omdb_pending_idx')
+      .on(table.status)
+      .where(
+        sql`${table.omdb_status} IS NULL OR ${table.omdb_status} = 'error'`,
+      ),
   ],
 );
 
@@ -223,10 +240,7 @@ export const tmdbPeople = sqliteTable(
     total_credits: integer('total_credits'),
     raw_credits: text('raw_credits'),
   },
-  (table) => [
-    index('tmdb_people_pop_idx').on(table.popularity),
-    index('tmdb_people_prestige_idx').on(table.prestige_score),
-  ],
+  (table) => [index('tmdb_people_prestige_idx').on(table.prestige_score)],
 );
 
 /**
@@ -253,7 +267,6 @@ export const torrents = sqliteTable(
   },
   (table) => [
     unique().on(table.imdb_id, table.info_hash),
-    index('torrents_imdb_idx').on(table.imdb_id),
     index('torrents_imdb_seeders_idx').on(table.imdb_id, table.seeders),
   ],
 );
@@ -273,7 +286,10 @@ export const torrentLookups = sqliteTable(
     raw_response: text('raw_response'),
     provider: text('provider', { enum: TORRENT_PROVIDERS }),
   },
-  (table) => [index('torrent_lookups_provider_idx').on(table.provider)],
+  (table) => [
+    index('torrent_lookups_provider_idx').on(table.provider),
+    index('torrent_lookups_searched_idx').on(table.searched_at),
+  ],
 );
 
 /**
@@ -281,13 +297,22 @@ export const torrentLookups = sqliteTable(
  * notification, keyed by its push endpoint. Removed when the endpoint answers
  * 410 Gone.
  */
-export const pushSubscriptions = sqliteTable('push_subscriptions', {
-  endpoint: text('endpoint').primaryKey(),
-  p256dh: text('p256dh').notNull(),
-  auth: text('auth').notNull(),
-  created_at: text('created_at').notNull(),
-  last_sent_at: text('last_sent_at'),
-});
+export const pushSubscriptions = sqliteTable(
+  'push_subscriptions',
+  {
+    endpoint: text('endpoint').primaryKey(),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    created_at: text('created_at').notNull(),
+    last_sent_at: text('last_sent_at'),
+    /**
+     * Hex SHA-256 of the endpoint (the id the API exposes). Null on rows made
+     * before it was stored; `PushSubscriptionRepository.removeById` fills it.
+     */
+    id: text('id'),
+  },
+  (table) => [uniqueIndex('push_subscriptions_id_idx').on(table.id)],
+);
 
 /**
  * One run of an operator operation. `parameters` and `result` are JSON text;

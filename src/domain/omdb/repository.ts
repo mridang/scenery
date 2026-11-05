@@ -5,7 +5,7 @@
  * `tmdb_movies` so the catalog view picks them up without a join.
  */
 
-import { and, eq, isNull, or } from 'drizzle-orm';
+import { and, eq, isNull, or, sql } from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
 import { tmdbMovies } from '../db/schema';
@@ -28,9 +28,11 @@ export class OmdbRepository {
       .where(
         and(
           eq(tmdbMovies.status, 'found'),
+          // The literal (not a bound value) lets SQLite match the partial
+          // index tmdb_movies_omdb_pending_idx.
           or(
             isNull(tmdbMovies.omdb_status),
-            eq(tmdbMovies.omdb_status, 'error'),
+            sql`${tmdbMovies.omdb_status} = 'error'`,
           ),
         ),
       )

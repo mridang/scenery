@@ -13,6 +13,9 @@ jest.unstable_mockModule('@/domain/push/repository', () => ({
         [...store.keys()].map((endpoint) => ({ endpoint })),
       );
     }
+    public has(endpoint: string) {
+      return Promise.resolve(store.has(endpoint));
+    }
     public upsert(r: { endpoint: string; p256dh: string; auth: string }) {
       store.set(r.endpoint, { p256dh: r.p256dh, auth: r.auth });
       return Promise.resolve();

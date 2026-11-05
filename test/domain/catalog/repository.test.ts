@@ -1,10 +1,15 @@
 import { databaseFrom, type Database } from '@/domain/db/client';
 import { beforeEach, describe, expect, it } from '@jest/globals';
+import type { DatabaseSync } from 'node:sqlite';
 
 import { CatalogRepository } from '@/domain/catalog/repository';
 import { ScrapingRepository } from '@/domain/scraping/repository';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
-import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
+import {
+  queryPlan,
+  recordStatements,
+  sqliteD1,
+} from '../../lib/core/db/sqlite-d1';
 
 /**
  * Tests for the catalog read model: the language filter, the
@@ -12,10 +17,13 @@ import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
  * query. Seeds via ScrapingRepository so the joins are realistic.
  */
 let d1: D1Database;
+let raw: DatabaseSync;
 let db: Database;
 
 beforeEach(() => {
-  d1 = sqliteD1(...APP_MIGRATIONS).d1;
+  const built = sqliteD1(...APP_MIGRATIONS);
+  d1 = built.d1;
+  raw = built.raw;
   db = databaseFrom(d1);
 });
 
@@ -150,4 +158,99 @@ describe('CatalogRepository (SQLite-backed D1)', () => {
     expect(rows.map((r) => r.cum_size_bytes)).toEqual([big, big * 2]);
     expect(rows.map((r) => r.fits)).toEqual([1, 0]);
   });
+  it("picks each movie's best torrent and summarises its releases in one pass", async () => {
+    await seedRelease('1', 'tt2000003', '2026-06-01T00:00:00Z');
+    await seedRelease('2', 'tt2000003', '2026-06-05T00:00:00Z');
+    // Both torrents are in the 3-7 GB band; the one with more seeders wins.
+    await d1
+      .prepare(
+        `INSERT INTO torrents
+            (imdb_id, info_hash, title, raw_title, seeders, size_bytes, fetched_at)
+          VALUES ('tt2000003', 'hash-a', 'Torrent A', 'raw', 5, 4000000000, '2026-06-02'),
+                 ('tt2000003', 'hash-b', 'Torrent B', 'raw', 50, 4500000000, '2026-06-02')`,
+      )
+      .run();
+
+    const movie = (
+      await new CatalogRepository(db).loadMovies('all', 'date', 'catalog')
+    ).find((row) => row.imdb_id === 'tt2000003');
+    expect(movie).toMatchObject({
+      torrent_count: 2,
+      best_info_hash: 'hash-b',
+      best_torrent_title: 'Torrent B',
+      release_count: 2,
+      latest_release_title: 'Release 2',
+      latest_release_at: '2026-06-05T00:00:00Z',
+      first_posted_at: '2026-06-01T00:00:00Z',
+      first_post_id: 1,
+    });
+  });
+
+  it('loadMovies computes its base rows once, not once per use', async () => {
+    const { d1: recorded, statements } = recordStatements(d1);
+    await new CatalogRepository(databaseFrom(recorded)).loadMovies(
+      'all',
+      'date',
+      'catalog',
+    );
+    const main = statements.find((sql) => sql.includes('WITH base'))!;
+    const plan = queryPlan(raw, main);
+    expect(plan.filter((line) => line === 'MATERIALIZE base')).toHaveLength(1);
+  });
+
+  it("loadMovies looks up each movie's torrents at most twice", async () => {
+    const { d1: recorded, statements } = recordStatements(d1);
+    await new CatalogRepository(databaseFrom(recorded)).loadMovies(
+      'all',
+      'date',
+      'catalog',
+    );
+    const main = statements.find((sql) => sql.includes('WITH base'))!;
+    const plan = queryPlan(raw, main);
+    // One probe for the best torrent and one for the count; before, the six
+    // best-torrent columns each probed the torrents of the movie again.
+    expect(plan.filter((line) => line.includes('SEARCH tr '))).toHaveLength(2);
+  });
+
+  it.each([
+    'page_snapshots_fetched_idx',
+    'torrent_lookups_searched_idx',
+    'tmdb_movies_fetched_idx',
+  ])('loadLastUpdate reads its newest row through %s', async (index) => {
+    const { d1: recorded, statements } = recordStatements(d1);
+    await new CatalogRepository(databaseFrom(recorded)).loadLastUpdate();
+    const plans = statements.flatMap((sql) => queryPlan(raw, sql));
+    expect(plans.some((line) => line.includes(index))).toBe(true);
+  });
+
+  it('loadLastUpdate needs no temporary sort', async () => {
+    const { d1: recorded, statements } = recordStatements(d1);
+    await new CatalogRepository(databaseFrom(recorded)).loadLastUpdate();
+    const plans = statements.flatMap((sql) => queryPlan(raw, sql));
+    expect(plans.filter((line) => line.includes('TEMP B-TREE'))).toEqual([]);
+  });
+
+  it.each([
+    ['all', 'date', 'catalog'],
+    ['en', 'score', 'catalog'],
+    ['all', 'date', 'plan'],
+    ['all', 'score', 'plan'],
+  ])(
+    'loadMovies(%s, %s, %s) uses no first_seen_at index; there is none to use',
+    async (lang, sort, view) => {
+      const { d1: recorded, statements } = recordStatements(d1);
+      await new CatalogRepository(databaseFrom(recorded)).loadMovies(
+        lang,
+        sort,
+        view,
+      );
+      const plans = statements.flatMap((sql) => queryPlan(raw, sql));
+      expect(plans.filter((line) => line.includes('first_seen'))).toEqual([]);
+      const indexes = raw
+        .prepare(`SELECT name FROM sqlite_master WHERE type = 'index'`)
+        .all()
+        .map((row) => row['name']);
+      expect(indexes).not.toContain('releases_first_seen_idx');
+    },
+  );
 });

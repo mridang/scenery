@@ -9,11 +9,7 @@
 import { database, type Database } from '@/domain/db/client';
 import { ApiController, type RouteContext } from '@/lib/core/api';
 import { created, ok, problems, readJsonObject } from '@/lib/core/api';
-import {
-  endpointForId,
-  isSubscriptionId,
-  subscriptionId,
-} from '@/lib/push/subscription-id';
+import { isSubscriptionId, subscriptionId } from '@/lib/push/subscription-id';
 import { PushSubscriptionRepository } from './repository';
 
 /** Per-request context for the push subscriptions API. */
@@ -95,9 +91,7 @@ export const subscriptionsCollection = new ApiController<PushCtx>({
   },
   handle: async (subscription, ctx) => {
     const repo = new PushSubscriptionRepository(ctx.db);
-    const existed = (await repo.listAll()).some(
-      (s) => s.endpoint === subscription.endpoint,
-    );
+    const existed = await repo.has(subscription.endpoint);
     await repo.upsert(subscription, new Date().toISOString());
     return { id: await subscriptionId(subscription.endpoint), existed };
   },
@@ -123,14 +117,9 @@ export const subscriptionsItem = new ApiController<PushCtx>({
       throw problems.notFound('push subscription');
     }
     const repo = new PushSubscriptionRepository(ctx.db);
-    const endpoint = await endpointForId(
-      (await repo.listAll()).map((s) => s.endpoint),
-      id,
-    );
-    if (!endpoint) {
+    if (!(await repo.removeById(id))) {
       throw problems.notFound('push subscription');
     }
-    await repo.remove(endpoint);
     return undefined;
   },
 });

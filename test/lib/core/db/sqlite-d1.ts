@@ -138,3 +138,31 @@ export function installCloudflareContext(
     holder[key] = previous;
   };
 }
+
+/**
+ * Wrap a D1 binding so that every statement prepared through it is recorded,
+ * in order. Lets a test check the plan of the queries one call issues (see
+ * {@link queryPlan}) without the call being changed to expose them.
+ */
+export function recordStatements(d1: D1Database): {
+  readonly d1: D1Database;
+  readonly statements: string[];
+} {
+  const statements: string[] = [];
+  const recorded = {
+    prepare: (sql: string) => {
+      statements.push(sql);
+      return d1.prepare(sql);
+    },
+    batch: d1.batch.bind(d1),
+  };
+  return { d1: recorded as unknown as D1Database, statements };
+}
+
+/** The plan SQLite gives `sql` against the migrated database, one line per step. */
+export function queryPlan(raw: DatabaseSync, sql: string): string[] {
+  return raw
+    .prepare(`EXPLAIN QUERY PLAN ${sql}`)
+    .all()
+    .map((row) => String(row['detail']));
+}

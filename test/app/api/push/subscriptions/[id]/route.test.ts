@@ -8,12 +8,14 @@ jest.unstable_mockModule('@/domain/db/client', () => ({
 }));
 jest.unstable_mockModule('@/domain/push/repository', () => ({
   PushSubscriptionRepository: class {
-    public listAll() {
-      return Promise.resolve([...store].map((endpoint) => ({ endpoint })));
-    }
-    public remove(endpoint: string) {
-      store.delete(endpoint);
-      return Promise.resolve();
+    public async removeById(id: string) {
+      for (const endpoint of store) {
+        if ((await subscriptionId(endpoint)) === id) {
+          store.delete(endpoint);
+          return true;
+        }
+      }
+      return false;
     }
   },
 }));

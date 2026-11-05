@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
 import type { ExtractedRelease, SourceSlug } from '@/lib/sources/types';
@@ -60,10 +60,10 @@ export class ScrapingRepository {
     sourceId: number,
     pageNumber: number,
   ): Promise<number> {
+    // The newest attempt is the last entry of the (source, page, attempt)
+    // index, so this reads one row however many attempts the page has.
     const row = await this.db
-      .select({
-        n: sql<number>`COALESCE(MAX(${fetchAttempts.attempt_number}), 0)`,
-      })
+      .select({ n: fetchAttempts.attempt_number })
       .from(fetchAttempts)
       .where(
         and(
@@ -71,6 +71,8 @@ export class ScrapingRepository {
           eq(fetchAttempts.page_number, pageNumber),
         ),
       )
+      .orderBy(desc(fetchAttempts.attempt_number))
+      .limit(1)
       .get();
     return (row?.n ?? 0) + 1;
   }
@@ -163,7 +165,7 @@ export class ScrapingRepository {
     release: ExtractedRelease,
     now: string,
   ): Promise<void> {
-    await this.db
+    const upsertMovie = this.db
       .insert(movies)
       .values({
         imdb_id: release.imdbId,
@@ -175,7 +177,7 @@ export class ScrapingRepository {
         set: { last_seen_at: now },
       });
 
-    await this.db
+    const upsertReleaseRow = this.db
       .insert(releases)
       .values({
         source_id: sourceId,
@@ -213,5 +215,18 @@ export class ScrapingRepository {
           last_seen_at: now,
         },
       });
+
+    // Keep movies.newest_posted_at in step in the same batch. Recomputed from
+    // the movie's own releases (a handful, through releases_imdb_idx) rather
+    // than only raised, because a re-scrape can move posted_at back.
+    const refreshNewest = this.db
+      .update(movies)
+      .set({
+        newest_posted_at: sql`(SELECT MAX(COALESCE(${releases.posted_at}, ${releases.first_seen_at}))
+          FROM ${releases} WHERE ${releases.imdb_id} = ${release.imdbId})`,
+      })
+      .where(eq(movies.imdb_id, release.imdbId));
+
+    await this.db.batch([upsertMovie, upsertReleaseRow, refreshNewest]);
   }
 }

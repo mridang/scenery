@@ -1,11 +1,23 @@
 import { databaseFrom, type Database } from '@/domain/db/client';
-import { beforeEach, describe, expect, it } from '@jest/globals';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
+import type { DatabaseSync } from 'node:sqlite';
 
 import { ScrapingRepository } from '@/domain/scraping/repository';
 import { TorrentRepository } from '@/domain/torrents/repository';
 import type { ResolvedLookup } from '@/lib/torrents/types';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
-import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
+import {
+  queryPlan,
+  recordStatements,
+  sqliteD1,
+} from '../../lib/core/db/sqlite-d1';
 
 /**
  * Tests for the torrent repository: the candidate gate (maturity +
@@ -14,6 +26,7 @@ import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
  * go in through the repository or raw SQL.
  */
 let d1: D1Database;
+let raw: DatabaseSync;
 let db: Database;
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -22,7 +35,9 @@ const recent = (): string =>
   new Date(Date.now() - 60 * 60 * 1000).toISOString(); // 1h ago
 
 beforeEach(() => {
-  d1 = sqliteD1(...APP_MIGRATIONS).d1;
+  const built = sqliteD1(...APP_MIGRATIONS);
+  d1 = built.d1;
+  raw = built.raw;
   db = databaseFrom(d1);
 });
 
@@ -200,4 +215,117 @@ describe('TorrentRepository.persist + totalStored (SQLite-backed D1)', () => {
       .first<{ n: number }>();
     expect(n?.n).toBe(1);
   });
+});
+
+/** The gate as it was written before movies.newest_posted_at: a subquery per movie. */
+const LEGACY_NEWEST = `(SELECT MAX(COALESCE(r.posted_at, r.first_seen_at))
+  FROM releases r WHERE r.imdb_id = m.imdb_id)`;
+
+describe('the newest-release gate against its previous form', () => {
+  const NOW = Date.parse('2026-06-10T12:00:00Z');
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  /** Movies with several releases, a missing date, lookups and a movie with no release. */
+  async function seedMixed(): Promise<void> {
+    const at = (days: number): string =>
+      new Date(NOW - days * ONE_DAY_MS).toISOString();
+    await seedRelease('a1', 'tt7000001', at(9));
+    await seedRelease('a2', 'tt7000001', at(2));
+    await seedRelease('b1', 'tt7000002', at(0.5));
+    await seedRelease('c1', 'tt7000003', at(6));
+    await seedRelease('d1', 'tt7000004', at(4));
+    await seedRelease('e1', 'tt7000005', at(0.2));
+    await seedRelease('e2', 'tt7000005', at(7));
+    await seedLookup('tt7000003', 'success');
+    await seedLookup('tt7000005', 'error');
+    await d1
+      .prepare(
+        `INSERT INTO movies (imdb_id, first_seen_at, last_seen_at) VALUES ('tt7000006', ?, ?)`,
+      )
+      .bind(at(3), at(3))
+      .run();
+    await d1
+      .prepare(
+        `INSERT INTO releases (source_id, external_id, imdb_id, title, url, first_seen_at, last_seen_at)
+         VALUES (1, 'undated', 'tt7000006', 't', 'u', ?, ?)`,
+      )
+      .bind(at(3), at(3))
+      .run();
+    await d1
+      .prepare(
+        `INSERT INTO movies (imdb_id, first_seen_at, last_seen_at) VALUES ('tt7000007', ?, ?)`,
+      )
+      .bind(at(8), at(8))
+      .run();
+  }
+
+  it('lists the same candidates, in the same order, as the subquery did', async () => {
+    jest.spyOn(Date, 'now').mockReturnValue(NOW);
+    await seedMixed();
+    // seeds above insert releases without going through the repository for
+    // the undated one; recompute the way the migration backfilled
+    raw.exec(`UPDATE movies SET newest_posted_at = (SELECT MAX(COALESCE(r.posted_at, r.first_seen_at))
+      FROM releases r WHERE r.imdb_id = movies.imdb_id)`);
+    const cutoff = new Date(NOW - ONE_DAY_MS).toISOString();
+    const legacy = (force: boolean): string[] =>
+      raw
+        .prepare(
+          `SELECT m.imdb_id AS id FROM movies m
+           WHERE NOT EXISTS (SELECT 1 FROM torrent_lookups t WHERE t.imdb_id = m.imdb_id AND t.status <> 'error')
+           ${force ? '' : `AND ${LEGACY_NEWEST} <= ?`}
+           ORDER BY ${LEGACY_NEWEST} ASC LIMIT 10`,
+        )
+        .all(...(force ? [] : [cutoff]))
+        .map((row) => String(row['id']));
+    const repo = new TorrentRepository(db);
+    expect(await repo.candidates(10)).toEqual(legacy(false));
+    expect(await repo.candidates(10, true)).toEqual(legacy(true));
+    expect((await repo.candidates(10)).length).toBeGreaterThan(1);
+  });
+
+  it('counts the same too-fresh movies as the subquery did', async () => {
+    jest.spyOn(Date, 'now').mockReturnValue(NOW);
+    await seedMixed();
+    raw.exec(`UPDATE movies SET newest_posted_at = (SELECT MAX(COALESCE(r.posted_at, r.first_seen_at))
+      FROM releases r WHERE r.imdb_id = movies.imdb_id)`);
+    const cutoff = new Date(NOW - ONE_DAY_MS).toISOString();
+    const row = raw
+      .prepare(
+        `SELECT count(*) AS n FROM movies m
+         WHERE NOT EXISTS (SELECT 1 FROM torrent_lookups t WHERE t.imdb_id = m.imdb_id)
+         AND ${LEGACY_NEWEST} > ?`,
+      )
+      .get(cutoff);
+    const expected = Number(row?.['n']);
+    expect(expected).toBeGreaterThan(0);
+    expect(await new TorrentRepository(db).tooFreshCount()).toBe(expected);
+  });
+
+  it.each([
+    ['candidates', (repo: TorrentRepository) => repo.candidates(10)],
+    [
+      'candidates (forced)',
+      (repo: TorrentRepository) => repo.candidates(10, true),
+    ],
+    ['tooFreshCount', (repo: TorrentRepository) => repo.tooFreshCount()],
+  ])(
+    '%s reads movies through movies_newest_posted_idx with no sort',
+    async (_name, run) => {
+      const { d1: recorded, statements } = recordStatements(d1);
+      await run(new TorrentRepository(databaseFrom(recorded)));
+      const plans = statements.flatMap((sql) => queryPlan(raw, sql));
+      expect(
+        plans.some((line) => line.includes('movies_newest_posted_idx')),
+      ).toBe(true);
+      expect(
+        plans.filter(
+          (line) => line.startsWith('SCAN movies') && !line.includes('USING'),
+        ),
+      ).toEqual([]);
+      expect(plans.filter((line) => line.includes('TEMP B-TREE'))).toEqual([]);
+      expect(plans.filter((line) => line.includes('releases'))).toEqual([]);
+    },
+  );
 });

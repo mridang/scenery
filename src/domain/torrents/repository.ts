@@ -1,7 +1,7 @@
 import { and, asc, count, eq, gt, lte, ne, notExists, sql } from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
-import { movies, releases, torrentLookups, torrents } from '../db/schema';
+import { movies, torrentLookups, torrents } from '../db/schema';
 import type {
   LookupResult,
   ResolvedLookup,
@@ -29,13 +29,14 @@ export class TorrentRepository {
   // happened to scrape it) and that haven't been successfully looked up.
   // `force` bypasses the maturity gate entirely.
   //
-  // We gate on MAX(posted_at) across the movie's releases, falling back
-  // to the movie's first_seen_at when a source didn't expose a date.
+  // We gate on movies.newest_posted_at, the MAX(posted_at) across the
+  // movie's releases (first_seen_at when a source didn't expose a date),
+  // kept on the movie by ScrapingRepository.upsertRelease. Index
+  // movies_newest_posted_idx gives the movies past the cutoff in order, so a
+  // run reads those movies and their lookup probes, not every release.
   async candidates(limit: number, force = false): Promise<string[]> {
     const cutoff = new Date(Date.now() - ONE_DAY_MS).toISOString();
-    const newestRelease = sql`(SELECT MAX(COALESCE(${releases.posted_at}, ${releases.first_seen_at}))
-               FROM ${releases} WHERE ${releases.imdb_id} = ${movies.imdb_id})`;
-    const freshness = force ? undefined : lte(newestRelease, cutoff);
+    const freshness = force ? undefined : lte(movies.newest_posted_at, cutoff);
     const rows = await this.db
       .select({ imdb_id: movies.imdb_id })
       .from(movies)
@@ -55,15 +56,13 @@ export class TorrentRepository {
           freshness,
         ),
       )
-      .orderBy(asc(newestRelease))
+      .orderBy(asc(movies.newest_posted_at))
       .limit(limit);
     return rows.map((row) => row.imdb_id);
   }
 
   async tooFreshCount(): Promise<number> {
     const cutoff = new Date(Date.now() - ONE_DAY_MS).toISOString();
-    const newestRelease = sql`(SELECT MAX(COALESCE(${releases.posted_at}, ${releases.first_seen_at}))
-               FROM ${releases} WHERE ${releases.imdb_id} = ${movies.imdb_id})`;
     const rows = await this.db
       .select({ n: count() })
       .from(movies)
@@ -75,7 +74,7 @@ export class TorrentRepository {
               .from(torrentLookups)
               .where(eq(torrentLookups.imdb_id, movies.imdb_id)),
           ),
-          gt(newestRelease, cutoff),
+          gt(movies.newest_posted_at, cutoff),
         ),
       );
     return Number(rows[0]?.n ?? 0);

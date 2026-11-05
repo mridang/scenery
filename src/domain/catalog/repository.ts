@@ -124,7 +124,7 @@ export class CatalogRepository {
     const planWhere = view === 'plan' ? sql`WHERE best_size_bytes > 0` : sql``;
 
     const rows = await this.db.all<ScoredRow>(sql`
-   WITH base AS (
+   WITH base AS MATERIALIZED (
      SELECT
      m.imdb_id                                  AS imdb_id,
      t.tmdb_id                                  AS tmdb_id,
@@ -153,73 +153,49 @@ export class CatalogRepository {
      tl.status                                  AS torrent_status,
      (SELECT COUNT(*) FROM torrents tr
         WHERE tr.imdb_id = m.imdb_id)           AS torrent_count,
-     (SELECT info_hash FROM torrents tr
-        WHERE tr.imdb_id = m.imdb_id
-        ORDER BY (CASE WHEN size_bytes BETWEEN 3000000000 AND 7000000000 THEN 0
-                      WHEN size_bytes BETWEEN 2000000000 AND 10000000000 THEN 1
-                      ELSE 2 END),
-                 -COALESCE(seeders, 0),
-                 ABS(COALESCE(size_bytes, 0) - 5000000000)
-        LIMIT 1)                                AS best_info_hash,
-     (SELECT title FROM torrents tr
-        WHERE tr.imdb_id = m.imdb_id
-        ORDER BY (CASE WHEN size_bytes BETWEEN 3000000000 AND 7000000000 THEN 0
-                      WHEN size_bytes BETWEEN 2000000000 AND 10000000000 THEN 1
-                      ELSE 2 END),
-                 -COALESCE(seeders, 0),
-                 ABS(COALESCE(size_bytes, 0) - 5000000000)
-        LIMIT 1)                                AS best_torrent_title,
-     (SELECT source FROM torrents tr
-        WHERE tr.imdb_id = m.imdb_id
-        ORDER BY (CASE WHEN size_bytes BETWEEN 3000000000 AND 7000000000 THEN 0
-                      WHEN size_bytes BETWEEN 2000000000 AND 10000000000 THEN 1
-                      ELSE 2 END),
-                 -COALESCE(seeders, 0),
-                 ABS(COALESCE(size_bytes, 0) - 5000000000)
-        LIMIT 1)                                AS best_source,
-     (SELECT size_bytes FROM torrents tr
-        WHERE tr.imdb_id = m.imdb_id
-        ORDER BY (CASE WHEN size_bytes BETWEEN 3000000000 AND 7000000000 THEN 0
-                      WHEN size_bytes BETWEEN 2000000000 AND 10000000000 THEN 1
-                      ELSE 2 END),
-                 -COALESCE(seeders, 0),
-                 ABS(COALESCE(size_bytes, 0) - 5000000000)
-        LIMIT 1)                                AS best_size_bytes,
-     (SELECT seeders FROM torrents tr
-        WHERE tr.imdb_id = m.imdb_id
-        ORDER BY (CASE WHEN size_bytes BETWEEN 3000000000 AND 7000000000 THEN 0
-                      WHEN size_bytes BETWEEN 2000000000 AND 10000000000 THEN 1
-                      ELSE 2 END),
-                 -COALESCE(seeders, 0),
-                 ABS(COALESCE(size_bytes, 0) - 5000000000)
-        LIMIT 1)                                AS best_seeders,
-     (SELECT quality FROM torrents tr
-        WHERE tr.imdb_id = m.imdb_id
-        ORDER BY (CASE WHEN size_bytes BETWEEN 3000000000 AND 7000000000 THEN 0
-                      WHEN size_bytes BETWEEN 2000000000 AND 10000000000 THEN 1
-                      ELSE 2 END),
-                 -COALESCE(seeders, 0),
-                 ABS(COALESCE(size_bytes, 0) - 5000000000)
-        LIMIT 1)                                AS best_quality,
-     (SELECT COUNT(*) FROM releases r
-        WHERE r.imdb_id = m.imdb_id)            AS release_count,
-     (SELECT r.title FROM releases r
-        WHERE r.imdb_id = m.imdb_id
-        ORDER BY COALESCE(r.posted_at, r.first_seen_at) DESC
-        LIMIT 1)                                AS latest_release_title,
-     (SELECT COALESCE(r.posted_at, r.first_seen_at) FROM releases r
-        WHERE r.imdb_id = m.imdb_id
-        ORDER BY COALESCE(r.posted_at, r.first_seen_at) DESC
-        LIMIT 1)                                AS latest_release_at,
-     (SELECT MIN(COALESCE(r.posted_at, r.first_seen_at)) FROM releases r
-        WHERE r.imdb_id = m.imdb_id)            AS first_posted_at,
+     bt.info_hash                               AS best_info_hash,
+     bt.title                                   AS best_torrent_title,
+     bt.source                                  AS best_source,
+     bt.size_bytes                              AS best_size_bytes,
+     bt.seeders                                 AS best_seeders,
+     bt.quality                                 AS best_quality,
+     COALESCE(rel.release_count, 0)             AS release_count,
+     lr.title                                   AS latest_release_title,
+     COALESCE(lr.posted_at, lr.first_seen_at)   AS latest_release_at,
+     rel.first_posted_at                        AS first_posted_at,
      -- Monotonic WordPress post id of the first appearance, used only to
      -- break same-day ties so recent-first ordering stays stable.
-     (SELECT MIN(CAST(r.external_id AS INTEGER)) FROM releases r
-        WHERE r.imdb_id = m.imdb_id)            AS first_post_id
+     rel.first_post_id                          AS first_post_id
    FROM movies m
    LEFT JOIN tmdb_movies t ON t.imdb_id = m.imdb_id
    LEFT JOIN torrent_lookups tl ON tl.imdb_id = m.imdb_id
+   -- The movie's best torrent, picked once (one read of its torrents) rather
+   -- than once per column. Same ordering as before: size band, seeders, then
+   -- closeness to 5 GB.
+   LEFT JOIN torrents bt ON bt.id = (
+     SELECT tr.id FROM torrents tr
+      WHERE tr.imdb_id = m.imdb_id
+      ORDER BY (CASE WHEN tr.size_bytes BETWEEN 3000000000 AND 7000000000 THEN 0
+                    WHEN tr.size_bytes BETWEEN 2000000000 AND 10000000000 THEN 1
+                    ELSE 2 END),
+               -COALESCE(tr.seeders, 0),
+               ABS(COALESCE(tr.size_bytes, 0) - 5000000000)
+      LIMIT 1)
+   -- Release counts and first appearance, aggregated once for every movie
+   -- instead of one correlated probe per column.
+   LEFT JOIN (
+     SELECT r.imdb_id                                       AS imdb_id,
+            COUNT(*)                                        AS release_count,
+            MIN(COALESCE(r.posted_at, r.first_seen_at))     AS first_posted_at,
+            MIN(CAST(r.external_id AS INTEGER))             AS first_post_id
+       FROM releases r
+      GROUP BY r.imdb_id) rel ON rel.imdb_id = m.imdb_id
+   -- The newest release of each movie, read through one id lookup.
+   LEFT JOIN releases lr ON lr.id = (
+     SELECT r.id FROM releases r
+      WHERE r.imdb_id = m.imdb_id
+      ORDER BY COALESCE(r.posted_at, r.first_seen_at) DESC
+      LIMIT 1)
    ${langClause}
    ),
    centroid AS (
