@@ -18,6 +18,7 @@ jobs:
   deploy-app:
     environment:
       name: production
+      url: https://scenery.apps.mrida.ng
     runs-on: ubuntu-latest
 
     steps:
