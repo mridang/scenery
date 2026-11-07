@@ -167,6 +167,8 @@ export interface PageViewOptions extends ViewOptions {
   readonly layout: string;
   /** Free-text search, trimmed; empty string disables. */
   readonly q: string;
+  /** How many pages of the grid to show, 1 or more. */
+  readonly page: number;
 }
 
 /**

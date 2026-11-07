@@ -19,6 +19,7 @@ export interface RawViewParams {
   readonly status?: string | null;
   readonly layout?: string | null;
   readonly q?: string | null;
+  readonly page?: string | null;
 }
 
 /**
@@ -60,11 +61,16 @@ export function parsePageViewOptions(raw: RawViewParams): PageViewOptions {
   const status = (raw.status ?? 'all').toLowerCase();
   const layout = (raw.layout ?? 'mosaic').toLowerCase();
   const q = (raw.q ?? '').trim();
+  const page = Math.min(
+    Math.max(Number.parseInt(raw.page ?? '', 10) || 1, 1),
+    50,
+  );
   return {
     ...base,
     pageSort,
     status: KNOWN_STATUSES.has(status) ? status : 'all',
     layout: KNOWN_LAYOUTS.has(layout) ? layout : 'mosaic',
     q,
+    page,
   };
 }

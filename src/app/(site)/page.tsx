@@ -21,6 +21,9 @@ import { torrentState } from './_lib/movie-style';
 
 export const dynamic = 'force-dynamic';
 
+/** Movies the grid shows per page; "Show more" adds another page. */
+const PAGE_SIZE = 48;
+
 export default async function Home({
   searchParams,
 }: {
@@ -31,6 +34,7 @@ export default async function Home({
     status?: string;
     layout?: string;
     q?: string;
+    page?: string;
   }>;
 }) {
   const opts = parsePageViewOptions(await searchParams);
@@ -140,8 +144,23 @@ export default async function Home({
             switching status back to All.
           </p>
         ) : (
-          <MovieGrid movies={filtered} layout={opts.layout} />
+          <MovieGrid
+            movies={filtered.slice(0, opts.page * PAGE_SIZE)}
+            layout={opts.layout}
+          />
         )}
+        {filtered.length > opts.page * PAGE_SIZE ? (
+          <a
+            href={`/${buildQuery({
+              ...hiddenParams,
+              q: opts.q,
+              page: String(opts.page + 1),
+            })}`}
+            className="mt-8 block w-full rounded-[10px] border border-white/20 py-[13px] text-center text-[13px] font-semibold text-[#f3f3f6] no-underline"
+          >
+            Show more
+          </a>
+        ) : null}
       </main>
 
       <SiteFooter

@@ -253,9 +253,24 @@ describe('SECURITY_HEADERS', () => {
     expect(SECURITY_HEADERS['Origin-Agent-Cluster']).toBe('?1');
   });
 
-  it('names no permissions feature that browsers have removed', () => {
-    expect(SECURITY_HEADERS['Permissions-Policy']).not.toContain(
-      'interest-cohort',
+  it("switches off every feature of OWASP's list", () => {
+    const policy = SECURITY_HEADERS['Permissions-Policy'] ?? '';
+    const features = policy.split(', ').map((part) => part.replace('=()', ''));
+    expect(features).toHaveLength(28);
+    expect(features).toContain('clipboard-write');
+    expect(features).toEqual(
+      expect.arrayContaining(['camera', 'serial', 'hid']),
+    );
+  });
+
+  it('turns off DNS prefetching and cross-domain policy files', () => {
+    expect(SECURITY_HEADERS['X-DNS-Prefetch-Control']).toBe('off');
+    expect(SECURITY_HEADERS['X-Permitted-Cross-Domain-Policies']).toBe('none');
+  });
+
+  it('disables the removed interest-cohort feature too', () => {
+    expect(SECURITY_HEADERS['Permissions-Policy']).toContain(
+      'interest-cohort=()',
     );
   });
 });

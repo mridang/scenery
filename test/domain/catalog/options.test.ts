@@ -1,6 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { parseViewOptions } from '@/domain/catalog/options';
+import {
+  parsePageViewOptions,
+  parseViewOptions,
+} from '@/domain/catalog/options';
 
 describe('parseViewOptions', () => {
   it('applies the defaults when nothing is supplied', () => {
@@ -32,5 +35,19 @@ describe('parseViewOptions', () => {
       sort: 'date',
       view: 'catalog',
     });
+  });
+});
+
+describe('parsePageViewOptions page', () => {
+  it('defaults to the first page', () => {
+    expect(parsePageViewOptions({}).page).toBe(1);
+  });
+  it('reads a valid page number', () => {
+    expect(parsePageViewOptions({ page: '3' }).page).toBe(3);
+  });
+  it('falls back to the first page for junk or out-of-range values', () => {
+    expect(parsePageViewOptions({ page: 'x' }).page).toBe(1);
+    expect(parsePageViewOptions({ page: '-4' }).page).toBe(1);
+    expect(parsePageViewOptions({ page: '9999' }).page).toBe(50);
   });
 });
