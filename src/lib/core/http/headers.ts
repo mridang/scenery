@@ -27,7 +27,7 @@ export const SECURITY_HEADERS: Readonly<Record<string, string>> = {
   // Nothing here needs the camera, microphone, location, payments or any other
   // powerful feature in OWASP's list, so each one gets an empty allowlist.
   'Permissions-Policy':
-    'accelerometer=(), autoplay=(), camera=(), clipboard-read=(), clipboard-write=(), cross-origin-isolated=(), display-capture=(), encrypted-media=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), interest-cohort=(), keyboard-map=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), unload=(), usb=(), web-share=(), xr-spatial-tracking=()',
+    'accelerometer=(), autoplay=(), camera=(), clipboard-read=(), clipboard-write=(), cross-origin-isolated=(), display-capture=(), encrypted-media=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), interest-cohort=(), keyboard-map=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), sync-xhr=(), unload=(), usb=(), web-share=(), xr-spatial-tracking=()',
   // Do not resolve the hosts of links ahead of time.
   'X-DNS-Prefetch-Control': 'off',
   // Keep Flash and PDF plugins from loading policy files from this host.

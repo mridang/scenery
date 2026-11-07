@@ -256,7 +256,7 @@ describe('SECURITY_HEADERS', () => {
   it("switches off every feature of OWASP's list", () => {
     const policy = SECURITY_HEADERS['Permissions-Policy'] ?? '';
     const features = policy.split(', ').map((part) => part.replace('=()', ''));
-    expect(features).toHaveLength(28);
+    expect(features).toHaveLength(29);
     expect(features).toContain('clipboard-write');
     expect(features).toEqual(
       expect.arrayContaining(['camera', 'serial', 'hid']),
