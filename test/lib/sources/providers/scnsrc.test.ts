@@ -48,6 +48,26 @@ describe('ScnsrcSource.extract', () => {
     expect(release.postHtml).toContain('post-99001');
   });
 
+  it('strips tags from the excerpt as before, even from a long run of "<"', () => {
+    const html = wellFormedPost().replace(
+      'A gripping tale.',
+      'x <> y <i>z</i> w ' + '<'.repeat(50_000),
+    );
+    const started = Date.now();
+    const release = source.extract(html)[0]!;
+
+    expect(release.excerpt).toContain('x <> y z w');
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
+
+  it('reads a two-digit ordinal day', () => {
+    const html = wellFormedPost().replace('Jun 5th', 'Jun 22nd');
+
+    expect(source.extract(html)[0]!.postedAt).toBe(
+      new Date('Jun 22 2026 5:25 am').toISOString(),
+    );
+  });
+
   it('skips a post that has no imdb id', () => {
     const html = `
       <div class="post" id="post-77002">

@@ -4,7 +4,7 @@ import type { ExtractedRelease, FetchResult, Source } from '../types';
 const BASE_URL = 'https://www.ddlvalley.me/category/movies/';
 
 const POST_RE = /class="post br5 cl"\s+id="post-(\d+)"/g;
-// eslint-disable-next-line sonarjs/super-linear-regex -- applied to one post chunk of a listing page this adapter fetched
+// eslint-disable-next-line sonarjs/super-linear-regex -- an attribute scan across a tag cannot be made linear without a different matcher; input is one post chunk of a fetched listing
 const DL_LINK_RE = /<a\s+href="([^"]+)"[^>]*title="Download\s+([^"]+)"/;
 const IMDB_RE = /imdb\.com\/title\/(tt\d+)/i;
 const DATE_RE = /<span class="date">([^<]+)<\/span>/;
@@ -13,13 +13,33 @@ const CATEGORY_RE = /rel="category tag"[^>]*>([^<]+)</g;
 const IMG_RE = /<div class="poster[^"]*">\s*<img[^>]+src="([^"]+)"/;
 const PLOT_RE = /<div class="plot">([\s\S]*?)<\/div>/;
 
+/** Removes every `<...>` run; same result as `replaceAll(/<[^>]+>/g, '')`, in linear time. */
+function stripTags(html: string): string {
+  let out = '';
+  let from = 0;
+  let open = html.indexOf('<');
+  while (open !== -1) {
+    const close = html.indexOf('>', open + 1);
+    if (close === -1) {
+      break;
+    }
+    if (close === open + 1) {
+      open = html.indexOf('<', open + 1);
+    } else {
+      out += html.slice(from, open);
+      from = close + 1;
+      open = html.indexOf('<', from);
+    }
+  }
+  return out + html.slice(from);
+}
+
 function parseDdlvalleyDate(raw: string | undefined): string | undefined {
   if (raw === undefined) {
     return undefined;
   }
   // Format observed: "Jun 7th, 2026" (no time of day).
-  // eslint-disable-next-line sonarjs/super-linear-regex -- the input is one short date string taken from a fetched post
-  const cleaned = raw.replace(/(\d+)(st|nd|rd|th)/, '$1').trim();
+  const cleaned = raw.replace(/(\d)(?:st|nd|rd|th)/, '$1').trim();
   const parsed = new Date(cleaned);
   return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
 }
@@ -83,11 +103,7 @@ export class DdlvalleySource implements Source {
       const imageUrl = IMG_RE.exec(chunk)?.[1];
       const plotRaw = PLOT_RE.exec(chunk)?.[1];
       const excerpt = plotRaw
-        ? plotRaw
-            // eslint-disable-next-line sonarjs/super-linear-regex -- the excerpt is one bounded post body, not user input
-            .replaceAll(/<[^>]+>/g, '')
-            .replaceAll(/\s+/g, ' ')
-            .trim()
+        ? stripTags(plotRaw).replaceAll(/\s+/g, ' ').trim()
         : undefined;
 
       return [
