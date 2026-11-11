@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { ScnsrcSource } from '@/lib/sources/providers/scnsrc';
+import { ScnsrcSource, findTitleLink } from '@/lib/sources/providers/scnsrc';
 
 /**
  * Build a single well-formed scnsrc post chunk. The extractor keys off the
@@ -163,5 +163,68 @@ describe('ScnsrcSource.fetchPage', () => {
     const result = await source.fetchPage(1);
     expect(result.ok).toBe(true);
     expect(result.html).toContain('post-99001');
+  });
+});
+
+describe('findTitleLink', () => {
+  const old = new RegExp(
+    [
+      String.raw`<h2>\s*<a\s+href="([^"]+)"`,
+      '[^>]*',
+      String.raw`title="Goto\s+([^"]+)"`,
+      String.raw`[^>]*>([^<]+)<\/a>`,
+    ].join(''),
+  );
+  const before = (chunk: string): string[] | undefined => {
+    const m = old.exec(chunk);
+    return m ? [m[1] ?? '', m[3] ?? ''] : undefined;
+  };
+
+  it.each([
+    ['<h2>\n<a href="u" rel="b" title="Goto Some Movie">Some Movie</a>'],
+    ['<h2><a href="u" title="Goto a" title="Goto b">T</a>'],
+    ['<h2><a href="u" title="Goto  ">T</a>'],
+    ['<h2><a href="u" title="Goto a"></a>'],
+    ['no title here'],
+  ])('reads %j like the old pattern', (chunk) => {
+    expect(findTitleLink(chunk)).toEqual(before(chunk));
+  });
+
+  it('matches the old pattern on seeded random markup', () => {
+    let state = 5;
+    const random = (): number => {
+      state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+      return state / 2 ** 32;
+    };
+    const pieces = [
+      '<h2>',
+      '<a',
+      ' ',
+      'href="',
+      'x',
+      '"',
+      '>',
+      'title="Goto',
+      'title="Goto ',
+      '</a>',
+      '<',
+      '\n',
+      'z',
+    ];
+    for (let i = 0; i < 20_000; i += 1) {
+      let chunk = '';
+      for (let j = 0; j < 14; j += 1) {
+        chunk += pieces[Math.floor(random() * pieces.length)];
+      }
+      expect({ chunk, got: findTitleLink(chunk) }).toEqual({
+        chunk,
+        got: before(chunk),
+      });
+    }
+  });
+
+  it('agrees on a long adversarial input', () => {
+    const chunk = `<h2><a href="x" ${'title="Goto a" '.repeat(3000)}`;
+    expect(findTitleLink(chunk)).toEqual(before(chunk));
   });
 });
