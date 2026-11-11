@@ -60,7 +60,6 @@ export function ServiceWorker(): null {
       registerWhenLoaded({
         production: process.env.NODE_ENV === 'production',
         serviceWorker:
-          // eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose: browser navigator, not Node's
           'serviceWorker' in navigator ? navigator.serviceWorker : undefined,
         readyState: document.readyState,
         onLoad: (listener) => {

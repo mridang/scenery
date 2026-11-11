@@ -52,10 +52,9 @@ function CloseGlyph(): ReactElement {
 /** The live browser, in the shape {@link readInstallEnvironment} reads. */
 function browserHost(): InstallHost {
   return {
-    // eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose: browser navigator, not Node's
     navigator,
     matchMedia: (query) => globalThis.matchMedia(query),
-    // eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose: browser localStorage, not Node's
+
     storage: () => globalThis.localStorage,
   };
 }
