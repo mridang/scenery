@@ -103,8 +103,8 @@ async function scrape(
           pageNumbers: pages,
         });
         return [...acc, [slug, result] as const];
-      } catch (err) {
-        return [...acc, [slug, { error: errorMessage(err) }] as const];
+      } catch (error) {
+        return [...acc, [slug, { error: errorMessage(error) }] as const];
       }
     },
     Promise.resolve([]),
@@ -140,8 +140,8 @@ async function pipelineRun(
     // concurrency limit reached").
     const proxied = withRetry(proxyTransport(env.SCRAPINGANT_API_KEY), {
       attempts: 6,
-      baseDelayMs: 2_000,
-      jitterMs: 3_000,
+      baseDelayMs: 2000,
+      jitterMs: 3000,
     });
     const direct = withRetry(genericTransport());
     torrents = await runTorrentLookups(db, {
@@ -173,8 +173,9 @@ export async function runOperation(
   deps: OperationDeps,
 ): Promise<unknown> {
   switch (request.type) {
-    case 'pipeline_run':
+    case 'pipeline_run': {
       return pipelineRun(deps, request.parameters);
+    }
     case 'omdb_backfill': {
       const enricher = new OmdbEnricher(deps.db, {
         apiKey: deps.env.OMDB_API_KEY,

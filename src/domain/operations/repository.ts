@@ -25,13 +25,14 @@ export class OperationRepository {
     readonly parameters: unknown;
     readonly createdAt: string;
   }): Promise<void> {
-    await this.db.insert(operations).values({
+    const write = this.db.insert(operations).values({
       id: row.id,
       type: row.type,
       status: 'running',
       parameters: JSON.stringify(row.parameters),
       created_at: row.createdAt,
     });
+    await write;
   }
 
   /** Record how an operation ended. */

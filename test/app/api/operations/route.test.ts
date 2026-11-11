@@ -6,6 +6,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
+
 import type { DatabaseSync } from 'node:sqlite';
 
 import type { OperationRequest } from '@/domain/operations/types';
@@ -27,25 +28,24 @@ const { POST } = await import('@/app/api/operations/route');
 let raw: DatabaseSync;
 let restore: () => void;
 
-const install = (env: Record<string, unknown> = {}) => {
+const install = async (env: Record<string, unknown> = {}) => {
   restore?.();
-  const made = sqliteD1(...APP_MIGRATIONS);
+  const made = await sqliteD1(...APP_MIGRATIONS);
   raw = made.raw;
   restore = installCloudflareContext(made.d1, env);
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   runOperation.mockClear();
   runOperation.mockResolvedValue({ done: true });
-  install();
+  await install();
 });
 
 afterEach(() => restore());
 
-const post = (
-  body: string,
-  headers: Record<string, string> = { 'content-type': 'application/json' },
-) =>
+const JSON_HEADERS = { 'content-type': 'application/json' };
+
+const post = (body: string, headers: Record<string, string> = JSON_HEADERS) =>
   POST(
     new Request('https://app.test/api/operations', {
       method: 'POST',
@@ -113,11 +113,12 @@ describe('POST /api/operations', () => {
   });
 
   it('answers 415 to a body that is not JSON and 400 to JSON that is not an object', async () => {
-    expect(
-      (await post('type=push_trigger', { 'content-type': 'text/plain' }))
-        .status,
-    ).toBe(415);
-    expect((await post('[]')).status).toBe(400);
+    const notJson = await post('type=push_trigger', {
+      'content-type': 'text/plain',
+    });
+    expect(notJson.status).toBe(415);
+    const notObject = await post('[]');
+    expect(notObject.status).toBe(400);
     expect(runOperation).not.toHaveBeenCalled();
   });
 

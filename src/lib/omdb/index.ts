@@ -7,4 +7,5 @@
 
 export { OmdbClient } from './client';
 export type { OmdbClientOptions } from './client';
-export * from './models';
+export { OmdbResponseSchema } from './models';
+export type { OmdbRatings, OmdbResponse } from './models';

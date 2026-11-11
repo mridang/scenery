@@ -52,6 +52,7 @@ export const movies = sqliteTable(
     imdb_id: text('imdb_id').primaryKey(),
     first_seen_at: text('first_seen_at').notNull(),
     last_seen_at: text('last_seen_at').notNull(),
+
     /**
      * MAX(COALESCE(posted_at, first_seen_at)) over the movie's releases, kept
      * in step by `ScrapingRepository.upsertRelease`; null while it has none.
@@ -305,6 +306,7 @@ export const pushSubscriptions = sqliteTable(
     auth: text('auth').notNull(),
     created_at: text('created_at').notNull(),
     last_sent_at: text('last_sent_at'),
+
     /**
      * Hex SHA-256 of the endpoint (the id the API exposes). Null on rows made
      * before it was stored; `PushSubscriptionRepository.removeById` fills it.

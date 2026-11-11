@@ -1,13 +1,43 @@
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { is } from 'drizzle-orm';
 import { SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core';
-import { describe, expect, it } from '@jest/globals';
+import { beforeAll, describe, expect, it } from '@jest/globals';
+
 import type { DatabaseSync } from 'node:sqlite';
 
-import * as schema from '@/domain/db/schema';
+import {
+  fetchAttempts,
+  movies,
+  operations,
+  pageSnapshots,
+  pushSubscriptions,
+  releases,
+  sources,
+  tmdbGenres,
+  tmdbMovies,
+  tmdbPeople,
+  torrentLookups,
+  torrents,
+} from '@/domain/db/schema';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
+
+/** Every table of the schema file, by its export name. */
+const schema = {
+  fetchAttempts,
+  movies,
+  operations,
+  pageSnapshots,
+  pushSubscriptions,
+  releases,
+  sources,
+  tmdbGenres,
+  tmdbMovies,
+  tmdbPeople,
+  torrentLookups,
+  torrents,
+};
 
 /** The column names SQLite reports for a table, sorted. */
 function columnsOf(raw: DatabaseSync, table: string): readonly string[] {
@@ -15,7 +45,7 @@ function columnsOf(raw: DatabaseSync, table: string): readonly string[] {
     .prepare(`PRAGMA table_info(${table})`)
     .all()
     .map((row) => String(row['name']))
-    .toSorted();
+    .toSorted((a, b) => a.localeCompare(b));
 }
 
 /** The names of the indexes SQLite reports for a table. */
@@ -34,7 +64,11 @@ const tables = new Map(
 );
 
 describe('the schema file and the migrations', () => {
-  const { raw } = sqliteD1(...APP_MIGRATIONS);
+  let raw: DatabaseSync;
+
+  beforeAll(async () => {
+    ({ raw } = await sqliteD1(...APP_MIGRATIONS));
+  });
 
   it('finds the tables of the schema', () => {
     expect(tables.size).toBeGreaterThan(0);
@@ -47,7 +81,9 @@ describe('the schema file and the migrations', () => {
       expect(table).toBeDefined();
       const config = getTableConfig(table!);
       expect(columnsOf(raw, name)).toEqual(
-        config.columns.map((column) => column.name).toSorted(),
+        config.columns
+          .map((column) => column.name)
+          .toSorted((a, b) => a.localeCompare(b)),
       );
       // Every index the schema names exists (the database may carry more, such
       // as the legacy unique constraint on recipes.drive_file_id).
@@ -60,9 +96,11 @@ describe('the schema file and the migrations', () => {
 });
 
 describe('migration 0016_movie_newest_posted', () => {
-  it('backfills the newest release time of every existing movie', () => {
-    const before = APP_MIGRATIONS.filter((file) => file < '0016');
-    const { raw: old } = sqliteD1(...before);
+  it('backfills the newest release time of every existing movie', async () => {
+    const before = APP_MIGRATIONS.filter(
+      (file) => file.localeCompare('0016') < 0,
+    );
+    const { raw: old } = await sqliteD1(...before);
     old.exec(`
       INSERT INTO movies (imdb_id, first_seen_at, last_seen_at) VALUES
         ('tt1', '2026-01-01', '2026-01-01'), ('tt2', '2026-01-01', '2026-01-01');
@@ -72,7 +110,7 @@ describe('migration 0016_movie_newest_posted', () => {
         (1, 'c', 'tt1', 't', 'u', '2026-02-01', '2026-06-01', '2026-06-01');
     `);
     old.exec(
-      readFileSync(
+      await readFile(
         path.join(
           process.cwd(),
           'migrations',

@@ -12,8 +12,9 @@ import {
 let d1: D1Database;
 let restore: (() => void) | undefined;
 
-beforeAll(() => {
-  d1 = sqliteD1(...APP_MIGRATIONS).d1;
+beforeAll(async () => {
+  const made = await sqliteD1(...APP_MIGRATIONS);
+  d1 = made.d1;
   // The route reads the binding from the request context; install a real one
   // over the seeded database so `database()` resolves to it.
   restore = installCloudflareContext(d1);

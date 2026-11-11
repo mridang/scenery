@@ -25,7 +25,7 @@ const TRACKERS_URL = 'https://cf.trackerslist.com/best.txt';
 /** How long a fetched tracker list is reused within a warm isolate. */
 const TRACKERS_TTL_MS = 6 * 60 * 60 * 1000;
 
-/** v1 info hash: 40 hex chars. v2/base32: 32 chars of RFC 4648 base32. */
+/** V1 info hash: 40 hex chars. V2/base32: 32 chars of RFC 4648 base32. */
 const HEX_40 = /^[a-fA-F0-9]{40}$/;
 const BASE32_32 = /^[A-Z2-7]{32}$/i;
 
@@ -68,9 +68,8 @@ export function resetTrackerCache(): void {
  * The current "best trackers" list, fetched live and memoised. Any
  * failure (network, non-200, empty body) falls back to
  * {@link FALLBACK_TRACKERS} so a magnet is always constructable.
- *
- * @param transport - injected fetch, so this stays testable and the lib
- *   never reaches for a global.
+ * @param transport - Injected fetch, so this stays testable and the lib
+ * never reaches for a global.
  */
 export async function bestTrackers(
   transport: typeof fetch,
@@ -84,7 +83,8 @@ export async function bestTrackers(
     if (!response.ok) {
       throw new Error(`tracker list HTTP ${response.status}`);
     }
-    const trackers = (await response.text())
+    const body = await response.text();
+    const trackers = body
       .split('\n')
       .map((line) => line.trim())
       .filter((line) => line.length > 0);

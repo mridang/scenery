@@ -103,7 +103,7 @@ describe('TmdbEnricher.enrichMovie', () => {
   it('persists a found movie then its credits and returns "found"', async () => {
     const { repo, calls } = fakeRepo();
     const find: TmdbFindResponse = {
-      movie_results: [{ id: 27205, title: 'Inception' }],
+      movie_results: [{ id: 27_205, title: 'Inception' }],
     };
     const movie: TmdbMovieResponse = { runtime: 148 };
     const client = fakeClient({
@@ -121,7 +121,7 @@ describe('TmdbEnricher.enrichMovie', () => {
     ]);
     // upsertFoundMovie is handed the first movie result.
     expect(nth(calls, 0).args[0]).toBe('tt1375666');
-    expect(nth(calls, 0).args[1]).toEqual({ id: 27205, title: 'Inception' });
+    expect(nth(calls, 0).args[1]).toEqual({ id: 27_205, title: 'Inception' });
     // updateMovieCredits receives the parsed credits payload.
     expect(nth(calls, 1).args[0]).toBe('tt1375666');
     expect(nth(calls, 1).args[1]).toEqual(movie);
@@ -130,7 +130,7 @@ describe('TmdbEnricher.enrichMovie', () => {
   it('still returns "found" but records a credits error when /movie fails', async () => {
     const { repo, calls } = fakeRepo();
     const find: TmdbFindResponse = {
-      movie_results: [{ id: 27205 }],
+      movie_results: [{ id: 27_205 }],
     };
     const client = fakeClient({
       findByImdb: () => Promise.resolve(ok(find)),

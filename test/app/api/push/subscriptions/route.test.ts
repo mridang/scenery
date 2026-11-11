@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { subscriptionId } from '@/lib/push/subscription-id';
+import insecure from '../../../../fixtures/insecure-urls.json';
 
 const store = new Map<string, { p256dh: string; auth: string }>();
 jest.unstable_mockModule('@/domain/db/client', () => ({
@@ -61,7 +62,7 @@ describe('POST /api/push/subscriptions', () => {
   it.each([
     [{ keys: GOOD.keys }, 'endpoint: must be an https URL.'],
     [
-      { endpoint: 'http://push.test/x', keys: GOOD.keys },
+      { endpoint: insecure.pushEndpoint, keys: GOOD.keys },
       'endpoint: must be an https URL.',
     ],
     [{ endpoint: ENDPOINT }, 'keys.p256dh: required.'],
@@ -77,6 +78,7 @@ describe('POST /api/push/subscriptions', () => {
   });
 
   it('415s for a body that is not JSON', async () => {
-    expect((await POST(post(GOOD, 'text/plain'))).status).toBe(415);
+    const res = await POST(post(GOOD, 'text/plain'));
+    expect(res.status).toBe(415);
   });
 });

@@ -14,7 +14,6 @@ import type {
 /**
  * Database access for TMDB enrichment. The enricher orchestrates calls
  * against this class; the underlying schema is invisible to it.
- *
  * @public
  */
 export class TmdbRepository {
@@ -42,7 +41,7 @@ export class TmdbRepository {
 
   /**
    * Imdb ids that still need a /find lookup: either no tmdb_movies row
-   * yet, or a prior attempt that errored (e.g. hit the per-invocation
+   * yet, or a prior attempt that errored (e.g. Hit the per-invocation
    * subrequest cap). 'not_found' rows are intentionally excluded — those
    * are a settled verdict, not a transient failure.
    */

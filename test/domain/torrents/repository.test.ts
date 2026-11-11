@@ -7,6 +7,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
+
 import type { DatabaseSync } from 'node:sqlite';
 
 import { ScrapingRepository } from '@/domain/scraping/repository';
@@ -34,8 +35,8 @@ const old = (): string => new Date(Date.now() - 3 * ONE_DAY_MS).toISOString(); /
 const recent = (): string =>
   new Date(Date.now() - 60 * 60 * 1000).toISOString(); // 1h ago
 
-beforeEach(() => {
-  const built = sqliteD1(...APP_MIGRATIONS);
+beforeEach(async () => {
+  const built = await sqliteD1(...APP_MIGRATIONS);
   d1 = built.d1;
   raw = built.raw;
   db = databaseFrom(d1);
@@ -282,7 +283,8 @@ describe('the newest-release gate against its previous form', () => {
     const repo = new TorrentRepository(db);
     expect(await repo.candidates(10)).toEqual(legacy(false));
     expect(await repo.candidates(10, true)).toEqual(legacy(true));
-    expect((await repo.candidates(10)).length).toBeGreaterThan(1);
+    const found = await repo.candidates(10);
+    expect(found.length).toBeGreaterThan(1);
   });
 
   it('counts the same too-fresh movies as the subquery did', async () => {

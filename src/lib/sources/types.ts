@@ -1,14 +1,13 @@
 /**
  * Registered scrape sources (one provider class per slug). This is the sources
  * library's own vocabulary; the app schema imports it to constrain the
- * `sources.slug` column. @public
+ * `sources.slug` column. @public.
  */
 export const SOURCE_SLUGS = ['scnsrc', 'ddlvalley'] as const;
 export type SourceSlug = (typeof SOURCE_SLUGS)[number];
 
 /**
  * Outcome of fetching one listing page from a release source.
- *
  * @public
  */
 export interface FetchResult {
@@ -29,7 +28,6 @@ export interface FetchResult {
 /**
  * One movie release extracted from a source's listing page. Shape is
  * deliberately source-agnostic so the orchestrator can persist anything.
- *
  * @public
  */
 export interface ExtractedRelease {
@@ -61,7 +59,6 @@ export interface ExtractedRelease {
  * Abstract contract every release source implements. Provider-specific
  * details (HTML structure, URL pattern, anti-bot strategy) live behind
  * this interface; orchestration only sees the methods below.
- *
  * @public
  */
 export interface Source {
@@ -74,7 +71,6 @@ export interface Source {
 
   /**
    * Compute the URL for a given page in the listing.
-   *
    * @param pageNumber - One-based page index.
    * @returns Absolute URL string.
    */
@@ -82,7 +78,6 @@ export interface Source {
 
   /**
    * Retrieve a listing page's HTML.
-   *
    * @param pageNumber - One-based page index.
    * @returns A {@link FetchResult} containing the HTML when successful.
    */
@@ -90,7 +85,6 @@ export interface Source {
 
   /**
    * Parse one listing page's HTML into structured releases.
-   *
    * @param html - The HTML returned by {@link fetchPage}.
    * @returns Zero or more releases extracted from the page.
    */

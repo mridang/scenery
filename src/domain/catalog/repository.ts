@@ -27,7 +27,6 @@ const RECENCY_MAX_PTS = 20;
  * Read-only access to the catalog tables. Every SQL query the UI
  * touches lives here, so consumers (page.tsx, feed.xml/route.ts,
  * Workflow status endpoints) never see raw SQL.
- *
  * @public
  */
 export class CatalogRepository {
@@ -66,54 +65,64 @@ export class CatalogRepository {
     const prestigeIds = sql.raw(PRESTIGE_IDS.join(', '));
 
     // True when the movie lists at least one recognised prestige studio.
-    const hasPrestige = sql`(b.production_companies IS NOT NULL AND EXISTS (
-      SELECT 1 FROM json_each(b.production_companies) je
-       WHERE CAST(json_extract(je.value, '$.id') AS INTEGER) IN (${prestigeIds})))`;
+    const hasPrestige = sql`
+      (b.production_companies IS NOT NULL AND EXISTS (
+            SELECT 1 FROM json_each(b.production_companies) je
+             WHERE CAST(json_extract(je.value, '$.id') AS INTEGER) IN (${prestigeIds})))
+    `;
 
     // Bayesian-weighted rating (no confidence factor); NULL when unrated.
-    const weighted = sql`(CASE
-        WHEN b.vote_average IS NULL OR b.vote_count IS NULL THEN NULL
-        ELSE (b.vote_count * 1.0 / (b.vote_count + ${M}.0)) * b.vote_average
-             + (${M}.0 / (b.vote_count + ${M}.0)) * (SELECT c FROM centroid)
-      END)`;
+    const weighted = sql`
+      (CASE
+              WHEN b.vote_average IS NULL OR b.vote_count IS NULL THEN NULL
+              ELSE (b.vote_count * 1.0 / (b.vote_count + ${M}.0)) * b.vote_average
+                   + (${M}.0 / (b.vote_count + ${M}.0)) * (SELECT c FROM centroid)
+            END)
+    `;
 
     // The composite score — a verbatim port of the old ScoringEngine.
-    const scoreExpr = sql`(CASE
-        WHEN b.tmdb_status != 'found' OR b.tmdb_status IS NULL THEN 0.0
-        ELSE (
-          ((COALESCE(b.vote_count, 0) * 1.0 / (COALESCE(b.vote_count, 0) + ${M}.0)) * COALESCE(b.vote_average, 0)
-            + (${M}.0 / (COALESCE(b.vote_count, 0) + ${M}.0)) * (SELECT c FROM centroid))
-            * 5 * MIN(1.0, log(COALESCE(b.vote_count, 0) + 1) / 2.0)
-          + MIN(COALESCE(b.talent_score, 0), 8.0) * 4
-          + (CASE WHEN COALESCE(b.budget, 0) / 1000000.0 > 0
-                  THEN log(COALESCE(b.budget, 0) / 1000000.0 + 1) * 8 ELSE 0 END)
-          + (CASE WHEN ${hasPrestige} THEN 10 ELSE 0 END)
-          + (CASE
-               WHEN b.first_posted_at IS NULL OR julianday(b.first_posted_at) IS NULL THEN 0
-               WHEN (julianday('now') - julianday(b.first_posted_at)) <= 0 THEN ${maxPts}.0
-               ELSE ${maxPts}.0 * exp(-(ln(2.0) * (julianday('now') - julianday(b.first_posted_at))) / ${halfLife}.0)
-             END)
-        )
-      END)`;
+    const scoreExpr = sql`
+      (CASE
+              WHEN b.tmdb_status != 'found' OR b.tmdb_status IS NULL THEN 0.0
+              ELSE (
+                ((COALESCE(b.vote_count, 0) * 1.0 / (COALESCE(b.vote_count, 0) + ${M}.0)) * COALESCE(b.vote_average, 0)
+                  + (${M}.0 / (COALESCE(b.vote_count, 0) + ${M}.0)) * (SELECT c FROM centroid))
+                  * 5 * MIN(1.0, log(COALESCE(b.vote_count, 0) + 1) / 2.0)
+                + MIN(COALESCE(b.talent_score, 0), 8.0) * 4
+                + (CASE WHEN COALESCE(b.budget, 0) / 1000000.0 > 0
+                        THEN log(COALESCE(b.budget, 0) / 1000000.0 + 1) * 8 ELSE 0 END)
+                + (CASE WHEN ${hasPrestige} THEN 10 ELSE 0 END)
+                + (CASE
+                     WHEN b.first_posted_at IS NULL OR julianday(b.first_posted_at) IS NULL THEN 0
+                     WHEN (julianday('now') - julianday(b.first_posted_at)) <= 0 THEN ${maxPts}.0
+                     ELSE ${maxPts}.0 * exp(-(ln(2.0) * (julianday('now') - julianday(b.first_posted_at))) / ${halfLife}.0)
+                   END)
+              )
+            END)
+    `;
 
     // Download-priority tier — a verbatim port of ScoringEngine.tier.
-    const tierExpr = sql`(CASE
-        WHEN b.tmdb_status != 'found' OR b.tmdb_status IS NULL THEN '?'
-        WHEN ${hasPrestige} THEN 'A'
-        WHEN COALESCE(b.budget, 0) >= 30000000 THEN 'A'
-        WHEN COALESCE(b.talent_score, 0) >= 5.5 THEN 'A'
-        WHEN ${weighted} IS NOT NULL AND ${weighted} >= 6.5 AND COALESCE(b.vote_count, 0) >= 100 THEN 'A'
-        WHEN COALESCE(b.vote_count, 0) < 5 AND COALESCE(b.talent_score, 0) < 1 AND COALESCE(b.budget, 0) = 0 THEN '?'
-        WHEN ${weighted} IS NOT NULL AND ${weighted} < 5.0 AND COALESCE(b.vote_count, 0) >= 30
-             AND COALESCE(b.talent_score, 0) < 2 AND COALESCE(b.budget, 0) < 5000000 THEN 'C'
-        ELSE 'B'
-      END)`;
+    const tierExpr = sql`
+      (CASE
+              WHEN b.tmdb_status != 'found' OR b.tmdb_status IS NULL THEN '?'
+              WHEN ${hasPrestige} THEN 'A'
+              WHEN COALESCE(b.budget, 0) >= 30000000 THEN 'A'
+              WHEN COALESCE(b.talent_score, 0) >= 5.5 THEN 'A'
+              WHEN ${weighted} IS NOT NULL AND ${weighted} >= 6.5 AND COALESCE(b.vote_count, 0) >= 100 THEN 'A'
+              WHEN COALESCE(b.vote_count, 0) < 5 AND COALESCE(b.talent_score, 0) < 1 AND COALESCE(b.budget, 0) = 0 THEN '?'
+              WHEN ${weighted} IS NOT NULL AND ${weighted} < 5.0 AND COALESCE(b.vote_count, 0) >= 30
+                   AND COALESCE(b.talent_score, 0) < 2 AND COALESCE(b.budget, 0) < 5000000 THEN 'C'
+              ELSE 'B'
+            END)
+    `;
 
     // The matched prestige-studio ids, for the UI to map back to labels.
-    const prestigeIdsExpr = sql`(CASE WHEN b.production_companies IS NULL THEN NULL ELSE (
-        SELECT json_group_array(DISTINCT CAST(json_extract(je.value, '$.id') AS INTEGER))
-          FROM json_each(b.production_companies) je
-         WHERE CAST(json_extract(je.value, '$.id') AS INTEGER) IN (${prestigeIds})) END)`;
+    const prestigeIdsExpr = sql`
+      (CASE WHEN b.production_companies IS NULL THEN NULL ELSE (
+              SELECT json_group_array(DISTINCT CAST(json_extract(je.value, '$.id') AS INTEGER))
+                FROM json_each(b.production_companies) je
+               WHERE CAST(json_extract(je.value, '$.id') AS INTEGER) IN (${prestigeIds})) END)
+    `;
 
     // Selection strategy: recent-first (default) or highest score first.
     const orderExpr: SQL =
@@ -123,106 +132,106 @@ export class CatalogRepository {
     // Plan view budgets disk space, so only sized rows participate.
     const planWhere = view === 'plan' ? sql`WHERE best_size_bytes > 0` : sql``;
 
-    const rows = await this.db.all<ScoredRow>(sql`
-   WITH base AS MATERIALIZED (
-     SELECT
-     m.imdb_id                                  AS imdb_id,
-     t.tmdb_id                                  AS tmdb_id,
-     t.status                                   AS tmdb_status,
-     t.title                                    AS tmdb_title,
-     t.release_year                             AS tmdb_year,
-     t.release_date                             AS release_date,
-     t.genre_ids                                AS tmdb_genre_ids,
-     t.poster_path                              AS poster_path,
-     t.backdrop_path                            AS backdrop_path,
-     t.vote_average                             AS vote_average,
-     t.vote_count                               AS vote_count,
-     t.popularity                               AS popularity,
-     t.runtime                                  AS runtime,
-     t.budget                                   AS budget,
-     t.imdb_rating                              AS imdb_rating,
-     t.imdb_votes                               AS imdb_votes,
-     t.metacritic_score                         AS metacritic_score,
-     t.rt_score                                 AS rt_score,
-     t.talent_score                             AS talent_score,
-     t.original_language                        AS original_language,
-     t.director                                 AS director,
-     t.top_cast                                 AS top_cast,
-     t.production_companies                     AS production_companies,
-     m.first_seen_at                            AS first_seen_at,
-     tl.status                                  AS torrent_status,
-     (SELECT COUNT(*) FROM torrents tr
-        WHERE tr.imdb_id = m.imdb_id)           AS torrent_count,
-     bt.info_hash                               AS best_info_hash,
-     bt.title                                   AS best_torrent_title,
-     bt.source                                  AS best_source,
-     bt.size_bytes                              AS best_size_bytes,
-     bt.seeders                                 AS best_seeders,
-     bt.quality                                 AS best_quality,
-     COALESCE(rel.release_count, 0)             AS release_count,
-     lr.title                                   AS latest_release_title,
-     COALESCE(lr.posted_at, lr.first_seen_at)   AS latest_release_at,
-     rel.first_posted_at                        AS first_posted_at,
-     -- Monotonic WordPress post id of the first appearance, used only to
-     -- break same-day ties so recent-first ordering stays stable.
-     rel.first_post_id                          AS first_post_id
-   FROM movies m
-   LEFT JOIN tmdb_movies t ON t.imdb_id = m.imdb_id
-   LEFT JOIN torrent_lookups tl ON tl.imdb_id = m.imdb_id
-   -- The movie's best torrent, picked once (one read of its torrents) rather
-   -- than once per column. Same ordering as before: size band, seeders, then
-   -- closeness to 5 GB.
-   LEFT JOIN torrents bt ON bt.id = (
-     SELECT tr.id FROM torrents tr
-      WHERE tr.imdb_id = m.imdb_id
-      ORDER BY (CASE WHEN tr.size_bytes BETWEEN 3000000000 AND 7000000000 THEN 0
-                    WHEN tr.size_bytes BETWEEN 2000000000 AND 10000000000 THEN 1
-                    ELSE 2 END),
-               -COALESCE(tr.seeders, 0),
-               ABS(COALESCE(tr.size_bytes, 0) - 5000000000)
-      LIMIT 1)
-   -- Release counts and first appearance, aggregated once for every movie
-   -- instead of one correlated probe per column.
-   LEFT JOIN (
-     SELECT r.imdb_id                                       AS imdb_id,
-            COUNT(*)                                        AS release_count,
-            MIN(COALESCE(r.posted_at, r.first_seen_at))     AS first_posted_at,
-            MIN(CAST(r.external_id AS INTEGER))             AS first_post_id
-       FROM releases r
-      GROUP BY r.imdb_id) rel ON rel.imdb_id = m.imdb_id
-   -- The newest release of each movie, read through one id lookup.
-   LEFT JOIN releases lr ON lr.id = (
-     SELECT r.id FROM releases r
-      WHERE r.imdb_id = m.imdb_id
-      ORDER BY COALESCE(r.posted_at, r.first_seen_at) DESC
-      LIMIT 1)
-   ${langClause}
-   ),
-   centroid AS (
-     SELECT COALESCE(AVG(vote_average), 6.0) AS c
-       FROM base
-      WHERE vote_average IS NOT NULL AND vote_count >= 5
-   ),
-   scored AS (
-     SELECT b.*, ${scoreExpr} AS score, ${tierExpr} AS tier,
-            ${prestigeIdsExpr} AS prestige_ids
-       FROM base b
-   ),
-   windowed AS (
-     SELECT scored.*,
-            SUM(COALESCE(best_size_bytes, 0)) OVER (
-              ORDER BY ${orderExpr}
-              ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-            ) AS cum_size_bytes
-       FROM scored
-       ${planWhere}
-   )
-   SELECT windowed.*,
-          CASE WHEN cum_size_bytes <= ${budget} THEN 1 ELSE 0 END AS fits
-     FROM windowed
-    ORDER BY ${orderExpr}
-    LIMIT 500`);
-    return rows;
+    return await this.db.all<ScoredRow>(sql`
+      WITH base AS MATERIALIZED (
+        SELECT
+        m.imdb_id                                  AS imdb_id,
+        t.tmdb_id                                  AS tmdb_id,
+        t.status                                   AS tmdb_status,
+        t.title                                    AS tmdb_title,
+        t.release_year                             AS tmdb_year,
+        t.release_date                             AS release_date,
+        t.genre_ids                                AS tmdb_genre_ids,
+        t.poster_path                              AS poster_path,
+        t.backdrop_path                            AS backdrop_path,
+        t.vote_average                             AS vote_average,
+        t.vote_count                               AS vote_count,
+        t.popularity                               AS popularity,
+        t.runtime                                  AS runtime,
+        t.budget                                   AS budget,
+        t.imdb_rating                              AS imdb_rating,
+        t.imdb_votes                               AS imdb_votes,
+        t.metacritic_score                         AS metacritic_score,
+        t.rt_score                                 AS rt_score,
+        t.talent_score                             AS talent_score,
+        t.original_language                        AS original_language,
+        t.director                                 AS director,
+        t.top_cast                                 AS top_cast,
+        t.production_companies                     AS production_companies,
+        m.first_seen_at                            AS first_seen_at,
+        tl.status                                  AS torrent_status,
+        (SELECT COUNT(*) FROM torrents tr
+           WHERE tr.imdb_id = m.imdb_id)           AS torrent_count,
+        bt.info_hash                               AS best_info_hash,
+        bt.title                                   AS best_torrent_title,
+        bt.source                                  AS best_source,
+        bt.size_bytes                              AS best_size_bytes,
+        bt.seeders                                 AS best_seeders,
+        bt.quality                                 AS best_quality,
+        COALESCE(rel.release_count, 0)             AS release_count,
+        lr.title                                   AS latest_release_title,
+        COALESCE(lr.posted_at, lr.first_seen_at)   AS latest_release_at,
+        rel.first_posted_at                        AS first_posted_at,
+        -- Monotonic WordPress post id of the first appearance, used only to
+        -- break same-day ties so recent-first ordering stays stable.
+        rel.first_post_id                          AS first_post_id
+      FROM movies m
+      LEFT JOIN tmdb_movies t ON t.imdb_id = m.imdb_id
+      LEFT JOIN torrent_lookups tl ON tl.imdb_id = m.imdb_id
+      -- The movie's best torrent, picked once (one read of its torrents) rather
+      -- than once per column. Same ordering as before: size band, seeders, then
+      -- closeness to 5 GB.
+      LEFT JOIN torrents bt ON bt.id = (
+        SELECT tr.id FROM torrents tr
+         WHERE tr.imdb_id = m.imdb_id
+         ORDER BY (CASE WHEN tr.size_bytes BETWEEN 3000000000 AND 7000000000 THEN 0
+                       WHEN tr.size_bytes BETWEEN 2000000000 AND 10000000000 THEN 1
+                       ELSE 2 END),
+                  -COALESCE(tr.seeders, 0),
+                  ABS(COALESCE(tr.size_bytes, 0) - 5000000000)
+         LIMIT 1)
+      -- Release counts and first appearance, aggregated once for every movie
+      -- instead of one correlated probe per column.
+      LEFT JOIN (
+        SELECT r.imdb_id                                       AS imdb_id,
+               COUNT(*)                                        AS release_count,
+               MIN(COALESCE(r.posted_at, r.first_seen_at))     AS first_posted_at,
+               MIN(CAST(r.external_id AS INTEGER))             AS first_post_id
+          FROM releases r
+         GROUP BY r.imdb_id) rel ON rel.imdb_id = m.imdb_id
+      -- The newest release of each movie, read through one id lookup.
+      LEFT JOIN releases lr ON lr.id = (
+        SELECT r.id FROM releases r
+         WHERE r.imdb_id = m.imdb_id
+         ORDER BY COALESCE(r.posted_at, r.first_seen_at) DESC
+         LIMIT 1)
+      ${langClause}
+      ),
+      centroid AS (
+        SELECT COALESCE(AVG(vote_average), 6.0) AS c
+          FROM base
+         WHERE vote_average IS NOT NULL AND vote_count >= 5
+      ),
+      scored AS (
+        SELECT b.*, ${scoreExpr} AS score, ${tierExpr} AS tier,
+               ${prestigeIdsExpr} AS prestige_ids
+          FROM base b
+      ),
+      windowed AS (
+        SELECT scored.*,
+               SUM(COALESCE(best_size_bytes, 0)) OVER (
+                 ORDER BY ${orderExpr}
+                 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+               ) AS cum_size_bytes
+          FROM scored
+          ${planWhere}
+      )
+      SELECT windowed.*,
+             CASE WHEN cum_size_bytes <= ${budget} THEN 1 ELSE 0 END AS fits
+        FROM windowed
+       ORDER BY ${orderExpr}
+       LIMIT 500
+    `);
   }
 
   public async loadLanguageCounts(): Promise<LangCount[]> {

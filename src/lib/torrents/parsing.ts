@@ -1,6 +1,5 @@
 // Shared helpers for deriving quality/HDR/remux flags from a torrent name.
-// Used by every provider so the rest of the code can rely on a consistent
-// representation.
+// Used by every provider so the rest of the code can rely on a consistent representation.
 
 import type { Quality } from './types';
 

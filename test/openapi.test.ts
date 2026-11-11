@@ -6,11 +6,12 @@ import {
   it,
   jest,
 } from '@jest/globals';
-import { readdirSync, readFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 import { APP_MIGRATIONS } from './lib/core/db/migrations';
 import { installCloudflareContext, sqliteD1 } from './lib/core/db/sqlite-d1';
+import insecure from './fixtures/insecure-urls.json';
 
 /**
  * Ties `openapi.json` to the route files and the controllers behind them: the
@@ -30,7 +31,7 @@ interface Operation {
 }
 
 const document = JSON.parse(
-  readFileSync(new URL('../openapi.json', import.meta.url), 'utf8'),
+  await readFile(new URL('../openapi.json', import.meta.url), 'utf8'),
 ) as {
   readonly openapi: string;
   readonly paths: Record<string, Record<string, Operation>>;
@@ -53,39 +54,49 @@ const documented = (): Map<string, Operation> => {
   return found;
 };
 
-const API = join(process.cwd(), 'src/app/api');
+const API = path.join(process.cwd(), 'src/app/api');
 
-const routeFiles = (dir: string): string[] =>
-  readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
-    entry.isDirectory()
-      ? routeFiles(join(dir, entry.name))
-      : entry.name === 'route.ts'
-        ? [join(dir, entry.name)]
-        : [],
+const routeFiles = async (dir: string): Promise<string[]> => {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const found = await Promise.all(
+    entries.map(async (entry) => {
+      if (entry.isDirectory()) {
+        return routeFiles(path.join(dir, entry.name));
+      }
+      return entry.name === 'route.ts' ? [path.join(dir, entry.name)] : [];
+    }),
   );
+  return found.flat();
+};
 
 /** The documented path of a route file, with `[x]` as `{x}`. */
 const pathOf = (file: string): string =>
   (
     '/api/' +
-    relative(API, file)
+    path
+      .relative(API, file)
       .replace(/\/?route\.ts$/, '')
-      .replace(/\[([a-z_]+)\]/g, '{$1}')
+      .replaceAll(/\[([a-z_]+)\]/g, '{$1}')
   ).replace(/\/$/, '');
 
 /** Every `METHOD /path` a route file under src/app/api exports, with `[x]` as `{x}`. */
-const registered = (): string[] =>
-  routeFiles(API).flatMap((file) => {
-    const path = pathOf(file);
-    const text = readFileSync(file, 'utf8');
-    return ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
-      .filter((method) =>
-        new RegExp(
-          `export (const \\{[^}]*\\b${method}\\b|async function ${method}\\b|function ${method}\\b|const ${method}\\b)`,
-        ).test(text),
-      )
-      .map((method) => `${method} ${path}`);
-  });
+const registered = async (): Promise<string[]> => {
+  const files = await routeFiles(API);
+  const found = await Promise.all(
+    files.map(async (file) => {
+      const route = pathOf(file);
+      const text = await readFile(file, 'utf8');
+      return ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+        .filter((method) =>
+          new RegExp(
+            String.raw`export (const \{[^}]*\b${method}\b|async function ${method}\b|function ${method}\b|const ${method}\b)`,
+          ).test(text),
+        )
+        .map((method) => `${method} ${route}`);
+    }),
+  );
+  return found.flat();
+};
 
 /** Resolve a `#/components/...` reference. */
 const resolve = (ref: string): Json =>
@@ -93,6 +104,16 @@ const resolve = (ref: string): Json =>
     .slice(2)
     .split('/')
     .reduce<unknown>((node, key) => (node as Json)[key], document) as Json;
+
+const actualType = (value: unknown): string => {
+  if (value === null) {
+    return 'null';
+  }
+  if (Array.isArray(value)) {
+    return 'array';
+  }
+  return Number.isInteger(value) ? 'integer' : typeof value;
+};
 
 /**
  * A small structural check of a value against a schema of this spec: type,
@@ -111,15 +132,8 @@ function check(value: unknown, schema: Json, at = '$'): string[] {
     return fits.length === 1 ? [] : [`${at}: matches ${fits.length} of oneOf`];
   }
   const errors: string[] = [];
-  const types = ([] as string[]).concat((schema['type'] as string[]) ?? []);
-  const actual =
-    value === null
-      ? 'null'
-      : Array.isArray(value)
-        ? 'array'
-        : Number.isInteger(value)
-          ? 'integer'
-          : typeof value;
+  const types = [(schema['type'] as string[]) ?? []].flat();
+  const actual = actualType(value);
   if (
     types.length > 0 &&
     !types.includes(actual) &&
@@ -187,6 +201,8 @@ function check(value: unknown, schema: Json, at = '$'): string[] {
         errors.push(...check(member, properties[key], `${at}.${key}`));
       } else if (schema['additionalProperties'] === false) {
         errors.push(`${at}.${key}: not allowed`);
+      } else {
+        // Extra members are allowed unless the schema forbids them.
       }
     }
   }
@@ -226,10 +242,10 @@ const SECRET = 'test-secret';
 const ORIGIN = 'https://app.test';
 let restore: () => void;
 
-beforeEach(() => {
+beforeEach(async () => {
   runOperation.mockClear();
   runOperation.mockResolvedValue({ done: true });
-  const made = sqliteD1(...APP_MIGRATIONS);
+  const made = await sqliteD1(...APP_MIGRATIONS);
   restore = installCloudflareContext(made.d1, {
     CRON_SECRET: SECRET,
     VAPID_PUBLIC_KEY: 'public-key',
@@ -256,7 +272,7 @@ const SUBSCRIPTION = {
 const send = ({ key, path, init, id }: Call): Promise<Response> => {
   const handler = handlers.get(key) as Handler;
   return handler(
-    new Request(`${ORIGIN}${path}`, { method: key.split(' ')[0], ...init }),
+    new Request(`${ORIGIN}${path}`, { method: key.split(' ', 1)[0], ...init }),
     id === undefined ? undefined : { params: Promise.resolve({ id }) },
   );
 };
@@ -432,7 +448,10 @@ const subjects: readonly Subject[] = [
       {
         name: 'not an https endpoint',
         call: () =>
-          subscriptionsPost({ ...SUBSCRIPTION, endpoint: 'http://push.test' }),
+          subscriptionsPost({
+            ...SUBSCRIPTION,
+            endpoint: insecure.pushEndpointBare,
+          }),
       },
       { name: 'not an object', call: () => subscriptionsPost('x') },
       {
@@ -536,10 +555,11 @@ async function conforms(key: string, res: Response): Promise<string[]> {
 }
 
 describe('openapi.json', () => {
-  it('is tested through every route file', () => {
-    expect(routeFiles(API).map(pathOf).sort()).toEqual(
-      Object.keys(MODULES).sort(),
-    );
+  it('is tested through every route file', async () => {
+    const files = await routeFiles(API);
+    expect(
+      files.map((file) => pathOf(file)).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(Object.keys(MODULES).toSorted((a, b) => a.localeCompare(b)));
   });
 
   it('is OpenAPI 3.1 and every reference resolves', () => {
@@ -554,8 +574,11 @@ describe('openapi.json', () => {
     refs.forEach((ref) => expect(resolve(ref)).toBeDefined());
   });
 
-  it('describes exactly the routes under src/app/api, one operation each', () => {
-    expect([...documented().keys()].sort()).toEqual(registered().sort());
+  it('describes exactly the routes under src/app/api, one operation each', async () => {
+    const routes = await registered();
+    expect(
+      [...documented().keys()].toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(routes.toSorted((a, b) => a.localeCompare(b)));
   });
 
   it('gives every operation an id, tags, a summary, security and a problem response', () => {
@@ -568,7 +591,9 @@ describe('openapi.json', () => {
       expect(operation.summary).toBeTruthy();
       expect(operation.security).toBeDefined();
       expect(
-        Object.keys(operation.responses).some((status) => status >= '400'),
+        Object.keys(operation.responses).some(
+          (status) => Number(status) >= 400,
+        ),
       ).toBe(true);
       expect(responseFor(operation, 429)).toBeDefined();
       const schemes = Object.keys(document.components['securitySchemes'] ?? {});
@@ -609,9 +634,9 @@ describe.each(subjects)('$key', ({ key, valid, invalid }) => {
   const secured = (operation.security ?? []).length > 0;
 
   it('has a test subject for every documented operation', () => {
-    expect(subjects.map((s) => s.key).sort()).toEqual(
-      [...documented().keys()].sort(),
-    );
+    expect(
+      subjects.map((s) => s.key).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual([...documented().keys()].toSorted((a, b) => a.localeCompare(b)));
   });
 
   it('answers valid input with a documented success that fits its schema', async () => {
@@ -693,7 +718,7 @@ describe.each(subjects)('$key', ({ key, valid, invalid }) => {
 
     it('is open where no secret is set, as the spec says', async () => {
       restore();
-      const made = sqliteD1(...APP_MIGRATIONS);
+      const made = await sqliteD1(...APP_MIGRATIONS);
       restore = installCloudflareContext(made.d1, {});
       const call = await valid();
       const res = await send({
@@ -720,17 +745,19 @@ describe('documented statuses', () => {
   it('are all produced by some case, except the platform rate limit', async () => {
     const seen = new Map<string, Set<number>>();
     for (const subject of subjects) {
-      const statuses = new Set<number>();
-      statuses.add((await send(await subject.valid())).status);
+      const first = await send(await subject.valid());
+      const statuses = new Set<number>([first.status]);
       for (const scenario of subject.invalid) {
-        statuses.add((await send(await scenario.call())).status);
+        const response = await send(await scenario.call());
+        statuses.add(response.status);
       }
       if ((documented().get(subject.key)?.security ?? []).length > 0) {
         const call = await subject.valid();
-        statuses.add(
-          (await send({ ...call, init: { ...call.init, headers: JSON_TYPE } }))
-            .status,
-        );
+        const repeated = await send({
+          ...call,
+          init: { ...call.init, headers: JSON_TYPE },
+        });
+        statuses.add(repeated.status);
       }
       seen.set(subject.key, statuses);
     }
@@ -751,7 +778,8 @@ describe('documented statuses', () => {
   });
 
   it('includes both 200 and 201 for a repeated subscription', async () => {
-    expect((await send(subscriptionsPost(SUBSCRIPTION))).status).toBe(201);
+    const created = await send(subscriptionsPost(SUBSCRIPTION));
+    expect(created.status).toBe(201);
     const again = await send(subscriptionsPost(SUBSCRIPTION));
     expect(again.status).toBe(200);
     expect(await conforms('POST /api/push/subscriptions', again)).toEqual([]);

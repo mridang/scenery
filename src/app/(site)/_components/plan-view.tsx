@@ -23,10 +23,10 @@ function fmtSize(bytes: number | null): string {
 export function PlanView({
   movies,
   budgetBytes,
-}: {
+}: Readonly<{
   movies: readonly ScoredMovie[];
   budgetBytes: number;
-}) {
+}>) {
   const eligible = movies.filter((movie) => movie.fits);
   const used = eligible.reduce(
     (sum, movie) => sum + (movie.row.best_size_bytes ?? 0),
@@ -92,11 +92,11 @@ function PlanRow({
   movie,
   rank,
   cumGb,
-}: {
+}: Readonly<{
   movie: ScoredMovie;
   rank: number;
   cumGb: number;
-}) {
+}>) {
   const { row, score, tier } = movie;
   const title = row.tmdb_title ?? row.latest_release_title ?? row.imdb_id;
   // Plan rows have a 34 CSS-px thumb — w185 keeps it sharp on 3× phones
@@ -105,7 +105,7 @@ function PlanRow({
   const sColor = scoreColor(score, tier);
   const torrentLine = [
     row.best_quality,
-    row.best_seeders !== null ? `${row.best_seeders} peers` : null,
+    row.best_seeders === null ? null : `${row.best_seeders} peers`,
     row.best_source,
   ]
     .filter(Boolean)
@@ -139,11 +139,11 @@ function PlanRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           <span className="truncate text-[14.5px] font-semibold">{title}</span>
-          {row.tmdb_year !== null ? (
+          {row.tmdb_year === null ? null : (
             <span className="flex-none font-mono text-[11px] text-[#8a8a94]">
               {row.tmdb_year}
             </span>
-          ) : null}
+          )}
         </div>
         {torrentLine ? (
           <div className="truncate font-mono text-[10.5px] text-[#8a8a94]">

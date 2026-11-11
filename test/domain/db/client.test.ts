@@ -6,23 +6,23 @@ import {
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
 
-let restore: (() => void) | undefined;
+let restore: (() => void) | null = null;
 
 afterEach(() => {
   restore?.();
-  restore = undefined;
+  restore = null;
 });
 
 describe('databaseFrom', () => {
-  it('wraps a D1 binding in the app client, keeping the binding as $client', () => {
-    const { d1 } = sqliteD1();
+  it('wraps a D1 binding in the app client, keeping the binding as $client', async () => {
+    const { d1 } = await sqliteD1();
     expect(databaseFrom(d1).$client).toBe(d1);
   });
 });
 
 describe('database', () => {
-  it('builds the app client from the request context binding', () => {
-    const { d1 } = sqliteD1();
+  it('builds the app client from the request context binding', async () => {
+    const { d1 } = await sqliteD1();
     restore = installCloudflareContext(d1);
     expect(database().$client).toBe(d1);
   });

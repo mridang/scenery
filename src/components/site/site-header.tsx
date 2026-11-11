@@ -23,13 +23,13 @@ export function SiteHeader({
   nowMs,
   q,
   hiddenParams,
-}: {
+}: Readonly<{
   lastUpdate: LastUpdate;
   nowMs: number;
   q: string;
   /** Other URL params to preserve when the search form submits. */
   hiddenParams: Readonly<Record<string, string>>;
-}) {
+}>) {
   const stale =
     lastUpdate.scrapeAt === null ||
     nowMs - Date.parse(lastUpdate.scrapeAt) > STALE_THRESHOLD_MS;
@@ -84,6 +84,7 @@ export function SiteHeader({
                 fill="none"
                 stroke="#c8c8cf"
                 strokeWidth="1.7"
+                aria-hidden="true"
               >
                 <circle cx="8" cy="8" r="5.5" />
                 <path d="M12.5 12.5 L16 16" strokeLinecap="round" />
@@ -93,7 +94,7 @@ export function SiteHeader({
 
           <MaintenanceMenu />
 
-          <div className="relative size-[42px] flex-none" title="Updates">
+          <div className="relative size-[42px] flex-none">
             <div className="flex size-[42px] items-center justify-center rounded-full border border-transparent bg-[#26262d]">
               <svg
                 width="19"
@@ -104,16 +105,18 @@ export function SiteHeader({
                 strokeWidth="1.7"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                aria-hidden="true"
               >
                 <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.7 21a2 2 0 0 1-3.4 0" />
               </svg>
             </div>
             {stale ? (
-              <span
-                className="absolute top-px right-px size-[9px] rounded-full border-2 border-[#1f1f22] bg-red-500"
-                title={`stale · last scrape ${timeAgo(lastUpdate.scrapeAt, nowMs)}`}
-              />
+              <span className="absolute top-px right-px size-[9px] rounded-full border-2 border-[#1f1f22] bg-red-500">
+                <span className="sr-only">
+                  {`stale · last scrape ${timeAgo(lastUpdate.scrapeAt, nowMs)}`}
+                </span>
+              </span>
             ) : null}
           </div>
         </div>

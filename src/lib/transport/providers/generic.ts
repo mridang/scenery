@@ -15,7 +15,6 @@ export interface GenericTransportOptions {
 
 /**
  * Build a {@link fetch}-compatible transport over the platform `fetch`.
- *
  * @public
  */
 export function genericTransport(

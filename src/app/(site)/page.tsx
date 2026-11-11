@@ -26,7 +26,7 @@ const PAGE_SIZE = 48;
 
 export default async function Home({
   searchParams,
-}: {
+}: Readonly<{
   searchParams: Promise<{
     lang?: string;
     sort?: string;
@@ -36,7 +36,7 @@ export default async function Home({
     q?: string;
     page?: string;
   }>;
-}) {
+}>) {
   const opts = parsePageViewOptions(await searchParams);
 
   const catalog = CatalogService.fromDatabase(database());
@@ -46,9 +46,8 @@ export default async function Home({
     catalog.lastUpdate(),
   ]);
 
-  // Async Server Component rendered once per request, so reading the wall
-  // clock here is deterministic for the render.
-  // eslint-disable-next-line react-hooks/purity -- per-request server render
+  // Async Server Component rendered once per request, so reading the wall clock here is deterministic for the render.
+  // eslint-disable-next-line react-hooks/purity -- async Server Component rendered per request, so reading the clock is the intent; the rule targets client components and has no server-component exemption
   const nowMs = Date.now();
 
   const feedHref = `/feed.xml?${new URLSearchParams({

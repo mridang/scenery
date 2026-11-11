@@ -28,7 +28,6 @@ export type TorrentRunResult = TorrentRunSummary & {
 /**
  * IMDb ids past the 24h gate that still need a torrent lookup. Each
  * becomes one granular workflow step.
- *
  * @public
  */
 export async function listTorrentCandidates(
@@ -42,7 +41,6 @@ export async function listTorrentCandidates(
 /**
  * Look up + persist torrents for ONE movie via the provider chain. One
  * step's worth of work (a handful of subrequests at most).
- *
  * @returns The provider that answered and the lookup status.
  * @public
  */
@@ -63,7 +61,6 @@ export async function lookupOneTorrent(
  * one or more provider subrequests), runs them through the manager,
  * persists results, summarises. `limit` doubles as the per-invocation
  * subrequest guard: keep it under the platform cap (50 on Free).
- *
  * @public
  */
 export async function runTorrentLookups(

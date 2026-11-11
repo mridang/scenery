@@ -33,12 +33,12 @@ function stubTransport(
 const FOUND_MOVIE: TmdbFindResponse = {
   movie_results: [
     {
-      id: 27205,
+      id: 27_205,
       title: 'Inception',
       original_title: 'Inception',
       release_date: '2010-07-15',
       vote_average: 8.4,
-      vote_count: 35000,
+      vote_count: 35_000,
     },
   ],
 };
@@ -100,7 +100,7 @@ describe('TmdbClient', () => {
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.status).toBe(200);
-      expect(res.value.movie_results?.[0]?.id).toBe(27205);
+      expect(res.value.movie_results?.[0]?.id).toBe(27_205);
       expect(res.value.movie_results?.[0]?.title).toBe('Inception');
     }
   });
@@ -112,7 +112,7 @@ describe('TmdbClient', () => {
     }));
     const client = new TmdbClient({ apiKey: 'k' }, transport);
 
-    const res = await client.getMovieWithCredits(27205);
+    const res = await client.getMovieWithCredits(27_205);
 
     const url = new URL(nth(calls, 0));
     expect(url.origin + url.pathname).toBe(

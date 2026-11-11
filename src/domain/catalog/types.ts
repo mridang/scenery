@@ -3,7 +3,6 @@ import type { LookupStatus, Quality } from '@/lib/torrents/types';
 
 /**
  * Storage budget for {@link CatalogService} plan view, in bytes (1 TB).
- *
  * @public
  */
 export const BUDGET_BYTES = 1_000_000_000_000;
@@ -11,7 +10,6 @@ export const BUDGET_BYTES = 1_000_000_000_000;
 /**
  * Wide row joining `movies`, `tmdb_movies` and `torrent_lookups`. Powers
  * both the HTML view and the RSS feed.
- *
  * @public
  */
 export interface MovieRow {
@@ -89,7 +87,6 @@ export type Tier = 'A' | 'B' | 'C' | '?';
  *
  * `cumBytes` and `fits` are populated by {@link CatalogService} in plan
  * view (zero / `true` otherwise).
- *
  * @public
  */
 export interface ScoredMovie {
@@ -126,7 +123,6 @@ export interface ViewResult {
  * download-priority {@link Tier}, the matched prestige-studio ids (a
  * `json_group_array` string), and — in plan view — the running storage
  * total and whether the row fits the 1 TB budget.
- *
  * @public
  */
 export interface ScoredRow extends MovieRow {
@@ -155,7 +151,6 @@ export interface ViewOptions {
  * SQL-relevant {@link ViewOptions} with the page-level filters/state
  * (status / layout / sort='rating' / free-text search) that are applied
  * after the SQL has returned its rows.
- *
  * @public
  */
 export interface PageViewOptions extends ViewOptions {
@@ -173,11 +168,10 @@ export interface PageViewOptions extends ViewOptions {
 
 /**
  * The read surface the catalog UI depends on. {@link CatalogRepository}
- * is the production implementation (backed by D1); unit tests supply a
+ * Is the production implementation (backed by D1); unit tests supply a
  * lightweight stub so {@link CatalogService} can be exercised without a
  * database. Depending on this interface — rather than the concrete
- * repository — is what keeps the service loosely coupled and testable.
- *
+ * repository — is what keeps the service loosely coupled and testable..
  * @public
  */
 export interface CatalogReader {

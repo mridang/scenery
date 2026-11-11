@@ -18,7 +18,6 @@ export { TmdbRepository } from './repository';
  * {@link TmdbRepository}, and {@link TmdbEnricher} from a database, an
  * environment, and an injected transport. The composition root chooses the
  * transport (see `@/lib/transport`) so the TMDB client stays HTTP-agnostic.
- *
  * @public
  */
 export function buildEnricher(

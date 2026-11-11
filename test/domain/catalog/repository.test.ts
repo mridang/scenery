@@ -1,5 +1,6 @@
 import { databaseFrom, type Database } from '@/domain/db/client';
 import { beforeEach, describe, expect, it } from '@jest/globals';
+
 import type { DatabaseSync } from 'node:sqlite';
 
 import { CatalogRepository } from '@/domain/catalog/repository';
@@ -20,8 +21,8 @@ let d1: D1Database;
 let raw: DatabaseSync;
 let db: Database;
 
-beforeEach(() => {
-  const built = sqliteD1(...APP_MIGRATIONS);
+beforeEach(async () => {
+  const built = await sqliteD1(...APP_MIGRATIONS);
   d1 = built.d1;
   raw = built.raw;
   db = databaseFrom(d1);
@@ -67,10 +68,9 @@ describe('CatalogRepository (SQLite-backed D1)', () => {
     const catalog = new CatalogRepository(db);
 
     const all = await catalog.loadMovies('all', 'date', 'catalog');
-    expect(all.map((m) => m.imdb_id).sort()).toEqual([
-      'tt2000001',
-      'tt2000002',
-    ]);
+    expect(
+      all.map((m) => m.imdb_id).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(['tt2000001', 'tt2000002']);
 
     const english = await catalog.loadMovies('en', 'date', 'catalog');
     expect(english).toHaveLength(1);
@@ -171,9 +171,12 @@ describe('CatalogRepository (SQLite-backed D1)', () => {
       )
       .run();
 
-    const movie = (
-      await new CatalogRepository(db).loadMovies('all', 'date', 'catalog')
-    ).find((row) => row.imdb_id === 'tt2000003');
+    const movies = await new CatalogRepository(db).loadMovies(
+      'all',
+      'date',
+      'catalog',
+    );
+    const movie = movies.find((row) => row.imdb_id === 'tt2000003');
     expect(movie).toMatchObject({
       torrent_count: 2,
       best_info_hash: 'hash-b',

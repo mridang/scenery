@@ -1,6 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { DdlvalleySource } from '@/lib/sources/providers/ddlvalley';
+import {
+  DdlvalleySource,
+  findDownloadLink,
+} from '@/lib/sources/providers/ddlvalley';
 
 /**
  * Build a single well-formed ddlvalley post chunk. The extractor keys off
@@ -48,6 +51,26 @@ describe('DdlvalleySource.extract', () => {
     expect(release.excerpt).toContain('A thrilling sequel');
     expect(release.excerpt).not.toContain('<b>');
     expect(release.postHtml).toContain('post-12345');
+  });
+
+  it('strips tags from the excerpt as before, even from a long run of "<"', () => {
+    const html = wellFormedPost().replace(
+      '<b>exceeds</b>',
+      'x <> y <i>z</i> w ' + '<'.repeat(50_000),
+    );
+    const started = Date.now();
+    const release = source.extract(html)[0]!;
+
+    expect(release.excerpt).toContain('x <> y z w');
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
+
+  it('reads a two-digit ordinal day', () => {
+    const html = wellFormedPost().replace('Jun 7th', 'Jun 22nd');
+
+    expect(source.extract(html)[0]!.postedAt).toBe(
+      new Date('Jun 22 2026').toISOString(),
+    );
   });
 
   it('skips a post that has no imdb id', () => {
@@ -148,5 +171,65 @@ describe('DdlvalleySource.fetchPage', () => {
     const result = await source.fetchPage(1);
     expect(result.ok).toBe(true);
     expect(result.html).toContain('post-12345');
+  });
+});
+
+describe('findDownloadLink', () => {
+  const old = new RegExp(
+    [
+      String.raw`<a\s+href="([^"]+)"`,
+      '[^>]*',
+      String.raw`title="Download\s+([^"]+)"`,
+    ].join(''),
+  );
+  const before = (chunk: string): string[] | undefined => {
+    const m = old.exec(chunk);
+    return m ? m.slice(1, 3) : undefined;
+  };
+
+  it.each([
+    ['<a href="u" class="c" title="Download Some Movie">x</a>'],
+    ['<a href="u" title="Download   ">'],
+    ['<a href="u" title="Download a" title="Download b">'],
+    ['<a href="u"> title="Download x"'],
+    ['no link here'],
+  ])('reads %j like the old pattern', (chunk) => {
+    expect(findDownloadLink(chunk)).toEqual(before(chunk));
+  });
+
+  it('matches the old pattern on seeded random markup', () => {
+    let state = 5;
+    const random = (): number => {
+      state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+      return state / 2 ** 32;
+    };
+    const pieces = [
+      '<a',
+      ' ',
+      'href="',
+      'x',
+      '"',
+      '>',
+      'title="Download',
+      'title="Download ',
+      '\n',
+      'z',
+      '<a ',
+    ];
+    for (let i = 0; i < 20_000; i += 1) {
+      let chunk = '';
+      for (let j = 0; j < 14; j += 1) {
+        chunk += pieces[Math.floor(random() * pieces.length)];
+      }
+      expect({ chunk, got: findDownloadLink(chunk) }).toEqual({
+        chunk,
+        got: before(chunk),
+      });
+    }
+  });
+
+  it('agrees on a long adversarial input', () => {
+    const chunk = `<a href="x" ${'title="Download '.repeat(3000)}`;
+    expect(findDownloadLink(chunk)).toEqual(before(chunk));
   });
 });

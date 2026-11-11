@@ -20,7 +20,6 @@ const POSTER_WIDTHS = {
 /**
  * Allowed poster sizes. Each one matches a TMDB native size AND a width
  * the proxy will accept.
- *
  * @public
  */
 export type PosterSize = keyof typeof POSTER_WIDTHS;
@@ -28,7 +27,6 @@ export type PosterSize = keyof typeof POSTER_WIDTHS;
 /**
  * Build a same-origin poster URL routed through `/img`, or `null` if
  * there's no poster path. The returned URL is a relative path.
- *
  * @public
  */
 export function posterUrl(
@@ -46,7 +44,6 @@ export function posterUrl(
  * Backdrop pixel widths. Bigger than posters because the hero spans the
  * full content width; the largest size matches the proxy's biggest
  * allowed render width.
- *
  * @public
  */
 export type BackdropSize =
@@ -66,7 +63,6 @@ const BACKDROP_WIDTHS: Record<BackdropSize, number> = {
  * for hero banners — distinct from the 2:3 portrait posters. Falls back
  * to the poster path so the hero never paints a blank rectangle when
  * only the poster is available.
- *
  * @public
  */
 export function backdropUrl(

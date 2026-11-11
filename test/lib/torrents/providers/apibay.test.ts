@@ -71,7 +71,7 @@ describe('ApibayProvider', () => {
     );
     expect(first.source).toBe('ThePirateBay');
     expect(first.seeders).toBe(120);
-    expect(first.sizeBytes).toBe(54000000000);
+    expect(first.sizeBytes).toBe(54_000_000_000);
     expect(first.quality).toBe('2160p');
     expect(first.isHdr).toBe(true);
     expect(first.isRemux).toBe(true);

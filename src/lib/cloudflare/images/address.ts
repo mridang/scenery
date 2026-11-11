@@ -30,7 +30,7 @@ const LARGEST_WIDTH = Math.max(...ALLOWED_WIDTHS);
 export function snapWidth(width: number): number {
   return (
     [...ALLOWED_WIDTHS]
-      .sort((a, b) => a - b)
+      .toSorted((a, b) => a - b)
       .find((allowed) => allowed >= width) ?? LARGEST_WIDTH
   );
 }

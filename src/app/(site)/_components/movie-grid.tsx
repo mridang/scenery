@@ -11,10 +11,10 @@ import { MovieCardMosaic, MovieCardUniform } from './movie-card';
 export function MovieGrid({
   movies,
   layout,
-}: {
+}: Readonly<{
   movies: readonly ScoredMovie[];
   layout: string;
-}) {
+}>) {
   if (layout === 'mosaic') {
     const ordered = mosaicOrder(movies);
     return (
@@ -47,7 +47,7 @@ function mosaicOrder(
 ): Array<{ movie: ScoredMovie; big: boolean }> {
   const BIG_COUNT = 6;
   const popularity = [...movies]
-    .sort((a, b) => (b.row.vote_count ?? 0) - (a.row.vote_count ?? 0))
+    .toSorted((a, b) => (b.row.vote_count ?? 0) - (a.row.vote_count ?? 0))
     .slice(0, BIG_COUNT);
   const bigIds = new Set(popularity.map((movie) => movie.row.imdb_id));
 
@@ -64,14 +64,16 @@ function mosaicOrder(
   const gapN = Math.max(2, Math.round(smalls.length / (bigs.length + 1)));
   const out: Array<{ movie: ScoredMovie; big: boolean }> = [];
   let bi = 0;
-  for (let i = 0; i < smalls.length; i++) {
-    out.push({ movie: smalls[i]!, big: false });
+  for (const [i, small] of smalls.entries()) {
+    out.push({ movie: small!, big: false });
     if ((i + 1) % gapN === 0 && bi < bigs.length) {
-      out.push({ movie: bigs[bi++]!, big: true });
+      out.push({ movie: bigs[bi]!, big: true });
+      bi += 1;
     }
   }
   while (bi < bigs.length) {
-    out.push({ movie: bigs[bi++]!, big: true });
+    out.push({ movie: bigs[bi]!, big: true });
+    bi += 1;
   }
   return out;
 }

@@ -13,18 +13,15 @@ import {
 
 describe('site settings', () => {
   it('lets the edge keep the catalog page and its feed, though nothing is indexed', () => {
-    expect([...EDGE_CACHED_PAGES].sort()).toEqual(['/', '/feed.xml']);
+    expect(
+      [...EDGE_CACHED_PAGES].toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(['/', '/feed.xml']);
   });
 
   it('lets a kept page carry only the names the catalog page reads', () => {
-    expect([...CACHED_QUERY_PARAMS].sort()).toEqual([
-      'lang',
-      'layout',
-      'q',
-      'sort',
-      'status',
-      'view',
-    ]);
+    expect(
+      [...CACHED_QUERY_PARAMS].toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(['lang', 'layout', 'q', 'sort', 'status', 'view']);
   });
 
   it('keeps a copy for half an hour, as the catalog changes once a day', () => {
@@ -61,14 +58,16 @@ describe('site settings', () => {
   );
 
   it('lets the social cards, the icons and the manifest be cached for a day', () => {
-    expect([...RARELY_CHANGING].sort()).toEqual([
-      '/apple-icon.png',
-      '/favicon.ico',
-      '/icon.svg',
-      '/manifest.webmanifest',
-      '/opengraph-image.png',
-      '/twitter-image.png',
-    ]);
+    expect([...RARELY_CHANGING].toSorted((a, b) => a.localeCompare(b))).toEqual(
+      [
+        '/apple-icon.png',
+        '/favicon.ico',
+        '/icon.svg',
+        '/manifest.webmanifest',
+        '/opengraph-image.png',
+        '/twitter-image.png',
+      ],
+    );
   });
 
   it('adds no outside picture sources: every picture comes through this site', () => {

@@ -64,7 +64,7 @@ export function MaintenanceActions({
     if (failure) {
       setMessage(failure);
     } else {
-      window.location.reload();
+      globalThis.location.reload();
     }
   }
 

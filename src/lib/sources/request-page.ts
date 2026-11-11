@@ -6,7 +6,6 @@ import type { FetchResult } from './types';
  * retries are the transport's concern — this only reads the body and
  * captures headers. Never throws; transport failures become
  * `{ ok: false }`.
- *
  * @param transport - A `fetch`-compatible transport.
  * @param url - The target URL.
  * @returns A {@link FetchResult}.
@@ -39,10 +38,10 @@ export async function requestPage(
       byteSize: html.length,
       responseHeaders,
     };
-  } catch (err) {
+  } catch (error) {
     return {
       ok: false,
-      error: err instanceof Error ? err.message : String(err),
+      error: error instanceof Error ? error.message : String(error),
       byteSize: 0,
     };
   }

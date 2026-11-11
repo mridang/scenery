@@ -4,7 +4,7 @@ import { posterUrl } from '../_lib/tmdb-image';
 
 /**
  * Right-rail "what's next" list. These are the highest-scored movies the
- * catalog knows about that don't have a torrent yet — i.e. on-the-radar
+ * catalog knows about that don't have a torrent yet — i.e. On-the-radar
  * releases, not the rented-shelf grid that fills the rest of the page.
  *
  * The button is a deep-link into the catalog with `?status=pending`, so
@@ -13,10 +13,10 @@ import { posterUrl } from '../_lib/tmdb-image';
 export function ComingSoon({
   movies,
   seeMoreHref,
-}: {
+}: Readonly<{
   movies: readonly ScoredMovie[];
   seeMoreHref: string;
-}) {
+}>) {
   if (movies.length === 0) {
     return null;
   }
@@ -41,7 +41,7 @@ export function ComingSoon({
   );
 }
 
-function ComingSoonRow({ movie }: { movie: ScoredMovie }) {
+function ComingSoonRow({ movie }: Readonly<{ movie: ScoredMovie }>) {
   const { row, genres, cast } = movie;
   const title = row.tmdb_title ?? row.latest_release_title ?? row.imdb_id;
   // Sidebar thumb is 58 CSS px → ~174 device px at 3×; w185 was right at
@@ -50,7 +50,7 @@ function ComingSoonRow({ movie }: { movie: ScoredMovie }) {
   const genreLine = genres.slice(0, 2).join(', ');
   const credit = [
     row.director ? `Dir. ${row.director}` : null,
-    cast.length ? cast.slice(0, 3).join(', ') : null,
+    cast.length > 0 ? cast.slice(0, 3).join(', ') : null,
   ]
     .filter(Boolean)
     .join(' · ');

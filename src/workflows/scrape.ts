@@ -14,7 +14,6 @@ import { browserTransport, genericTransport, withRetry } from '@/lib/transport';
 
 /**
  * Parameters accepted by {@link ScrapeWorkflow}.
- *
  * @public
  */
 export interface ScrapeWorkflowParams {
@@ -28,7 +27,6 @@ export interface ScrapeWorkflowParams {
  * Granular scrape: one `step.do()` per (source, page). Each page is a
  * single ScrapingAnt fetch + its DB writes, independently retried and
  * checkpointed — a failure on page 7 doesn't re-scrape pages 1–6.
- *
  * @public
  */
 export class ScrapeWorkflow extends WorkflowEntrypoint<

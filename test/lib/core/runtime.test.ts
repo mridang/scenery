@@ -23,6 +23,7 @@ describe('without a Cloudflare context (tests, scripts)', () => {
     runInBackground(
       Promise.resolve().then(() => {
         done = true;
+        return true;
       }),
     );
     await Promise.resolve();
@@ -43,15 +44,15 @@ describe('without a Cloudflare context (tests, scripts)', () => {
 });
 
 describe('with a Cloudflare context', () => {
-  let restore: (() => void) | undefined;
+  let restore: (() => void) | null = null;
 
   afterEach(() => {
     restore?.();
-    restore = undefined;
+    restore = null;
   });
 
-  it("hands out the context's D1 binding and environment", () => {
-    const { d1 } = sqliteD1();
+  it("hands out the context's D1 binding and environment", async () => {
+    const { d1 } = await sqliteD1();
     restore = installCloudflareContext(d1, { SECRET: 'value' });
     expect(getDB()).toBe(d1);
     expect(getEnv()).toMatchObject({ SECRET: 'value', DB: d1 });

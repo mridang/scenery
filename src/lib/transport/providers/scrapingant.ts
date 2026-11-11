@@ -31,7 +31,6 @@ const DEFAULT_ENDPOINT = 'https://api.scrapingant.com/v2/general';
  * Build a {@link fetch}-compatible transport that proxies through
  * ScrapingAnt. The returned function rewrites the request's target URL
  * into a ScrapingAnt call and returns the upstream {@link Response}.
- *
  * @throws When `apiKey` is empty.
  * @public
  */

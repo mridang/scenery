@@ -60,7 +60,6 @@ function toEnrichResult(result: Result<OmdbResponse>): OmdbEnrichResult {
  * sequentially — OMDB's free tier is 1000 requests/day, far above the scrape
  * rate, but the upstream is also slow enough that parallelism gives little
  * real benefit and costs us subrequest budget.
- *
  * @public
  */
 export class OmdbEnricher {

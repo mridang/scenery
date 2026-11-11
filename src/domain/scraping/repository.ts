@@ -12,7 +12,6 @@ import {
 
 /**
  * Row shape for a registered source in the `sources` table.
- *
  * @public
  */
 export interface SourceRow {
@@ -25,7 +24,6 @@ export interface SourceRow {
  * makes — attempts, snapshots, releases, catalog-level movies — is
  * routed through this single class. Keeps the orchestrator unaware of
  * the underlying schema.
- *
  * @public
  */
 export class ScrapingRepository {
@@ -33,7 +31,6 @@ export class ScrapingRepository {
 
   /**
    * Look up a registered source by its stable slug.
-   *
    * @param slug - The source slug (e.g. `scnsrc`).
    * @returns The row, or null if the slug is unknown.
    */
@@ -51,7 +48,6 @@ export class ScrapingRepository {
 
   /**
    * Compute the next attempt number for a (source, page) pair.
-   *
    * @param sourceId - PK of the source row.
    * @param pageNumber - One-based page index.
    * @returns The attempt number to use for the next write.
@@ -89,7 +85,7 @@ export class ScrapingRepository {
     error?: string;
     responseBody?: string;
   }): Promise<void> {
-    await this.db.insert(fetchAttempts).values({
+    const write = this.db.insert(fetchAttempts).values({
       source_id: opts.sourceId,
       page_number: opts.pageNumber,
       page_url: opts.pageUrl,
@@ -101,6 +97,7 @@ export class ScrapingRepository {
       error: opts.error ?? null,
       response_body: opts.responseBody ?? null,
     });
+    await write;
   }
 
   /** Persist a successful page snapshot and return its PK. */
@@ -146,7 +143,7 @@ export class ScrapingRepository {
     httpStatus?: number;
     snapshotId: number;
   }): Promise<void> {
-    await this.db.insert(fetchAttempts).values({
+    const write = this.db.insert(fetchAttempts).values({
       source_id: opts.sourceId,
       page_number: opts.pageNumber,
       page_url: opts.pageUrl,
@@ -157,6 +154,7 @@ export class ScrapingRepository {
       http_status: opts.httpStatus ?? null,
       snapshot_id: opts.snapshotId,
     });
+    await write;
   }
 
   /** Upsert one extracted release together with its parent movie row. */
@@ -222,8 +220,10 @@ export class ScrapingRepository {
     const refreshNewest = this.db
       .update(movies)
       .set({
-        newest_posted_at: sql`(SELECT MAX(COALESCE(${releases.posted_at}, ${releases.first_seen_at}))
-          FROM ${releases} WHERE ${releases.imdb_id} = ${release.imdbId})`,
+        newest_posted_at: sql`
+          (SELECT MAX(COALESCE(${releases.posted_at}, ${releases.first_seen_at}))
+                    FROM ${releases} WHERE ${releases.imdb_id} = ${release.imdbId})
+        `,
       })
       .where(eq(movies.imdb_id, release.imdbId));
 

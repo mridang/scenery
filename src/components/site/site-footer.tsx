@@ -41,13 +41,13 @@ export function SiteFooter({
   avgScore,
   lastUpdate,
   nowMs,
-}: {
+}: Readonly<{
   count: number;
   total: number;
   avgScore: number;
   lastUpdate: LastUpdate;
   nowMs: number;
-}) {
+}>) {
   const scrapeAgo = timeAgo(lastUpdate.scrapeAt, nowMs);
   return (
     <footer className="mt-7 border-t border-white/[0.07]">

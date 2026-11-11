@@ -5,4 +5,5 @@
  * scores into the numbers we keep.
  */
 
-export * from './omdb-response';
+export { OmdbResponseSchema } from './omdb-response';
+export type { OmdbRatings, OmdbResponse } from './omdb-response';

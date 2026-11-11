@@ -15,7 +15,7 @@ export function formatRuntime(min: number | null): string | null {
 
 /** "3 hours ago" style label (`never` when missing/unparseable). */
 export function timeAgo(at: string | null, nowMs: number): string {
-  const parsed = at ? Date.parse(at) : NaN;
+  const parsed = at ? Date.parse(at) : Number.NaN;
   return Number.isFinite(parsed)
     ? relativeTime(new Date(parsed), new Date(nowMs))
     : 'never';

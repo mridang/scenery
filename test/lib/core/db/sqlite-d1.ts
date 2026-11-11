@@ -1,5 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+
 import {
   DatabaseSync,
   type SQLInputValue,
@@ -70,16 +71,16 @@ class Statement {
  * rate limiter: `prepare`, `bind`, `run`, `all`, `raw`, `first`, and `batch`
  * (one transaction, rolled back if any statement fails, as D1 does).
  */
-export function sqliteD1(...migrations: readonly string[]): {
+export async function sqliteD1(...migrations: readonly string[]): Promise<{
   readonly d1: D1Database;
   readonly raw: DatabaseSync;
-} {
+}> {
   const raw = new DatabaseSync(':memory:');
-  migrations.forEach((file) =>
+  for (const file of migrations) {
     raw.exec(
-      readFileSync(path.join(process.cwd(), 'migrations', file), 'utf8'),
-    ),
-  );
+      await readFile(path.join(process.cwd(), 'migrations', file), 'utf8'),
+    );
+  }
   const d1 = {
     prepare: (sql: string) => new Statement(raw, sql),
     batch: async (statements: readonly Statement[]) => {

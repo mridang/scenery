@@ -64,8 +64,13 @@ describe('registerWhenLoaded', () => {
   });
 
   it('does nothing in a browser without service workers', () => {
-    const env = browser({ serviceWorker: undefined, readyState: 'complete' });
-    expect(registerWhenLoaded(env)).toBeUndefined();
+    const env = browser({ readyState: 'complete' });
+    const bare = {
+      production: env.production,
+      readyState: env.readyState,
+      onLoad: env.onLoad,
+    };
+    expect(registerWhenLoaded(bare)).toBeUndefined();
     expect(env.register).not.toHaveBeenCalled();
   });
 });

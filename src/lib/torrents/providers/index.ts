@@ -11,16 +11,15 @@ export type { ApibayOptions, ProviderOptions } from './types';
  * apibay (TPB) as a free fallback.
  *
  * Torrentio answers fine from a Cloudflare-Worker egress IP, so it gets
- * the direct transport. apibay blocks Worker IPs and needs the proxied
+ * the direct transport. Apibay blocks Worker IPs and needs the proxied
  * one. Splitting the transports means we only spend our ScrapingAnt
  * 1-concurrent free-tier budget on the cases where the primary provider
  * misses — Torrentio successes (the common case) cost zero ScrapingAnt
- * calls.
- *
- * @param proxied  Wrapped transport routing via ScrapingAnt (geoblocked
- *                 endpoints).
- * @param direct   Transport that hits the upstream directly. Defaults to
- *                 the proxied one so existing callers keep working.
+ * calls..
+ * @param proxied - Wrapped transport routing via ScrapingAnt (geoblocked
+ * endpoints).
+ * @param direct - Transport that hits the upstream directly. Defaults to
+ * the proxied one so existing callers keep working.
  * @public
  */
 export function defaultProviders(

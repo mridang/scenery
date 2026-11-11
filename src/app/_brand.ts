@@ -16,7 +16,6 @@ import {
   PRIVACY_LAST_UPDATED,
   SITE_DESCRIPTION,
   SITE_NAME,
-  SITE_TITLE,
   SITE_URL,
   TERMS_LAST_UPDATED,
 } from '@/utils/site';
@@ -25,19 +24,16 @@ import {
 export const BRAND_NAME = SITE_NAME;
 
 /** The name where space is short: under the home-screen icon, and as the installed app's short name. */
-export const BRAND_SHORT_NAME = SITE_NAME;
 
 /** The small descriptor under the wordmark and on the social card. */
 export const BRAND_TAGLINE = 'Movie release tracker';
 
 /** The title of the home page, and of any page that does not set its own. */
-export const BRAND_TITLE = SITE_TITLE;
 
 /** What search results and social cards say about the app. */
 export const BRAND_DESCRIPTION = SITE_DESCRIPTION;
 
 /** The public address of the app, with no trailing slash. */
-export const BRAND_URL = SITE_URL;
 
 /** Where to report a security problem: published in `security.txt` and the security policy. */
 export const SECURITY_CONTACT = 'mailto:mridang.agarwalla@gmail.com';
@@ -60,7 +56,7 @@ export const COLOR_SCHEME = 'dark';
 /**
  * Whether pages may be indexed unless they say otherwise. The whole site is a
  * private tool, so crawlers are told to keep it out of search indexes while
- * social scrapers, which ignore this, still read the share card. robots.txt
+ * social scrapers, which ignore this, still read the share card. Robots.txt
  * and an `X-Robots-Tag` header (see `lib/core/http/headers.ts`) say the same thing.
  */
 export const INDEX_BY_DEFAULT = false;
@@ -121,3 +117,9 @@ export const NOT_FOUND_LINK: Readonly<{ href: string; label: string }> | null =
 
 /** The reassurance on the error pages, after "Something went wrong". */
 export const ERROR_REASSURANCE = 'Try again in a moment.';
+
+export {
+  SITE_TITLE as BRAND_TITLE,
+  SITE_NAME as BRAND_SHORT_NAME,
+  SITE_URL as BRAND_URL,
+} from '@/utils/site';
