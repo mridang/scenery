@@ -103,13 +103,9 @@ function fetchEvent(
 describe('public/sw.js', () => {
   it('listens for install, activate and fetch', () => {
     const { listeners } = loadWorker({ online: true, preload: true });
-    expect([...listeners.keys()].toSorted()).toEqual([
-      'activate',
-      'fetch',
-      'install',
-      'notificationclick',
-      'push',
-    ]);
+    expect(
+      [...listeners.keys()].toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(['activate', 'fetch', 'install', 'notificationclick', 'push']);
   });
 
   it('takes over straight away on install', () => {

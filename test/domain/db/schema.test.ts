@@ -15,7 +15,7 @@ function columnsOf(raw: DatabaseSync, table: string): readonly string[] {
     .prepare(`PRAGMA table_info(${table})`)
     .all()
     .map((row) => String(row['name']))
-    .toSorted();
+    .toSorted((a, b) => a.localeCompare(b));
 }
 
 /** The names of the indexes SQLite reports for a table. */
@@ -47,7 +47,9 @@ describe('the schema file and the migrations', () => {
       expect(table).toBeDefined();
       const config = getTableConfig(table!);
       expect(columnsOf(raw, name)).toEqual(
-        config.columns.map((column) => column.name).toSorted(),
+        config.columns
+          .map((column) => column.name)
+          .toSorted((a, b) => a.localeCompare(b)),
       );
       // Every index the schema names exists (the database may carry more, such
       // as the legacy unique constraint on recipes.drive_file_id).

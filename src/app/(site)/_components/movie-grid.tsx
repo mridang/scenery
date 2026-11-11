@@ -47,7 +47,7 @@ function mosaicOrder(
 ): Array<{ movie: ScoredMovie; big: boolean }> {
   const BIG_COUNT = 6;
   const popularity = [...movies]
-    .sort((a, b) => (b.row.vote_count ?? 0) - (a.row.vote_count ?? 0))
+    .toSorted((a, b) => (b.row.vote_count ?? 0) - (a.row.vote_count ?? 0))
     .slice(0, BIG_COUNT);
   const bigIds = new Set(popularity.map((movie) => movie.row.imdb_id));
 

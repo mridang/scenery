@@ -59,9 +59,9 @@ const routeFiles = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
     entry.isDirectory()
       ? routeFiles(join(dir, entry.name))
-      : (entry.name === 'route.ts'
+      : entry.name === 'route.ts'
         ? [join(dir, entry.name)]
-        : []),
+        : [],
   );
 
 /** The documented path of a route file, with `[x]` as `{x}`. */
@@ -537,9 +537,11 @@ async function conforms(key: string, res: Response): Promise<string[]> {
 
 describe('openapi.json', () => {
   it('is tested through every route file', () => {
-    expect(routeFiles(API).map(pathOf).sort()).toEqual(
-      Object.keys(MODULES).sort(),
-    );
+    expect(
+      routeFiles(API)
+        .map(pathOf)
+        .toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(Object.keys(MODULES).toSorted((a, b) => a.localeCompare(b)));
   });
 
   it('is OpenAPI 3.1 and every reference resolves', () => {
@@ -555,7 +557,9 @@ describe('openapi.json', () => {
   });
 
   it('describes exactly the routes under src/app/api, one operation each', () => {
-    expect([...documented().keys()].sort()).toEqual(registered().sort());
+    expect(
+      [...documented().keys()].toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(registered().toSorted((a, b) => a.localeCompare(b)));
   });
 
   it('gives every operation an id, tags, a summary, security and a problem response', () => {
@@ -609,9 +613,9 @@ describe.each(subjects)('$key', ({ key, valid, invalid }) => {
   const secured = (operation.security ?? []).length > 0;
 
   it('has a test subject for every documented operation', () => {
-    expect(subjects.map((s) => s.key).sort()).toEqual(
-      [...documented().keys()].sort(),
-    );
+    expect(
+      subjects.map((s) => s.key).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual([...documented().keys()].toSorted((a, b) => a.localeCompare(b)));
   });
 
   it('answers valid input with a documented success that fits its schema', async () => {

@@ -81,7 +81,7 @@ function allowedQuery(
     names.add(name);
   }
   return new URLSearchParams(
-    entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+    entries.toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
   );
 }
 

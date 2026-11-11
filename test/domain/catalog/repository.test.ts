@@ -67,10 +67,9 @@ describe('CatalogRepository (SQLite-backed D1)', () => {
     const catalog = new CatalogRepository(db);
 
     const all = await catalog.loadMovies('all', 'date', 'catalog');
-    expect(all.map((m) => m.imdb_id).sort()).toEqual([
-      'tt2000001',
-      'tt2000002',
-    ]);
+    expect(
+      all.map((m) => m.imdb_id).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(['tt2000001', 'tt2000002']);
 
     const english = await catalog.loadMovies('en', 'date', 'catalog');
     expect(english).toHaveLength(1);

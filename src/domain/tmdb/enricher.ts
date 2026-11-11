@@ -15,7 +15,6 @@ import type { TmdbRepository } from './repository';
  *
  * Every method is idempotent: re-running after a partial failure simply
  * picks up whatever is still pending.
- *
  * @public
  */
 export class TmdbEnricher {
@@ -46,7 +45,6 @@ export class TmdbEnricher {
   /**
    * IMDb ids that still need a /find lookup (never fetched, or a prior
    * attempt errored). Each is one unit of work.
-   *
    * @public
    */
   public async listPendingMovieIds(limit: number): Promise<string[]> {
@@ -56,7 +54,6 @@ export class TmdbEnricher {
   /**
    * Fully enrich ONE movie: /find then /movie credits. At most two TMDB
    * subrequests — safely under any per-invocation cap.
-   *
    * @returns A short verdict for the step result.
    * @public
    */
@@ -103,7 +100,6 @@ export class TmdbEnricher {
   /**
    * Person ids referenced by the catalog that we haven't fetched yet (or
    * whose prestige score is missing). Each is one unit of work.
-   *
    * @public
    */
   public async listPendingPeopleIds(limit: number): Promise<number[]> {
@@ -123,7 +119,6 @@ export class TmdbEnricher {
   /**
    * Fetch ONE person's filmography and store their prestige score. One
    * TMDB subrequest.
-   *
    * @returns true on success, false on fetch error.
    * @public
    */
@@ -149,7 +144,6 @@ export class TmdbEnricher {
    * Bounded by the movie's ~6 referenced ids (deduped against people we
    * already have), so a single call is a handful of TMDB subrequests at
    * most.
-   *
    * @returns how many people were newly fetched.
    * @public
    */
