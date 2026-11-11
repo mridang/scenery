@@ -59,9 +59,9 @@ const routeFiles = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
     entry.isDirectory()
       ? routeFiles(join(dir, entry.name))
-      : entry.name === 'route.ts'
+      : (entry.name === 'route.ts'
         ? [join(dir, entry.name)]
-        : [],
+        : []),
   );
 
 /** The documented path of a route file, with `[x]` as `{x}`. */
@@ -70,7 +70,7 @@ const pathOf = (file: string): string =>
     '/api/' +
     relative(API, file)
       .replace(/\/?route\.ts$/, '')
-      .replace(/\[([a-z_]+)\]/g, '{$1}')
+      .replaceAll(/\[([a-z_]+)\]/g, '{$1}')
   ).replace(/\/$/, '');
 
 /** Every `METHOD /path` a route file under src/app/api exports, with `[x]` as `{x}`. */
@@ -81,7 +81,7 @@ const registered = (): string[] =>
     return ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
       .filter((method) =>
         new RegExp(
-          `export (const \\{[^}]*\\b${method}\\b|async function ${method}\\b|function ${method}\\b|const ${method}\\b)`,
+          String.raw`export (const \{[^}]*\b${method}\b|async function ${method}\b|function ${method}\b|const ${method}\b)`,
         ).test(text),
       )
       .map((method) => `${method} ${path}`);
@@ -256,7 +256,7 @@ const SUBSCRIPTION = {
 const send = ({ key, path, init, id }: Call): Promise<Response> => {
   const handler = handlers.get(key) as Handler;
   return handler(
-    new Request(`${ORIGIN}${path}`, { method: key.split(' ')[0], ...init }),
+    new Request(`${ORIGIN}${path}`, { method: key.split(' ', 1)[0], ...init }),
     id === undefined ? undefined : { params: Promise.resolve({ id }) },
   );
 };

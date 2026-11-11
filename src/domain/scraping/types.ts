@@ -2,7 +2,6 @@ import type { FetchStatus } from '@/domain/db/enums';
 
 /**
  * Result of attempting to scrape a single listing page.
- *
  * @public
  */
 export interface PageRunResult {

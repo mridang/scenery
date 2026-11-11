@@ -2,7 +2,7 @@
  * Operator operations: the manual runs (a pipeline run, an OMDB backfill, a
  * test of the daily notification).
  *
- *   POST /api/operations {type, parameters?} → 201 + Location
+ *   POST /api/operations {type, parameters?} → 201 + Location.
  *
  * Auth: the `CRON_SECRET` as a bearer token. With no secret set (local
  * development) it is open, as the manual triggers it replaces always were. The

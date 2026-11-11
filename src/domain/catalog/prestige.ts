@@ -7,23 +7,22 @@
  * query reads {@link PRESTIGE_IDS} for its `IN (...)` membership test,
  * and the view layer reads {@link PRESTIGE_LABELS} to turn the ids a row
  * matched back into display names.
- *
  * @public
  */
 export const PRESTIGE_LABELS: Readonly<Record<number, string>> = {
   178: 'Netflix',
-  152952: 'Apple TV+',
-  192828: 'Apple TV+',
+  152_952: 'Apple TV+',
+  192_828: 'Apple TV+',
   420: 'Marvel',
   3268: 'HBO',
   7429: 'HBO',
-  41077: 'A24',
-  20580: 'Amazon MGM',
-  210099: 'Amazon MGM',
-  127928: 'Searchlight',
+  41_077: 'A24',
+  20_580: 'Amazon MGM',
+  210_099: 'Amazon MGM',
+  127_928: 'Searchlight',
   7637: 'Annapurna',
-  10146: 'Focus',
-  90733: 'NEON',
+  10_146: 'Focus',
+  90_733: 'NEON',
   81: 'Plan B',
   2575: 'Disney',
   6194: 'Warner Bros',

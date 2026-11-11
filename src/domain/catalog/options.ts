@@ -31,7 +31,6 @@ export interface RawViewParams {
  *
  * Centralising this is what keeps the two entry points honest — they
  * can't drift to different defaults or skip the validation.
- *
  * @public
  */
 export function parseViewOptions(raw: RawViewParams): ViewOptions {
@@ -51,7 +50,6 @@ export function parseViewOptions(raw: RawViewParams): ViewOptions {
  * page applies after the SQL has returned its rows. `pageSort` keeps the
  * full user choice, while {@link ViewOptions#sort} downgrades 'rating' to
  * the SQL default so the SQL path stays small.
- *
  * @public
  */
 export function parsePageViewOptions(raw: RawViewParams): PageViewOptions {

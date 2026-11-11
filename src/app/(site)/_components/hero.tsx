@@ -41,7 +41,7 @@ export function Hero({ movie }: { movie: ScoredMovie | null }) {
   const metaLine = [...genres, runtime].filter(Boolean).join('  ·  ');
   const credit = [
     row.director ? `Dir. ${row.director}` : null,
-    cast.length ? cast.slice(0, 3).join(', ') : null,
+    cast.length > 0 ? cast.slice(0, 3).join(', ') : null,
   ]
     .filter(Boolean)
     .join('  ·  ');
@@ -49,9 +49,9 @@ export function Hero({ movie }: { movie: ScoredMovie | null }) {
   const status =
     row.torrent_status === 'success' && (row.torrent_count ?? 0) > 0
       ? (row.best_quality ?? 'Available')
-      : row.torrent_status === 'empty'
+      : (row.torrent_status === 'empty'
         ? 'No torrent yet'
-        : 'Pending';
+        : 'Pending');
   const sizeText =
     row.best_size_bytes && row.best_size_bytes > 0
       ? formatSize(row.best_size_bytes)

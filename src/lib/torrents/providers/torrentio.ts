@@ -19,7 +19,7 @@ const SIZE_UNIT_BYTES: Record<string, number> = {
   TB: 1_000_000_000_000,
   GB: 1_000_000_000,
   MB: 1_000_000,
-  KB: 1_000,
+  KB: 1000,
 };
 const ACCEPT_JSON: RequestInit = { headers: { Accept: 'application/json' } };
 
@@ -67,13 +67,13 @@ export class TorrentioProvider implements TorrentProvider {
       return null;
     }
     const raw = stream.title ?? '';
-    const firstLine = raw.split('\n')[0] ?? '';
+    const firstLine = raw.split('\n', 1)[0] ?? '';
 
     const seedersMatch = raw.match(/👤\s*([\d,]+)/);
     const seeders =
-      seedersMatch?.[1] !== undefined
-        ? Number(seedersMatch[1].replace(/,/g, ''))
-        : null;
+      seedersMatch?.[1] === undefined
+        ? null
+        : Number(seedersMatch[1].replaceAll(',', ''));
 
     const sizeMatch = raw.match(/💾\s*([\d.]+)\s*(GB|MB|TB|KB)/i);
     const sizeBytes =

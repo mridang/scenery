@@ -30,11 +30,11 @@ export class TorrentLookupManager {
       const acc = await accP;
       const result = await provider
         .search(imdbId)
-        .catch((err: unknown): LookupResult => ({
+        .catch((error: unknown): LookupResult => ({
           status: 'error',
           torrents: [],
           rawResponse: '',
-          error: err instanceof Error ? err.message : String(err),
+          error: error instanceof Error ? error.message : String(error),
         }));
       return [...acc, { provider: provider.name, result }];
     }, Promise.resolve([]));

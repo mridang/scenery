@@ -8,11 +8,8 @@
  * Worker, so they are re-exported here.
  */
 
-import { ScrapeWorkflow, MovieWorkflow, NotifyWorkflow } from '@/workflows';
 import { setErrorContext } from '@/lib/core/observability/context';
 import { errorMessage, logError, logInfo } from '@/utils/logging';
-
-export { ScrapeWorkflow, MovieWorkflow, NotifyWorkflow };
 
 /**
  * Start one workflow instance. A workflow may transiently fail to start (rate
@@ -49,7 +46,7 @@ async function safeCreate(
  * `scheduled` is the cron-trigger entrypoint. It routes by the firing cron
  * expression:
  *   - 06:00 UTC → ScrapeWorkflow (scrape sources, dispatch MovieWorkflows)
- *   - 17:00 UTC → NotifyWorkflow (push top-5 new movies to subscribers)
+ *   - 17:00 UTC → NotifyWorkflow (push top-5 new movies to subscribers).
  *
  * Anything else logs and does nothing, so a future cron addition isn't a silent
  * crash.
@@ -57,21 +54,26 @@ async function safeCreate(
 const extraHandlers: Partial<ExportedHandler<CloudflareEnv>> = {
   async scheduled(event, env, ctx) {
     switch (event.cron) {
-      case '0 6 * * *':
+      case '0 6 * * *': {
         await setErrorContext({ 'job.name': 'scrape' });
         ctx.waitUntil(
           safeCreate('scrape', env.SCRAPE_WORKFLOW, { pageNumbers: [1] }),
         );
         break;
-      case '0 17 * * *':
+      }
+      case '0 17 * * *': {
         await setErrorContext({ 'job.name': 'notify' });
         ctx.waitUntil(safeCreate('notify', env.NOTIFY_WORKFLOW, {}));
         break;
-      default:
+      }
+      default: {
         await setErrorContext({ 'job.name': 'unknown' });
         logInfo({ event: 'cron.unknown', cron: event.cron });
+      }
     }
   },
 };
 
 export default extraHandlers;
+
+export { ScrapeWorkflow, NotifyWorkflow, MovieWorkflow } from '@/workflows';

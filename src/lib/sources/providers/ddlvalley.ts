@@ -23,10 +23,9 @@ function parseDdlvalleyDate(raw: string | undefined): string | undefined {
 }
 
 /**
- * ddlvalley.me adapter — pulls movie releases from the `/category/movies/`
+ * Ddlvalley.me adapter — pulls movie releases from the `/category/movies/`
  * listing. Used as a parallel source to scnsrc so a Cloudflare block on
- * either site doesn't lose us the day's releases.
- *
+ * either site doesn't lose us the day's releases..
  * @public
  */
 export class DdlvalleySource implements Source {
@@ -47,7 +46,7 @@ export class DdlvalleySource implements Source {
   }
 
   public extract(html: string): ExtractedRelease[] {
-    const offsets = Array.from(html.matchAll(POST_RE))
+    const offsets = [...html.matchAll(POST_RE)]
       .map((match) => ({ id: match[1], idx: match.index ?? 0 }))
       .filter(
         (offset): offset is { id: string; idx: number } =>
@@ -74,15 +73,15 @@ export class DdlvalleySource implements Source {
 
       const dateRaw = chunk.match(DATE_RE)?.[1]?.trim();
       const author = chunk.match(AUTHOR_RE)?.[1]?.trim();
-      const categories = Array.from(chunk.matchAll(CATEGORY_RE))
+      const categories = [...chunk.matchAll(CATEGORY_RE)]
         .map((match) => match[1]?.trim())
         .filter((category): category is string => category !== undefined);
       const imageUrl = chunk.match(IMG_RE)?.[1];
       const plotRaw = chunk.match(PLOT_RE)?.[1];
       const excerpt = plotRaw
         ? plotRaw
-            .replace(/<[^>]+>/g, '')
-            .replace(/\s+/g, ' ')
+            .replaceAll(/<[^>]+>/g, '')
+            .replaceAll(/\s+/g, ' ')
             .trim()
         : undefined;
 

@@ -24,10 +24,9 @@ function parseScnsrcDate(raw: string | undefined): string | undefined {
 }
 
 /**
- * scnsrc.me adapter — pulls movie releases from the `/category/films/hd/`
+ * Scnsrc.me adapter — pulls movie releases from the `/category/films/hd/`
  * listing. Each post is wrapped in `<div class="post" id="post-NNNNNN">`
- * and embeds an IMDb link inside its body.
- *
+ * and embeds an IMDb link inside its body..
  * @public
  */
 export class ScnsrcSource implements Source {
@@ -48,7 +47,7 @@ export class ScnsrcSource implements Source {
   }
 
   public extract(html: string): ExtractedRelease[] {
-    const offsets = Array.from(html.matchAll(POST_RE))
+    const offsets = [...html.matchAll(POST_RE)]
       .map((match) => ({ id: match[1], idx: match.index ?? 0 }))
       .filter(
         (offset): offset is { id: string; idx: number } =>
@@ -75,15 +74,15 @@ export class ScnsrcSource implements Source {
 
       const author = chunk.match(AUTHOR_RE)?.[1]?.trim();
       const dateRaw = chunk.match(DATE_RE)?.[1]?.trim();
-      const categories = Array.from(chunk.matchAll(CATEGORY_RE))
+      const categories = [...chunk.matchAll(CATEGORY_RE)]
         .map((match) => match[1]?.trim())
         .filter((category): category is string => category !== undefined);
       const imageUrl = chunk.match(IMG_RE)?.[1];
       const excerptRaw = chunk.match(EXCERPT_RE)?.[1];
       const excerpt = excerptRaw
         ? excerptRaw
-            .replace(/<[^>]+>/g, '')
-            .replace(/\s+/g, ' ')
+            .replaceAll(/<[^>]+>/g, '')
+            .replaceAll(/\s+/g, ' ')
             .trim()
         : undefined;
 

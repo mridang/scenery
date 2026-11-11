@@ -51,7 +51,6 @@ function castNames(raw: string | null): string[] {
  *
  * Construct with {@link CatalogService.fromDatabase} in production. Unit tests
  * pass a stub {@link CatalogReader} straight to the constructor.
- *
  * @public
  */
 export class CatalogService {

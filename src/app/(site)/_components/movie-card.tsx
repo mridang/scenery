@@ -48,13 +48,14 @@ export function MovieCardUniform({ movie }: CardProps) {
   const runtime = formatRuntime(row.runtime);
   const metaLine = [...genres, runtime].filter(Boolean).join('  ·  ');
   const dirText = row.director ? `Dir. ${row.director}` : null;
-  const castLine = cast.length ? `With ${cast.slice(0, 3).join(', ')}` : null;
+  const castLine =
+    cast.length > 0 ? `With ${cast.slice(0, 3).join(', ')}` : null;
   const torrentBits =
     state === 'torrent'
       ? [
           row.best_quality,
           fmtSizeShort(row.best_size_bytes),
-          row.best_seeders !== null ? `${row.best_seeders} peers` : null,
+          row.best_seeders === null ? null : `${row.best_seeders} peers`,
           row.best_source,
         ]
           .filter(Boolean)
@@ -145,11 +146,11 @@ export function MovieCardUniform({ movie }: CardProps) {
           <span className="truncate text-[14.5px] leading-tight font-semibold tracking-[-0.01em]">
             {title}
           </span>
-          {row.tmdb_year !== null ? (
+          {row.tmdb_year === null ? null : (
             <span className="ml-auto flex-none font-mono text-[11px] text-[#71717a]">
               {row.tmdb_year}
             </span>
-          ) : null}
+          )}
         </div>
         {metaLine ? (
           <div className="truncate font-mono text-[10.5px] text-[#8a8a94]">
@@ -203,7 +204,7 @@ export function MovieCardMosaic({ movie, big = false }: CardProps) {
   const metaLine = [...genres, runtime].filter(Boolean).join('  ·  ');
   const credit = [
     row.director ? `Dir. ${row.director}` : null,
-    cast.length ? cast.slice(0, 3).join(', ') : null,
+    cast.length > 0 ? cast.slice(0, 3).join(', ') : null,
   ]
     .filter(Boolean)
     .join('  ·  ');

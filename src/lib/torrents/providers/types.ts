@@ -11,6 +11,6 @@ export interface ProviderOptions {
 
 /** Options for {@link ApibayProvider}. @public */
 export interface ApibayOptions extends ProviderOptions {
-  /** apibay category id; `200` is video/movies. */
+  /** Apibay category id; `200` is video/movies. */
   readonly category?: string;
 }

@@ -33,7 +33,6 @@ export interface NotifyWorkflowParams {}
  * patch, transient 503) is retried automatically; 404/410 ("Gone") is
  * treated as the user having unsubscribed at the browser, and the row
  * is dropped from D1.
- *
  * @public
  */
 export class NotifyWorkflow extends WorkflowEntrypoint<
@@ -135,9 +134,9 @@ function buildPayload(picks: readonly ScoredMovie[]): PushPayload {
     .join(' · ');
   const top = picks[0]!;
   const image =
-    top.row.poster_path !== null
-      ? `https://image.tmdb.org/t/p/w500${top.row.poster_path}`
-      : undefined;
+    top.row.poster_path === null
+      ? undefined
+      : `https://image.tmdb.org/t/p/w500${top.row.poster_path}`;
   const count = picks.length;
   return {
     title: `${countOf(count, 'new movie')} today`,
@@ -154,6 +153,6 @@ function shortKey(endpoint: string): string {
   // token there, which is unique enough for distinguishing steps within
   // a single workflow instance.
   const segments = endpoint.split('/');
-  const last = segments[segments.length - 1] ?? endpoint;
+  const last = segments.at(-1) ?? endpoint;
   return last.slice(0, 32);
 }

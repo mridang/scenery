@@ -158,10 +158,12 @@ export function parseOperationInput(
     return { ok: false, errors };
   }
   switch (type as OperationType) {
-    case 'pipeline_run':
+    case 'pipeline_run': {
       return pipelineRun(parameters);
-    case 'omdb_backfill':
+    }
+    case 'omdb_backfill': {
       return omdbBackfill(parameters);
+    }
     case 'push_trigger': {
       const extra = unknownKeys(parameters, []);
       return extra.length > 0

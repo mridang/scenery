@@ -46,8 +46,7 @@ export default async function Home({
     catalog.lastUpdate(),
   ]);
 
-  // Async Server Component rendered once per request, so reading the wall
-  // clock here is deterministic for the render.
+  // Async Server Component rendered once per request, so reading the wall clock here is deterministic for the render.
   // eslint-disable-next-line react-hooks/purity -- per-request server render
   const nowMs = Date.now();
 

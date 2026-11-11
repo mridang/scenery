@@ -4,7 +4,6 @@ import type { PageRunResult } from './types';
 
 /**
  * Options for {@link ScrapeOrchestrator#run}.
- *
  * @public
  */
 export interface RunOptions {
@@ -17,7 +16,6 @@ export interface RunOptions {
 /**
  * Drives a {@link Source} adapter and writes its output into D1. One
  * instance handles many runs — there is no per-call state.
- *
  * @public
  */
 export class ScrapeOrchestrator {
@@ -28,7 +26,6 @@ export class ScrapeOrchestrator {
 
   /**
    * Scrape a list of pages from one source.
-   *
    * @throws When the requested source slug isn't registered or isn't seeded.
    */
   public async run(opts: RunOptions): Promise<PageRunResult[]> {

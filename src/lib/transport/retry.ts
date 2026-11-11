@@ -37,7 +37,6 @@ function sleep(ms: number): Promise<void> {
 
 /**
  * Wrap `transport` so transient failures are retried.
- *
  * @public
  */
 export function withRetry(
@@ -58,9 +57,9 @@ export function withRetry(
           return attempt(attemptNumber + 1);
         }
         return response;
-      } catch (err) {
+      } catch (error) {
         if (isLast) {
-          throw err;
+          throw error;
         }
         await sleep(backoffMs(attemptNumber, baseDelayMs, jitterMs));
         return attempt(attemptNumber + 1);

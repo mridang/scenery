@@ -15,12 +15,12 @@ import { genericTransport, proxyTransport, withRetry } from '@/lib/transport';
 
 /**
  * Parameters accepted by {@link MovieWorkflow}.
- *
  * @public
  */
 export interface MovieWorkflowParams {
   /** IMDb id of the single movie this instance is responsible for. */
   imdbId: string;
+
   /**
    * Position in the dispatch batch (0, 1, 2, …). Drives the per-movie
    * stagger so sibling instances don't stampede ScrapingAnt's one-
@@ -40,7 +40,6 @@ export interface MovieWorkflowParams {
  * many movies arrive. The 24h torrent-maturity gate is just a
  * `step.sleep` between the two halves: free, durable, and resumed in a
  * fresh invocation with a clean budget.
- *
  * @public
  */
 export class MovieWorkflow extends WorkflowEntrypoint<

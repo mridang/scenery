@@ -21,7 +21,6 @@ export type { RetryOptions } from './retry';
  * Transport for JSON endpoints that ban a Worker's single egress IP: route
  * through ScrapingAnt's rotating proxy when a key is available, otherwise
  * fall back to a direct request.
- *
  * @public
  */
 export function proxyTransport(apiKey: string | undefined): typeof fetch {
@@ -34,7 +33,6 @@ export function proxyTransport(apiKey: string | undefined): typeof fetch {
  * Transport for HTML pages behind an anti-bot wall (e.g. Cloudflare): the
  * full ScrapingAnt headless-browser tier, which renders JS and solves
  * challenges. Requires a key — there's no useful direct fallback.
- *
  * @public
  */
 export function browserTransport(apiKey: string): typeof fetch {

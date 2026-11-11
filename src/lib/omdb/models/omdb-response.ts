@@ -24,14 +24,14 @@ function intOrNull(input: string | undefined): number | null {
   if (input === undefined || input === 'N/A') {
     return null;
   }
-  const value = Number.parseInt(input.replace(/[^0-9-]/g, ''), 10);
+  const value = Number.parseInt(input.replaceAll(/[^0-9-]/g, ''), 10);
   return Number.isFinite(value) ? value : null;
 }
 
 /**
  * OMDb's `?i=` response, coerced: the `Response` flag, any error, and the four
  * scores as numbers (the stringly-typed "8.5"/"1,234"/"85%"/"N/A" quirks are
- * handled here, in the model, not in the client). @public
+ * handled here, in the model, not in the client). @public.
  */
 export const OmdbResponseSchema = z
   .object({

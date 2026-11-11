@@ -105,7 +105,7 @@ function PlanRow({
   const sColor = scoreColor(score, tier);
   const torrentLine = [
     row.best_quality,
-    row.best_seeders !== null ? `${row.best_seeders} peers` : null,
+    row.best_seeders === null ? null : `${row.best_seeders} peers`,
     row.best_source,
   ]
     .filter(Boolean)
@@ -139,11 +139,11 @@ function PlanRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           <span className="truncate text-[14.5px] font-semibold">{title}</span>
-          {row.tmdb_year !== null ? (
+          {row.tmdb_year === null ? null : (
             <span className="flex-none font-mono text-[11px] text-[#8a8a94]">
               {row.tmdb_year}
             </span>
-          ) : null}
+          )}
         </div>
         {torrentLine ? (
           <div className="truncate font-mono text-[10.5px] text-[#8a8a94]">

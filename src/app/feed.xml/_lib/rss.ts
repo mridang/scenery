@@ -29,11 +29,11 @@ export function descriptionFor(movie: ScoredMovie): string {
         })()
       : null;
   const rating =
-    row.vote_average != null
-      ? `${formatRating(row.vote_average)}${
-          row.vote_count != null ? ` (${countOf(row.vote_count, 'vote')})` : ''
-        }`
-      : null;
+    row.vote_average == null
+      ? null
+      : `${formatRating(row.vote_average)}${
+          row.vote_count == null ? '' : ` (${countOf(row.vote_count, 'vote')})`
+        }`;
   const torrent = row.best_torrent_title
     ? `${row.best_torrent_title} (${[
         row.best_quality,
@@ -51,12 +51,12 @@ export function descriptionFor(movie: ScoredMovie): string {
   const parts: readonly (readonly [string, string | null])[] = [
     ['Score', formatRating(score)],
     ['Year', row.tmdb_year ? String(row.tmdb_year) : null],
-    ['Genres', genres.length ? genres.join(', ') : null],
+    ['Genres', genres.length > 0 ? genres.join(', ') : null],
     ['Runtime', runtime],
     ['Rating', rating],
-    ['Studios', studios.length ? studios.join(', ') : null],
+    ['Studios', studios.length > 0 ? studios.join(', ') : null],
     ['Director', row.director ?? null],
-    ['Cast', cast.length ? cast.join(', ') : null],
+    ['Cast', cast.length > 0 ? cast.join(', ') : null],
     ['Torrent', torrent],
     ['Seeders', seeders],
   ];
@@ -109,7 +109,7 @@ export function buildFeed(channel: FeedChannel): string {
     const year = row.tmdb_year ? ` (${row.tmdb_year})` : '';
     const releaseMs = row.latest_release_at
       ? Date.parse(row.latest_release_at)
-      : NaN;
+      : Number.NaN;
     feed.addItem({
       title: `${title}${year} — ${formatRating(movie.score)}`,
       id: row.best_info_hash

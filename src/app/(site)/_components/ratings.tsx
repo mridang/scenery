@@ -53,7 +53,7 @@ export function RatingsRow({
   const iconSize = big ? 'h-4 w-auto' : 'h-3 w-auto';
   return (
     <div className={cls}>
-      {sceneryScore !== null ? (
+      {sceneryScore === null ? null : (
         <span className={itemCls}>
           <img
             src="/icon.svg"
@@ -75,7 +75,7 @@ export function RatingsRow({
             ) : null}
           </span>
         </span>
-      ) : null}
+      )}
       {showImdb ? (
         <span className={itemCls}>
           <img
@@ -88,7 +88,7 @@ export function RatingsRow({
           <span className="font-semibold">{formatRating(imdbRating!)}</span>
         </span>
       ) : null}
-      {mcScore !== null ? (
+      {mcScore === null ? null : (
         <span className={itemCls}>
           <img
             src="/icons/metacritic.svg"
@@ -99,8 +99,8 @@ export function RatingsRow({
           />
           <span className="font-semibold">{mcScore}</span>
         </span>
-      ) : null}
-      {rtScore !== null ? (
+      )}
+      {rtScore === null ? null : (
         <span className={itemCls}>
           <img
             src="/icons/rotten-tomatoes.svg"
@@ -111,7 +111,7 @@ export function RatingsRow({
           />
           <span className="font-semibold">{rtScore}%</span>
         </span>
-      ) : null}
+      )}
     </div>
   );
 }

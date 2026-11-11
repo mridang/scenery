@@ -8,7 +8,6 @@ export type { ExtractedRelease, FetchResult, Source } from './types';
  * Build the registered set of sources over a given transport. The caller
  * (a composition root) decides how bytes are fetched and passes a label
  * describing that path — the sources themselves stay transport-agnostic.
- *
  * @param transport - A `fetch`-compatible transport (see `@/lib/transport`).
  * @param fetcherLabel - Identifier persisted on each snapshot row.
  * @returns Map of slug → {@link Source}.
