@@ -21,8 +21,7 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const SITE_URL = 'https://scenery.apps.mrida.ng';
 
 /** Parameters accepted by {@link NotifyWorkflow}. @public */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- a workflow with no inputs takes an empty params object
-export interface NotifyWorkflowParams {}
+export type NotifyWorkflowParams = object;
 
 /**
  * Daily 17:00 UTC tick: surface the five highest-scoring movies first
