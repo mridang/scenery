@@ -77,11 +77,11 @@ function loadWorker(options: {
       return new Response('from the network');
     },
   });
-  vm.runInContext(
+  // eslint-disable-next-line sonarjs/code-eval -- test fixture: loads the repository's own public/sw.js into a sandboxed vm context
+  new vm.Script(
     // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: a test helper that loads the worker synchronously
     readFileSync(path.join(process.cwd(), 'public/sw.js'), 'utf8'),
-    context,
-  );
+  ).runInContext(context);
   return { listeners, calls, windows };
 }
 

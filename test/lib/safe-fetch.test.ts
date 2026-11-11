@@ -278,171 +278,6 @@ describe('fetchCapped', () => {
     expect(seen).toEqual(['']);
   });
 
-  describe('size', () => {
-    it('refuses a body that announces it is too long, reading none of it', async () => {
-      const { response, state } = streaming(['x'], {
-        'content-length': '5000',
-      });
-      const { fetcher } = serving(response);
-      expect(
-        await fetchCapped('https://a.com/x', { ...OPTIONS, fetcher }),
-      ).toEqual({ ok: false, reason: 'too-large' });
-      expect(state.cancelled).toBe(true);
-    });
-
-    it('cuts off a body with no declared length once it passes the limit, and drops it', async () => {
-      const { response, state } = streaming([
-        'x'.repeat(60),
-        'x'.repeat(60),
-        'x'.repeat(60),
-      ]);
-      const { fetcher } = serving(response);
-      expect(
-        await fetchCapped('https://a.com/x', { ...OPTIONS, fetcher }),
-      ).toEqual({ ok: false, reason: 'too-large' });
-      expect(state.cancelled).toBe(true);
-    });
-
-    it('stops pulling from a body that never ends', async () => {
-      const pulls = { count: 0 };
-      const endless = new ReadableStream<Uint8Array>({
-        pull(controller) {
-          pulls.count += 1;
-          controller.enqueue(new Uint8Array(40));
-        },
-      });
-      const { fetcher } = serving(new Response(endless));
-      expect(
-        await fetchCapped('https://a.com/x', { ...OPTIONS, fetcher }),
-      ).toEqual({ ok: false, reason: 'too-large' });
-      expect(pulls.count).toBeLessThan(10);
-    });
-
-    it('accepts a body of exactly the limit', async () => {
-      const { fetcher } = serving(new Response('x'.repeat(100)));
-      const result = await fetchCapped('https://a.com/x', {
-        ...OPTIONS,
-        fetcher,
-      });
-      expect(result.ok && result.bytes.byteLength).toBe(100);
-    });
-
-    it('turns away a body dribbled in thousands of tiny pieces', async () => {
-      const { response, state } = streaming(
-        Array.from({ length: 5000 }, () => 'x'),
-      );
-      const { fetcher } = serving(response);
-      const result = await fetchCapped('https://a.com/x', {
-        ...OPTIONS,
-        maxBytes: 1_000_000,
-        fetcher,
-      });
-      expect(result).toEqual({ ok: false, reason: 'too-large' });
-      expect(state.cancelled).toBe(true);
-    });
-
-    it('can keep the start of a long body instead, and says it did', async () => {
-      const { response, state } = streaming([
-        'a'.repeat(60),
-        'b'.repeat(60),
-        'c'.repeat(60),
-      ]);
-      const { fetcher } = serving(response);
-      const result = await fetchCapped('https://a.com/x', {
-        ...OPTIONS,
-        overflow: 'truncate',
-        fetcher,
-      });
-      expect(result).toMatchObject({ ok: true, truncated: true });
-      expect(result.ok && new TextDecoder().decode(result.bytes)).toBe(
-        `${'a'.repeat(60)}${'b'.repeat(40)}`,
-      );
-      expect(state.cancelled).toBe(true);
-    });
-
-    it('does not mind a long declared length when it is only keeping the start', async () => {
-      const { fetcher } = serving(
-        new Response('x'.repeat(100), {
-          headers: { 'content-length': '999999' },
-        }),
-      );
-      const result = await fetchCapped('https://a.com/x', {
-        ...OPTIONS,
-        overflow: 'truncate',
-        fetcher,
-      });
-      expect(result).toMatchObject({ ok: true });
-    });
-
-    it('reads a body with no pieces at all as empty', async () => {
-      const { fetcher } = serving(new Response(null, { status: 200 }));
-      const result = await fetchCapped('https://a.com/x', {
-        ...OPTIONS,
-        fetcher,
-      });
-      expect(result.ok && result.bytes.byteLength).toBe(0);
-    });
-  });
-
-  describe('failure', () => {
-    it('says unreachable when the request throws', async () => {
-      const fetcher: SafeFetcher = async () => {
-        throw new TypeError('fetch failed');
-      };
-      expect(
-        await fetchCapped('https://a.com/x', { ...OPTIONS, fetcher }),
-      ).toEqual({ ok: false, reason: 'unreachable' });
-    });
-
-    it('says unreachable when the body breaks off', async () => {
-      const broken = new ReadableStream<Uint8Array>({
-        start(controller) {
-          controller.error(new Error('reset'));
-        },
-      });
-      const { fetcher } = serving(new Response(broken));
-      expect(
-        await fetchCapped('https://a.com/x', { ...OPTIONS, fetcher }),
-      ).toEqual({ ok: false, reason: 'unreachable' });
-    });
-
-    it('says timeout when the site is too slow to answer', async () => {
-      const fetcher: SafeFetcher = (_url, init) =>
-        new Promise((_resolve, reject) =>
-          init.signal?.addEventListener('abort', () =>
-            reject(init.signal?.reason),
-          ),
-        );
-      expect(
-        await fetchCapped('https://a.com/x', {
-          ...OPTIONS,
-          timeoutMs: 20,
-          fetcher,
-        }),
-      ).toEqual({ ok: false, reason: 'timeout' });
-    });
-
-    it('says timeout when the body stalls', async () => {
-      const fetcher: SafeFetcher = async (_url, init) =>
-        new Response(
-          new ReadableStream<Uint8Array>({
-            start(controller) {
-              init.signal?.addEventListener('abort', () =>
-                controller.error(init.signal?.reason),
-              );
-            },
-          }),
-        );
-      expect(
-        await fetchCapped('https://a.com/x', {
-          ...OPTIONS,
-          timeoutMs: 20,
-          fetcher,
-        }),
-      ).toEqual({ ok: false, reason: 'timeout' });
-    });
-  });
-
   it('uses the real fetch when no fetcher is given', async () => {
     const real = globalThis.fetch;
     const calls: string[] = [];
@@ -457,5 +292,170 @@ describe('fetchCapped', () => {
     } finally {
       globalThis.fetch = real;
     }
+  });
+});
+
+describe('fetchCapped size', () => {
+  it('refuses a body that announces it is too long, reading none of it', async () => {
+    const { response, state } = streaming(['x'], {
+      'content-length': '5000',
+    });
+    const { fetcher } = serving(response);
+    expect(
+      await fetchCapped('https://a.com/x', { ...OPTIONS, fetcher }),
+    ).toEqual({ ok: false, reason: 'too-large' });
+    expect(state.cancelled).toBe(true);
+  });
+
+  it('cuts off a body with no declared length once it passes the limit, and drops it', async () => {
+    const { response, state } = streaming([
+      'x'.repeat(60),
+      'x'.repeat(60),
+      'x'.repeat(60),
+    ]);
+    const { fetcher } = serving(response);
+    expect(
+      await fetchCapped('https://a.com/x', { ...OPTIONS, fetcher }),
+    ).toEqual({ ok: false, reason: 'too-large' });
+    expect(state.cancelled).toBe(true);
+  });
+
+  it('stops pulling from a body that never ends', async () => {
+    const pulls = { count: 0 };
+    const endless = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls.count += 1;
+        controller.enqueue(new Uint8Array(40));
+      },
+    });
+    const { fetcher } = serving(new Response(endless));
+    expect(
+      await fetchCapped('https://a.com/x', { ...OPTIONS, fetcher }),
+    ).toEqual({ ok: false, reason: 'too-large' });
+    expect(pulls.count).toBeLessThan(10);
+  });
+
+  it('accepts a body of exactly the limit', async () => {
+    const { fetcher } = serving(new Response('x'.repeat(100)));
+    const result = await fetchCapped('https://a.com/x', {
+      ...OPTIONS,
+      fetcher,
+    });
+    expect(result.ok && result.bytes.byteLength).toBe(100);
+  });
+
+  it('turns away a body dribbled in thousands of tiny pieces', async () => {
+    const { response, state } = streaming(
+      Array.from({ length: 5000 }, () => 'x'),
+    );
+    const { fetcher } = serving(response);
+    const result = await fetchCapped('https://a.com/x', {
+      ...OPTIONS,
+      maxBytes: 1_000_000,
+      fetcher,
+    });
+    expect(result).toEqual({ ok: false, reason: 'too-large' });
+    expect(state.cancelled).toBe(true);
+  });
+
+  it('can keep the start of a long body instead, and says it did', async () => {
+    const { response, state } = streaming([
+      'a'.repeat(60),
+      'b'.repeat(60),
+      'c'.repeat(60),
+    ]);
+    const { fetcher } = serving(response);
+    const result = await fetchCapped('https://a.com/x', {
+      ...OPTIONS,
+      overflow: 'truncate',
+      fetcher,
+    });
+    expect(result).toMatchObject({ ok: true, truncated: true });
+    expect(result.ok && new TextDecoder().decode(result.bytes)).toBe(
+      `${'a'.repeat(60)}${'b'.repeat(40)}`,
+    );
+    expect(state.cancelled).toBe(true);
+  });
+
+  it('does not mind a long declared length when it is only keeping the start', async () => {
+    const { fetcher } = serving(
+      new Response('x'.repeat(100), {
+        headers: { 'content-length': '999999' },
+      }),
+    );
+    const result = await fetchCapped('https://a.com/x', {
+      ...OPTIONS,
+      overflow: 'truncate',
+      fetcher,
+    });
+    expect(result).toMatchObject({ ok: true });
+  });
+
+  it('reads a body with no pieces at all as empty', async () => {
+    const { fetcher } = serving(new Response(null, { status: 200 }));
+    const result = await fetchCapped('https://a.com/x', {
+      ...OPTIONS,
+      fetcher,
+    });
+    expect(result.ok && result.bytes.byteLength).toBe(0);
+  });
+});
+
+describe('fetchCapped failure', () => {
+  it('says unreachable when the request throws', async () => {
+    const fetcher: SafeFetcher = async () => {
+      throw new TypeError('fetch failed');
+    };
+    expect(
+      await fetchCapped('https://a.com/x', { ...OPTIONS, fetcher }),
+    ).toEqual({ ok: false, reason: 'unreachable' });
+  });
+
+  it('says unreachable when the body breaks off', async () => {
+    const broken = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.error(new Error('reset'));
+      },
+    });
+    const { fetcher } = serving(new Response(broken));
+    expect(
+      await fetchCapped('https://a.com/x', { ...OPTIONS, fetcher }),
+    ).toEqual({ ok: false, reason: 'unreachable' });
+  });
+
+  it('says timeout when the site is too slow to answer', async () => {
+    const fetcher: SafeFetcher = (_url, init) =>
+      new Promise((_resolve, reject) =>
+        init.signal?.addEventListener('abort', () =>
+          reject(init.signal?.reason),
+        ),
+      );
+    expect(
+      await fetchCapped('https://a.com/x', {
+        ...OPTIONS,
+        timeoutMs: 20,
+        fetcher,
+      }),
+    ).toEqual({ ok: false, reason: 'timeout' });
+  });
+
+  it('says timeout when the body stalls', async () => {
+    const fetcher: SafeFetcher = async (_url, init) =>
+      new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            init.signal?.addEventListener('abort', () =>
+              controller.error(init.signal?.reason),
+            );
+          },
+        }),
+      );
+    expect(
+      await fetchCapped('https://a.com/x', {
+        ...OPTIONS,
+        timeoutMs: 20,
+        fetcher,
+      }),
+    ).toEqual({ ok: false, reason: 'timeout' });
   });
 });

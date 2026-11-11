@@ -282,176 +282,172 @@ describe('serveImage', () => {
     );
     expect(second.status).toBe(304);
   });
+});
 
-  describe('who may ask', () => {
-    it('lets the access rules refuse a caller first, before anything else', async () => {
-      const refusal = new Response('no', { status: 401 });
-      const fetcher = jest.fn(serving);
-      const response = await serveImage(ask('http://127.0.0.1/'), {
-        access: { ...open, authenticate: async () => refusal },
-        fetcher,
-        background: () => undefined,
-      });
-      expect(response).toBe(refusal);
-      expect(fetcher).not.toHaveBeenCalled();
+describe('serveImage who may ask', () => {
+  it('lets the access rules refuse a caller first, before anything else', async () => {
+    const refusal = new Response('no', { status: 401 });
+    const fetcher = jest.fn(serving);
+    const response = await serveImage(ask('http://127.0.0.1/'), {
+      access: { ...open, authenticate: async () => refusal },
+      fetcher,
+      background: () => undefined,
     });
+    expect(response).toBe(refusal);
+    expect(fetcher).not.toHaveBeenCalled();
+  });
 
-    it('refuses with 403, without fetching, a picture the access rules do not let this caller have', async () => {
-      const fetcher = jest.fn(serving);
-      const asked: string[] = [];
-      const response = await serveImage(ask(), {
-        access: {
-          ...open,
-          mayFetch: async (url) => {
-            asked.push(url);
-            return false;
-          },
+  it('refuses with 403, without fetching, a picture the access rules do not let this caller have', async () => {
+    const fetcher = jest.fn(serving);
+    const asked: string[] = [];
+    const response = await serveImage(ask(), {
+      access: {
+        ...open,
+        mayFetch: async (url) => {
+          asked.push(url);
+          return false;
         },
+      },
+      fetcher,
+      background: () => undefined,
+    });
+    expect(response.status).toBe(403);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(asked).toEqual([PHOTO]);
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('hands the signature to the access rules, and refuses with 403 when it is wrong', async () => {
+    const fetcher = jest.fn(serving);
+    const checked: (string | null)[] = [];
+    const access: ImageAccess = {
+      ...open,
+      signatureValid: async (_url, signature) => {
+        checked.push(signature);
+        return signature === 'good';
+      },
+    };
+    const deps = { access, fetcher, background: () => undefined };
+    const bad = await serveImage(ask(PHOTO, '&sig=bad'), deps);
+    expect(bad.status).toBe(403);
+    const unsigned = await serveImage(ask(), deps);
+    expect(unsigned.status).toBe(403);
+    expect(fetcher).not.toHaveBeenCalled();
+    const good = await serveImage(ask(PHOTO, '&sig=good'), deps);
+    expect(good.status).toBe(200);
+    expect(checked).toEqual(['bad', null, 'good']);
+  });
+
+  it('refuses an address that is not a public image with 400, before any other question', async () => {
+    const mayFetch = jest.fn(async () => true);
+    const signatureValid = jest.fn(async () => true);
+    const deps = {
+      access: { ...open, mayFetch, signatureValid },
+      background: () => undefined,
+    };
+    for (const url of [
+      'http://127.0.0.1/x.png',
+      'file:///etc/passwd',
+      'https://localhost/x.png',
+      '',
+      `https://${HOST}/${'a'.repeat(3000)}`,
+    ]) {
+      const refused = await serveImage(ask(url), deps);
+      expect(refused.status).toBe(400);
+    }
+    const missing = await serveImage(
+      new Request('https://app.test/img?w=640'),
+      deps,
+    );
+    expect(missing.status).toBe(400);
+    expect(mayFetch).not.toHaveBeenCalled();
+    expect(signatureValid).not.toHaveBeenCalled();
+  });
+
+  it('refuses with 403 a picture from another host, where the app names the hosts it takes them from', async () => {
+    const fetcher = jest.fn(serving);
+    const hosts = ALLOWED_HOSTS === null ? [] : ['evil.example.org'];
+    for (const host of hosts) {
+      const response = await serveImage(ask(`https://${host}/a.jpg`), {
+        access: open,
         fetcher,
         background: () => undefined,
       });
       expect(response.status).toBe(403);
-      expect(response.headers.get('cache-control')).toBe('no-store');
-      expect(asked).toEqual([PHOTO]);
-      expect(fetcher).not.toHaveBeenCalled();
+    }
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+});
+
+describe('serveImage when the picture cannot be had', () => {
+  const answer = async (fetcher: ImageFetch) =>
+    serveImage(ask(), {
+      access: open,
+      fetcher,
+      background: () => undefined,
     });
 
-    it('hands the signature to the access rules, and refuses with 403 when it is wrong', async () => {
-      const fetcher = jest.fn(serving);
-      const checked: (string | null)[] = [];
-      const access: ImageAccess = {
-        ...open,
-        signatureValid: async (_url, signature) => {
-          checked.push(signature);
-          return signature === 'good';
-        },
-      };
-      const deps = { access, fetcher, background: () => undefined };
-      const bad = await serveImage(ask(PHOTO, '&sig=bad'), deps);
-      expect(bad.status).toBe(403);
-      const unsigned = await serveImage(ask(), deps);
-      expect(unsigned.status).toBe(403);
-      expect(fetcher).not.toHaveBeenCalled();
-      const good = await serveImage(ask(PHOTO, '&sig=good'), deps);
-      expect(good.status).toBe(200);
-      expect(checked).toEqual(['bad', null, 'good']);
-    });
-
-    it('refuses an address that is not a public image with 400, before any other question', async () => {
-      const mayFetch = jest.fn(async () => true);
-      const signatureValid = jest.fn(async () => true);
-      const deps = {
-        access: { ...open, mayFetch, signatureValid },
-        background: () => undefined,
-      };
-      for (const url of [
-        'http://127.0.0.1/x.png',
-        'file:///etc/passwd',
-        'https://localhost/x.png',
-        '',
-        `https://${HOST}/${'a'.repeat(3000)}`,
-      ]) {
-        const refused = await serveImage(ask(url), deps);
-        expect(refused.status).toBe(400);
-      }
-      const missing = await serveImage(
-        new Request('https://app.test/img?w=640'),
-        deps,
-      );
-      expect(missing.status).toBe(400);
-      expect(mayFetch).not.toHaveBeenCalled();
-      expect(signatureValid).not.toHaveBeenCalled();
-    });
-
-    it('refuses with 403 a picture from another host, where the app names the hosts it takes them from', async () => {
-      const fetcher = jest.fn(serving);
-      const hosts = ALLOWED_HOSTS === null ? [] : ['evil.example.org'];
-      for (const host of hosts) {
-        const response = await serveImage(ask(`https://${host}/a.jpg`), {
-          access: open,
-          fetcher,
-          background: () => undefined,
-        });
-        expect(response.status).toBe(403);
-      }
-      expect(fetcher).not.toHaveBeenCalled();
-    });
+  it.each([
+    ['is gone', () => new Response('', { status: 404 })],
+    ['is refused by its site', () => new Response('', { status: 500 })],
+    [
+      'is not an image',
+      () =>
+        new Response('<html>', { headers: { 'content-type': 'text/html' } }),
+    ],
+    [
+      'is an SVG',
+      () =>
+        new Response('<svg/>', {
+          headers: { 'content-type': 'image/svg+xml' },
+        }),
+    ],
+    [
+      'is too large',
+      () =>
+        new Response('x', {
+          headers: {
+            'content-type': 'image/png',
+            'content-length': String(50 * 1024 * 1024),
+          },
+        }),
+    ],
+  ])('answers 204, kept for an hour, when it %s', async (_n, make) => {
+    const response = await answer(async () => make());
+    expect(response.status).toBe(204);
+    expect(response.headers.get('cache-control')).toBe('public, max-age=3600');
+    expect(await response.text()).toBe('');
   });
 
-  describe('when the picture cannot be had', () => {
-    const answer = async (fetcher: ImageFetch) =>
-      serveImage(ask(), {
-        access: open,
-        fetcher,
-        background: () => undefined,
-      });
-
-    it.each([
-      ['is gone', () => new Response('', { status: 404 })],
-      ['is refused by its site', () => new Response('', { status: 500 })],
-      [
-        'is not an image',
-        () =>
-          new Response('<html>', { headers: { 'content-type': 'text/html' } }),
-      ],
-      [
-        'is an SVG',
-        () =>
-          new Response('<svg/>', {
-            headers: { 'content-type': 'image/svg+xml' },
-          }),
-      ],
-      [
-        'is too large',
-        () =>
-          new Response('x', {
-            headers: {
-              'content-type': 'image/png',
-              'content-length': String(50 * 1024 * 1024),
-            },
-          }),
-      ],
-    ])('answers 204, kept for an hour, when it %s', async (_n, make) => {
-      const response = await answer(async () => make());
-      expect(response.status).toBe(204);
-      expect(response.headers.get('cache-control')).toBe(
-        'public, max-age=3600',
-      );
-      expect(await response.text()).toBe('');
+  it('answers 204 when its site cannot be reached', async () => {
+    const response = await answer(async () => {
+      throw new Error('offline');
     });
+    expect(response.status).toBe(204);
+    expect(response.headers.get('cache-control')).toBe('public, max-age=3600');
+  });
 
-    it('answers 204 when its site cannot be reached', async () => {
-      const response = await answer(async () => {
-        throw new Error('offline');
-      });
-      expect(response.status).toBe(204);
-      expect(response.headers.get('cache-control')).toBe(
-        'public, max-age=3600',
-      );
-    });
+  it('answers 400 when it redirects to an address it should not reach', async () => {
+    const response = await answer(
+      async () =>
+        new Response(null, {
+          status: 302,
+          headers: { Location: 'http://127.0.0.1:8080/admin' },
+        }),
+    );
+    expect(response.status).toBe(400);
+  });
 
-    it('answers 400 when it redirects to an address it should not reach', async () => {
-      const response = await answer(
-        async () =>
-          new Response(null, {
-            status: 302,
-            headers: { Location: 'http://127.0.0.1:8080/admin' },
-          }),
-      );
-      expect(response.status).toBe(400);
+  it('does not keep a copy of what it could not get', async () => {
+    const { cache, stored } = fakeCache();
+    const background = jest.fn();
+    await serveImage(ask(), {
+      access: open,
+      cache,
+      fetcher: async () => new Response('', { status: 500 }),
+      background,
     });
-
-    it('does not keep a copy of what it could not get', async () => {
-      const { cache, stored } = fakeCache();
-      const background = jest.fn();
-      await serveImage(ask(), {
-        access: open,
-        cache,
-        fetcher: async () => new Response('', { status: 500 }),
-        background,
-      });
-      expect(background).not.toHaveBeenCalled();
-      expect(stored).toEqual([]);
-    });
+    expect(background).not.toHaveBeenCalled();
+    expect(stored).toEqual([]);
   });
 });

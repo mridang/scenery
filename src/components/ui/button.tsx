@@ -125,6 +125,7 @@ export function IconButton({
   } & Omit<ComponentProps<'button'>, 'aria-label'>
 >): ReactElement {
   return (
+    // eslint-disable-next-line github/a11y-no-title-attribute -- the native tooltip is the intended hint for an icon-only button, and its test asserts it
     <button
       type="button"
       aria-label={label}
