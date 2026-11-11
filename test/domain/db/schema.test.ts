@@ -3,7 +3,7 @@ import path from 'node:path';
 import { is } from 'drizzle-orm';
 import { SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core';
 import { beforeAll, describe, expect, it } from '@jest/globals';
-// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
+
 import type { DatabaseSync } from 'node:sqlite';
 
 import {

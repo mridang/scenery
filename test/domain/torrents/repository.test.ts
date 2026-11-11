@@ -7,7 +7,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
-// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
+
 import type { DatabaseSync } from 'node:sqlite';
 
 import { ScrapingRepository } from '@/domain/scraping/repository';
