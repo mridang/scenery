@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { is } from 'drizzle-orm';
 import { SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core';
-import { describe, expect, it } from '@jest/globals';
+import { beforeAll, describe, expect, it } from '@jest/globals';
 // eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
@@ -64,7 +64,11 @@ const tables = new Map(
 );
 
 describe('the schema file and the migrations', () => {
-  const { raw } = sqliteD1(...APP_MIGRATIONS);
+  let raw: DatabaseSync;
+
+  beforeAll(async () => {
+    ({ raw } = await sqliteD1(...APP_MIGRATIONS));
+  });
 
   it('finds the tables of the schema', () => {
     expect(tables.size).toBeGreaterThan(0);
@@ -96,7 +100,7 @@ describe('migration 0016_movie_newest_posted', () => {
     const before = APP_MIGRATIONS.filter(
       (file) => file.localeCompare('0016') < 0,
     );
-    const { raw: old } = sqliteD1(...before);
+    const { raw: old } = await sqliteD1(...before);
     old.exec(`
       INSERT INTO movies (imdb_id, first_seen_at, last_seen_at) VALUES
         ('tt1', '2026-01-01', '2026-01-01'), ('tt2', '2026-01-01', '2026-01-01');

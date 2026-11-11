@@ -7,10 +7,9 @@ import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 
 let repository: OperationRepository;
 
-beforeEach(() => {
-  repository = new OperationRepository(
-    databaseFrom(sqliteD1(...APP_MIGRATIONS).d1),
-  );
+beforeEach(async () => {
+  const { d1 } = await sqliteD1(...APP_MIGRATIONS);
+  repository = new OperationRepository(databaseFrom(d1));
 });
 
 const ID = '0b8a3f1e-5a53-4a5c-8a1c-0a6c8d8f6a11';

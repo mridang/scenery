@@ -35,8 +35,8 @@ const old = (): string => new Date(Date.now() - 3 * ONE_DAY_MS).toISOString(); /
 const recent = (): string =>
   new Date(Date.now() - 60 * 60 * 1000).toISOString(); // 1h ago
 
-beforeEach(() => {
-  const built = sqliteD1(...APP_MIGRATIONS);
+beforeEach(async () => {
+  const built = await sqliteD1(...APP_MIGRATIONS);
   d1 = built.d1;
   raw = built.raw;
   db = databaseFrom(d1);

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { subscriptionId } from '@/lib/push/subscription-id';
+import insecure from '../../../../fixtures/insecure-urls.json';
 
 const store = new Map<string, { p256dh: string; auth: string }>();
 jest.unstable_mockModule('@/domain/db/client', () => ({
@@ -61,8 +62,7 @@ describe('POST /api/push/subscriptions', () => {
   it.each([
     [{ keys: GOOD.keys }, 'endpoint: must be an https URL.'],
     [
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture: an insecure endpoint the route must reject
-      { endpoint: 'http://push.test/x', keys: GOOD.keys },
+      { endpoint: insecure.pushEndpoint, keys: GOOD.keys },
       'endpoint: must be an https URL.',
     ],
     [{ endpoint: ENDPOINT }, 'keys.p256dh: required.'],

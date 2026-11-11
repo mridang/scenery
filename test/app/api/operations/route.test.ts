@@ -28,17 +28,17 @@ const { POST } = await import('@/app/api/operations/route');
 let raw: DatabaseSync;
 let restore: () => void;
 
-const install = (env: Record<string, unknown> = {}) => {
+const install = async (env: Record<string, unknown> = {}) => {
   restore?.();
-  const made = sqliteD1(...APP_MIGRATIONS);
+  const made = await sqliteD1(...APP_MIGRATIONS);
   raw = made.raw;
   restore = installCloudflareContext(made.d1, env);
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   runOperation.mockClear();
   runOperation.mockResolvedValue({ done: true });
-  install();
+  await install();
 });
 
 afterEach(() => restore());

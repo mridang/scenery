@@ -16,8 +16,8 @@ let d1: D1Database;
 let raw: DatabaseSync;
 let db: Database;
 
-beforeEach(() => {
-  const built = sqliteD1(...APP_MIGRATIONS);
+beforeEach(async () => {
+  const built = await sqliteD1(...APP_MIGRATIONS);
   d1 = built.d1;
   raw = built.raw;
   db = databaseFrom(d1);

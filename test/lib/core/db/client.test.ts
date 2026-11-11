@@ -37,13 +37,13 @@ const schema = {
 };
 
 describe('createDatabase', () => {
-  it('wraps a D1 binding in a client that keeps the binding as $client', () => {
-    const { d1 } = sqliteD1();
+  it('wraps a D1 binding in a client that keeps the binding as $client', async () => {
+    const { d1 } = await sqliteD1();
     expect(createDatabase(d1, schema).$client).toBe(d1);
   });
 
   it('runs typed queries against every table of the schema', async () => {
-    const { d1 } = sqliteD1(...APP_MIGRATIONS);
+    const { d1 } = await sqliteD1(...APP_MIGRATIONS);
     const db = createDatabase(d1, schema);
     const tables = Object.values(schema).filter((value) =>
       is(value, SQLiteTable),

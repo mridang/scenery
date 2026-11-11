@@ -1,0 +1,12 @@
+{
+  "pushEndpoint": "http://push.test/x",
+  "pushEndpointBare": "http://push.test",
+  "appOrigin": "http://app.test",
+  "ftp": "ftp://a.com/x.jpg",
+  "plainHttpImage": "http://www.site.co.uk/a.png",
+  "privateTen": "http://10.0.0.5/x.jpg",
+  "privateLan": "http://192.168.1.1/x.jpg",
+  "privateTwelve": "http://172.20.0.1/x.jpg",
+  "linkLocalV6": "http://[fe80::1]/x.jpg",
+  "malformedRedirect": "http://["
+}

@@ -1,20 +1,24 @@
-import { describe, expect, it } from '@jest/globals';
-import { readFileSync } from 'node:fs';
+import { beforeAll, describe, expect, it } from '@jest/globals';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { BRAND_NAME, BRAND_URL, SECURITY_CONTACT } from '@/app/_brand';
 
 const read = (name: string) =>
-  // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: a test helper read by sync assertions
-  readFileSync(path.join(process.cwd(), 'public', name), 'utf8');
+  readFile(path.join(process.cwd(), 'public', name), 'utf8');
 
 /** Plain-text files are served without a charset, so they must be ASCII. */
 const NON_ASCII = /[\u0080-￿]/;
 
 describe('public/llms.txt', () => {
-  const text = read('llms.txt');
+  let text: string;
   /** The part before `## Optional`: what an assistant should read first. */
-  const main = text.split('\n## Optional', 1)[0] ?? '';
+  let main: string;
+
+  beforeAll(async () => {
+    text = await read('llms.txt');
+    main = text.split('\n## Optional', 1)[0] ?? '';
+  });
 
   it('follows the llms.txt shape: a title, a summary and sections of links', () => {
     expect(text.startsWith(`# ${BRAND_NAME}\n`)).toBe(true);
@@ -42,7 +46,11 @@ describe('public/llms.txt', () => {
 });
 
 describe('public/security-policy.txt', () => {
-  const text = read('security-policy.txt');
+  let text: string;
+
+  beforeAll(async () => {
+    text = await read('security-policy.txt');
+  });
 
   it('names the app and its address', () => {
     expect(text.startsWith(`${BRAND_NAME} security policy\n`)).toBe(true);
@@ -66,7 +74,11 @@ describe('public/security-policy.txt', () => {
 });
 
 describe('public/_headers', () => {
-  const file = read('_headers');
+  let file: string;
+
+  beforeAll(async () => {
+    file = await read('_headers');
+  });
 
   it('caches the security policy for a day and lets other sites fetch it', () => {
     const block = file.split('\n/security-policy.txt\n', 2)[1] ?? '';

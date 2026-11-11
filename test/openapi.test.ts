@@ -6,11 +6,12 @@ import {
   it,
   jest,
 } from '@jest/globals';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { APP_MIGRATIONS } from './lib/core/db/migrations';
 import { installCloudflareContext, sqliteD1 } from './lib/core/db/sqlite-d1';
+import insecure from './fixtures/insecure-urls.json';
 
 /**
  * Ties `openapi.json` to the route files and the controllers behind them: the
@@ -30,8 +31,7 @@ interface Operation {
 }
 
 const document = JSON.parse(
-  // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: the spec is read once when the module loads
-  readFileSync(new URL('../openapi.json', import.meta.url), 'utf8'),
+  await readFile(new URL('../openapi.json', import.meta.url), 'utf8'),
 ) as {
   readonly openapi: string;
   readonly paths: Record<string, Record<string, Operation>>;
@@ -56,14 +56,18 @@ const documented = (): Map<string, Operation> => {
 
 const API = path.join(process.cwd(), 'src/app/api');
 
-const routeFiles = (dir: string): string[] =>
-  // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: a directory walk used by sync checks
-  readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    if (entry.isDirectory()) {
-      return routeFiles(path.join(dir, entry.name));
-    }
-    return entry.name === 'route.ts' ? [path.join(dir, entry.name)] : [];
-  });
+const routeFiles = async (dir: string): Promise<string[]> => {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const found = await Promise.all(
+    entries.map(async (entry) => {
+      if (entry.isDirectory()) {
+        return routeFiles(path.join(dir, entry.name));
+      }
+      return entry.name === 'route.ts' ? [path.join(dir, entry.name)] : [];
+    }),
+  );
+  return found.flat();
+};
 
 /** The documented path of a route file, with `[x]` as `{x}`. */
 const pathOf = (file: string): string =>
@@ -76,19 +80,23 @@ const pathOf = (file: string): string =>
   ).replace(/\/$/, '');
 
 /** Every `METHOD /path` a route file under src/app/api exports, with `[x]` as `{x}`. */
-const registered = (): string[] =>
-  routeFiles(API).flatMap((file) => {
-    const route = pathOf(file);
-    // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: a sync read of each route file for a sync check
-    const text = readFileSync(file, 'utf8');
-    return ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
-      .filter((method) =>
-        new RegExp(
-          String.raw`export (const \{[^}]*\b${method}\b|async function ${method}\b|function ${method}\b|const ${method}\b)`,
-        ).test(text),
-      )
-      .map((method) => `${method} ${route}`);
-  });
+const registered = async (): Promise<string[]> => {
+  const files = await routeFiles(API);
+  const found = await Promise.all(
+    files.map(async (file) => {
+      const route = pathOf(file);
+      const text = await readFile(file, 'utf8');
+      return ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+        .filter((method) =>
+          new RegExp(
+            String.raw`export (const \{[^}]*\b${method}\b|async function ${method}\b|function ${method}\b|const ${method}\b)`,
+          ).test(text),
+        )
+        .map((method) => `${method} ${route}`);
+    }),
+  );
+  return found.flat();
+};
 
 /** Resolve a `#/components/...` reference. */
 const resolve = (ref: string): Json =>
@@ -234,10 +242,10 @@ const SECRET = 'test-secret';
 const ORIGIN = 'https://app.test';
 let restore: () => void;
 
-beforeEach(() => {
+beforeEach(async () => {
   runOperation.mockClear();
   runOperation.mockResolvedValue({ done: true });
-  const made = sqliteD1(...APP_MIGRATIONS);
+  const made = await sqliteD1(...APP_MIGRATIONS);
   restore = installCloudflareContext(made.d1, {
     CRON_SECRET: SECRET,
     VAPID_PUBLIC_KEY: 'public-key',
@@ -440,8 +448,10 @@ const subjects: readonly Subject[] = [
       {
         name: 'not an https endpoint',
         call: () =>
-          // eslint-disable-next-line unicorn/prefer-https -- test fixture
-          subscriptionsPost({ ...SUBSCRIPTION, endpoint: 'http://push.test' }),
+          subscriptionsPost({
+            ...SUBSCRIPTION,
+            endpoint: insecure.pushEndpointBare,
+          }),
       },
       { name: 'not an object', call: () => subscriptionsPost('x') },
       {
@@ -545,11 +555,10 @@ async function conforms(key: string, res: Response): Promise<string[]> {
 }
 
 describe('openapi.json', () => {
-  it('is tested through every route file', () => {
+  it('is tested through every route file', async () => {
+    const files = await routeFiles(API);
     expect(
-      routeFiles(API)
-        .map((file) => pathOf(file))
-        .toSorted((a, b) => a.localeCompare(b)),
+      files.map((file) => pathOf(file)).toSorted((a, b) => a.localeCompare(b)),
     ).toEqual(Object.keys(MODULES).toSorted((a, b) => a.localeCompare(b)));
   });
 
@@ -565,10 +574,11 @@ describe('openapi.json', () => {
     refs.forEach((ref) => expect(resolve(ref)).toBeDefined());
   });
 
-  it('describes exactly the routes under src/app/api, one operation each', () => {
+  it('describes exactly the routes under src/app/api, one operation each', async () => {
+    const routes = await registered();
     expect(
       [...documented().keys()].toSorted((a, b) => a.localeCompare(b)),
-    ).toEqual(registered().toSorted((a, b) => a.localeCompare(b)));
+    ).toEqual(routes.toSorted((a, b) => a.localeCompare(b)));
   });
 
   it('gives every operation an id, tags, a summary, security and a problem response', () => {
@@ -708,7 +718,7 @@ describe.each(subjects)('$key', ({ key, valid, invalid }) => {
 
     it('is open where no secret is set, as the spec says', async () => {
       restore();
-      const made = sqliteD1(...APP_MIGRATIONS);
+      const made = await sqliteD1(...APP_MIGRATIONS);
       restore = installCloudflareContext(made.d1, {});
       const call = await valid();
       const res = await send({
