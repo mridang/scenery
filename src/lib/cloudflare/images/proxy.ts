@@ -46,6 +46,9 @@ export function isImagesBinding(value: unknown): value is ImagesLike {
   );
 }
 
+/** The HTTP status a failed fetch is answered with. */
+type FailureStatus = 400 | 404 | 413 | 415 | 502;
+
 /** What fetching a picture gave: its bytes and type, or why not. */
 export type ImageResult =
   | {
@@ -56,7 +59,7 @@ export type ImageResult =
     }
   | {
       readonly ok: false;
-      readonly status: 400 | 404 | 413 | 415 | 502;
+      readonly status: FailureStatus;
       readonly reason: string;
     };
 

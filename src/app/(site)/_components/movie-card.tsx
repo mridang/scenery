@@ -22,9 +22,9 @@ function fmtSizeShort(bytes: number | null): string | null {
 }
 
 interface CardProps {
-  movie: ScoredMovie;
+  readonly movie: ScoredMovie;
   /** When true, render the larger 2×2 mosaic variant (top-by-votes). */
-  big?: boolean;
+  readonly big?: boolean;
 }
 
 /**
@@ -92,32 +92,31 @@ export function MovieCardUniform({ movie }: CardProps) {
         ) : null}
         <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(9,9,11,0.88)_0%,rgba(9,9,11,0.12)_32%,rgba(9,9,11,0)_54%)]" />
 
-        {qualityIcon ? (
-          magnetHref ? (
-            <a
-              href={magnetHref}
-              aria-label={`Download ${row.best_quality ?? ''} magnet`}
-              title="Download magnet"
-              className="absolute top-[10px] right-[10px] z-20 block rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,0.5)] transition-transform hover:scale-105"
-            >
-              <img
-                src={qualityIcon}
-                alt={row.best_quality ?? ''}
-                width={48}
-                height={35}
-                className="block h-[26px] w-auto"
-              />
-            </a>
-          ) : (
+        {qualityIcon && magnetHref ? (
+          <a
+            href={magnetHref}
+            aria-label={`Download ${row.best_quality ?? ''} magnet`}
+            className="absolute top-[10px] right-[10px] z-20 block rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,0.5)] transition-transform hover:scale-105"
+          >
             <img
               src={qualityIcon}
               alt={row.best_quality ?? ''}
               width={48}
               height={35}
-              className="absolute top-[10px] right-[10px] block h-[26px] w-auto rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,0.5)]"
+              className="block h-[26px] w-auto"
             />
-          )
-        ) : (
+          </a>
+        ) : null}
+        {qualityIcon && !magnetHref ? (
+          <img
+            src={qualityIcon}
+            alt={row.best_quality ?? ''}
+            width={48}
+            height={35}
+            className="absolute top-[10px] right-[10px] block h-[26px] w-auto rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,0.5)]"
+          />
+        ) : null}
+        {qualityIcon ? null : (
           <div className="absolute top-[10px] right-[10px] flex items-center gap-[6px] rounded-[8px] border border-transparent bg-[rgba(9,9,11,0.66)] px-[9px] py-[5px] font-mono text-[10px] font-medium text-[#d4d4d8] backdrop-blur">
             <span
               className="inline-block size-[6px] rounded-full"
@@ -239,32 +238,31 @@ export function MovieCardMosaic({ movie, big = false }: CardProps) {
       ) : null}
       <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(9,9,11,0.97)_0%,rgba(9,9,11,0.88)_30%,rgba(9,9,11,0.5)_56%,rgba(9,9,11,0)_82%)]" />
 
-      {qualityIcon ? (
-        magnetHref ? (
-          <a
-            href={magnetHref}
-            aria-label={`Download ${row.best_quality ?? ''} magnet`}
-            title="Download magnet"
-            className="absolute top-[9px] right-[9px] z-20 block rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,0.5)] transition-transform hover:scale-105"
-          >
-            <img
-              src={qualityIcon}
-              alt={row.best_quality ?? ''}
-              width={big ? 60 : 44}
-              height={big ? 44 : 32}
-              className={`block w-auto ${big ? 'h-[32px]' : 'h-[24px]'}`}
-            />
-          </a>
-        ) : (
+      {qualityIcon && magnetHref ? (
+        <a
+          href={magnetHref}
+          aria-label={`Download ${row.best_quality ?? ''} magnet`}
+          className="absolute top-[9px] right-[9px] z-20 block rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,0.5)] transition-transform hover:scale-105"
+        >
           <img
             src={qualityIcon}
             alt={row.best_quality ?? ''}
             width={big ? 60 : 44}
             height={big ? 44 : 32}
-            className={`absolute top-[9px] right-[9px] block w-auto rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,0.5)] ${big ? 'h-[32px]' : 'h-[24px]'}`}
+            className={`block w-auto ${big ? 'h-[32px]' : 'h-[24px]'}`}
           />
-        )
-      ) : (
+        </a>
+      ) : null}
+      {qualityIcon && !magnetHref ? (
+        <img
+          src={qualityIcon}
+          alt={row.best_quality ?? ''}
+          width={big ? 60 : 44}
+          height={big ? 44 : 32}
+          className={`absolute top-[9px] right-[9px] block w-auto rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,0.5)] ${big ? 'h-[32px]' : 'h-[24px]'}`}
+        />
+      ) : null}
+      {qualityIcon ? null : (
         <div className="absolute top-[9px] right-[9px] flex items-center gap-[5px] rounded-[8px] bg-[rgba(9,9,11,0.6)] px-2 py-1 font-mono text-[9.5px] text-[#d4d4d8] backdrop-blur">
           <span
             className="inline-block size-[6px] rounded-full"

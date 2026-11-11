@@ -7,4 +7,25 @@
 
 export { TmdbClient } from './client';
 export type { TmdbClientOptions, TmdbResult } from './client';
-export * from './models';
+export {
+  TmdbGenreSchema,
+  TmdbGenresResponseSchema,
+  TmdbFindMovieSchema,
+  TmdbFindResponseSchema,
+  TmdbCastEntrySchema,
+  TmdbCrewEntrySchema,
+  TmdbCompanySchema,
+  TmdbMovieResponseSchema,
+  TmdbPersonResponseSchema,
+} from './models';
+export type {
+  TmdbGenre,
+  TmdbGenresResponse,
+  TmdbFindMovie,
+  TmdbFindResponse,
+  TmdbCastEntry,
+  TmdbCrewEntry,
+  TmdbCompany,
+  TmdbMovieResponse,
+  TmdbPersonResponse,
+} from './models';

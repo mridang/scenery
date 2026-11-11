@@ -23,10 +23,10 @@ function fmtSize(bytes: number | null): string {
 export function PlanView({
   movies,
   budgetBytes,
-}: {
+}: Readonly<{
   movies: readonly ScoredMovie[];
   budgetBytes: number;
-}) {
+}>) {
   const eligible = movies.filter((movie) => movie.fits);
   const used = eligible.reduce(
     (sum, movie) => sum + (movie.row.best_size_bytes ?? 0),
@@ -92,11 +92,11 @@ function PlanRow({
   movie,
   rank,
   cumGb,
-}: {
+}: Readonly<{
   movie: ScoredMovie;
   rank: number;
   cumGb: number;
-}) {
+}>) {
   const { row, score, tier } = movie;
   const title = row.tmdb_title ?? row.latest_release_title ?? row.imdb_id;
   // Plan rows have a 34 CSS-px thumb — w185 keeps it sharp on 3× phones

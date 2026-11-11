@@ -21,7 +21,7 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const SITE_URL = 'https://scenery.apps.mrida.ng';
 
 /** Parameters accepted by {@link NotifyWorkflow}. @public */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- a workflow with no inputs takes an empty params object
 export interface NotifyWorkflowParams {}
 
 /**
@@ -114,11 +114,7 @@ async function pickTopFiveNew(db: Database): Promise<readonly ScoredMovie[]> {
   const cutoff = Date.now() - ONE_DAY_MS;
   const fresh = view.movies.filter((movie) => {
     const firstSeen = movie.row.first_seen_at;
-    return (
-      firstSeen !== null &&
-      firstSeen !== undefined &&
-      Date.parse(firstSeen) >= cutoff
-    );
+    return Date.parse(firstSeen) >= cutoff;
   });
   // Fallback for low-traffic days and the manual push_trigger operation
   // smoke test: if nothing fresh, still surface the top 5 overall so

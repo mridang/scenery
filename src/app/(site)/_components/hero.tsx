@@ -17,7 +17,7 @@ import { RatingsRow } from './ratings';
  * there's no sensible placeholder for a card whose visual centerpiece
  * is the art.
  */
-export function Hero({ movie }: { movie: ScoredMovie | null }) {
+export function Hero({ movie }: Readonly<{ movie: ScoredMovie | null }>) {
   if (!movie) {
     return null;
   }
@@ -46,12 +46,14 @@ export function Hero({ movie }: { movie: ScoredMovie | null }) {
     .filter(Boolean)
     .join('  ·  ');
 
-  const status =
-    row.torrent_status === 'success' && (row.torrent_count ?? 0) > 0
-      ? (row.best_quality ?? 'Available')
-      : row.torrent_status === 'empty'
-        ? 'No torrent yet'
-        : 'Pending';
+  let status: string;
+  if (row.torrent_status === 'success' && (row.torrent_count ?? 0) > 0) {
+    status = row.best_quality ?? 'Available';
+  } else if (row.torrent_status === 'empty') {
+    status = 'No torrent yet';
+  } else {
+    status = 'Pending';
+  }
   const sizeText =
     row.best_size_bytes && row.best_size_bytes > 0
       ? formatSize(row.best_size_bytes)

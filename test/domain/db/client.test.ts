@@ -6,11 +6,11 @@ import {
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
 
-let restore: (() => void) | undefined;
+let restore: (() => void) | null = null;
 
 afterEach(() => {
   restore?.();
-  restore = undefined;
+  restore = null;
 });
 
 describe('databaseFrom', () => {

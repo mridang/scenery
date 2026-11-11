@@ -74,21 +74,19 @@ export class TmdbEnricher {
     await this.repo.upsertFoundMovie(imdbId, movie, find.raw, now);
 
     const credits = await this.client.getMovieWithCredits(movie.id);
-    if (credits.ok) {
-      await this.repo.updateMovieCredits(
-        imdbId,
-        credits.value,
-        credits.raw,
-        new Date().toISOString(),
-      );
-    } else {
-      await this.repo.recordCreditsError(
-        imdbId,
-        credits.raw,
-        credits.error,
-        new Date().toISOString(),
-      );
-    }
+    await (credits.ok
+      ? this.repo.updateMovieCredits(
+          imdbId,
+          credits.value,
+          credits.raw,
+          new Date().toISOString(),
+        )
+      : this.repo.recordCreditsError(
+          imdbId,
+          credits.raw,
+          credits.error,
+          new Date().toISOString(),
+        ));
     return 'found';
   }
 
@@ -109,10 +107,10 @@ export class TmdbEnricher {
     }
     const have = await this.repo.knownPeopleIds();
     const stale = await this.repo.stalePeopleIds();
-    const todo = new Set<number>([
-      ...[...wanted].filter((id) => !have.has(id)),
-      ...stale,
-    ]);
+    const todo = new Set<number>([...wanted].filter((id) => !have.has(id)));
+    for (const id of stale) {
+      todo.add(id);
+    }
     return [...todo].slice(0, limit);
   }
 

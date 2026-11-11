@@ -4,6 +4,7 @@ import type { ExtractedRelease, FetchResult, Source } from '../types';
 const BASE_URL = 'https://www.ddlvalley.me/category/movies/';
 
 const POST_RE = /class="post br5 cl"\s+id="post-(\d+)"/g;
+// eslint-disable-next-line sonarjs/super-linear-regex -- applied to one post chunk of a listing page this adapter fetched
 const DL_LINK_RE = /<a\s+href="([^"]+)"[^>]*title="Download\s+([^"]+)"/;
 const IMDB_RE = /imdb\.com\/title\/(tt\d+)/i;
 const DATE_RE = /<span class="date">([^<]+)<\/span>/;
@@ -17,6 +18,7 @@ function parseDdlvalleyDate(raw: string | undefined): string | undefined {
     return undefined;
   }
   // Format observed: "Jun 7th, 2026" (no time of day).
+  // eslint-disable-next-line sonarjs/super-linear-regex -- the input is one short date string taken from a fetched post
   const cleaned = raw.replace(/(\d+)(st|nd|rd|th)/, '$1').trim();
   const parsed = new Date(cleaned);
   return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
@@ -59,27 +61,30 @@ export class DdlvalleySource implements Source {
       const end = next ? next.idx : html.length;
       const chunk = html.slice(start, end);
 
-      const downloadMatch = chunk.match(DL_LINK_RE);
-      const imdbMatch = chunk.match(IMDB_RE);
+      const downloadMatch = DL_LINK_RE.exec(chunk);
+      const imdbMatch = IMDB_RE.exec(chunk);
       if (!downloadMatch || !imdbMatch) {
         return [];
       }
-      const url = downloadMatch[1];
-      const title = downloadMatch[2];
+      const [, url, title] = downloadMatch;
       const imdbId = imdbMatch[1];
-      if (url === undefined || title === undefined || imdbId === undefined) {
+      if (url === undefined || title === undefined) {
+        return [];
+      }
+      if (imdbId === undefined) {
         return [];
       }
 
-      const dateRaw = chunk.match(DATE_RE)?.[1]?.trim();
-      const author = chunk.match(AUTHOR_RE)?.[1]?.trim();
+      const dateRaw = DATE_RE.exec(chunk)?.[1]?.trim();
+      const author = AUTHOR_RE.exec(chunk)?.[1]?.trim();
       const categories = [...chunk.matchAll(CATEGORY_RE)]
         .map((match) => match[1]?.trim())
         .filter((category): category is string => category !== undefined);
-      const imageUrl = chunk.match(IMG_RE)?.[1];
-      const plotRaw = chunk.match(PLOT_RE)?.[1];
+      const imageUrl = IMG_RE.exec(chunk)?.[1];
+      const plotRaw = PLOT_RE.exec(chunk)?.[1];
       const excerpt = plotRaw
         ? plotRaw
+            // eslint-disable-next-line sonarjs/super-linear-regex -- the excerpt is one bounded post body, not user input
             .replaceAll(/<[^>]+>/g, '')
             .replaceAll(/\s+/g, ' ')
             .trim()

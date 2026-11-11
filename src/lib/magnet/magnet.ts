@@ -83,7 +83,8 @@ export async function bestTrackers(
     if (!response.ok) {
       throw new Error(`tracker list HTTP ${response.status}`);
     }
-    const trackers = (await response.text())
+    const body = await response.text();
+    const trackers = body
       .split('\n')
       .map((line) => line.trim())
       .filter((line) => line.length > 0);

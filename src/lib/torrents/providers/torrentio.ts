@@ -69,19 +69,19 @@ export class TorrentioProvider implements TorrentProvider {
     const raw = stream.title ?? '';
     const firstLine = raw.split('\n', 1)[0] ?? '';
 
-    const seedersMatch = raw.match(/👤\s*([\d,]+)/);
+    const seedersMatch = /👤\s*([\d,]+)/.exec(raw);
     const seeders =
       seedersMatch?.[1] === undefined
         ? null
         : Number(seedersMatch[1].replaceAll(',', ''));
 
-    const sizeMatch = raw.match(/💾\s*([\d.]+)\s*(GB|MB|TB|KB)/i);
+    const sizeMatch = /💾\s*([\d.]+)\s*(GB|MB|TB|KB)/i.exec(raw);
     const sizeBytes =
       sizeMatch?.[1] !== undefined && sizeMatch[2] !== undefined
         ? Number(sizeMatch[1]) * SIZE_UNIT_BYTES[sizeMatch[2].toUpperCase()]!
         : null;
 
-    const sourceMatch = raw.match(/⚙️\s*([^\s\n]+)/);
+    const sourceMatch = /⚙️\s*(\S+)/.exec(raw);
     const haystack = `${stream.name ?? ''} ${firstLine}`;
 
     return {

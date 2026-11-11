@@ -19,16 +19,12 @@ export interface RetryOptions {
 
 /** Whether an HTTP status code is worth retrying. @public */
 export function isRetryableStatus(status: number): boolean {
-  return (
-    status === 408 ||
-    status === 409 ||
-    status === 429 ||
-    (status >= 500 && status < 600)
-  );
+  return [408, 409, 429].includes(status) || (status >= 500 && status < 600);
 }
 
 function backoffMs(attempt: number, base: number, jitter: number): number {
-  return base * 2 ** attempt + Math.floor(Math.random() * jitter);
+  const sample = crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
+  return base * 2 ** attempt + Math.floor((sample / 2 ** 32) * jitter);
 }
 
 function sleep(ms: number): Promise<void> {

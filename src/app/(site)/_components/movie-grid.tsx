@@ -11,10 +11,10 @@ import { MovieCardMosaic, MovieCardUniform } from './movie-card';
 export function MovieGrid({
   movies,
   layout,
-}: {
+}: Readonly<{
   movies: readonly ScoredMovie[];
   layout: string;
-}) {
+}>) {
   if (layout === 'mosaic') {
     const ordered = mosaicOrder(movies);
     return (
@@ -67,11 +67,13 @@ function mosaicOrder(
   for (const [i, small] of smalls.entries()) {
     out.push({ movie: small!, big: false });
     if ((i + 1) % gapN === 0 && bi < bigs.length) {
-      out.push({ movie: bigs[bi++]!, big: true });
+      out.push({ movie: bigs[bi]!, big: true });
+      bi += 1;
     }
   }
   while (bi < bigs.length) {
-    out.push({ movie: bigs[bi++]!, big: true });
+    out.push({ movie: bigs[bi]!, big: true });
+    bi += 1;
   }
   return out;
 }

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import {
   DatabaseSync,
   type SQLInputValue,
@@ -77,6 +78,7 @@ export function sqliteD1(...migrations: readonly string[]): {
   const raw = new DatabaseSync(':memory:');
   migrations.forEach((file) =>
     raw.exec(
+      // eslint-disable-next-line n/no-sync -- test helper: sqliteD1 builds the database synchronously for describe-time use
       readFileSync(path.join(process.cwd(), 'migrations', file), 'utf8'),
     ),
   );

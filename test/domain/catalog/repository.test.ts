@@ -1,5 +1,6 @@
 import { databaseFrom, type Database } from '@/domain/db/client';
 import { beforeEach, describe, expect, it } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
 import { CatalogRepository } from '@/domain/catalog/repository';
@@ -170,9 +171,12 @@ describe('CatalogRepository (SQLite-backed D1)', () => {
       )
       .run();
 
-    const movie = (
-      await new CatalogRepository(db).loadMovies('all', 'date', 'catalog')
-    ).find((row) => row.imdb_id === 'tt2000003');
+    const movies = await new CatalogRepository(db).loadMovies(
+      'all',
+      'date',
+      'catalog',
+    );
+    const movie = movies.find((row) => row.imdb_id === 'tt2000003');
     expect(movie).toMatchObject({
       torrent_count: 2,
       best_info_hash: 'hash-b',

@@ -5,6 +5,7 @@ const BASE_URL = 'https://www.scnsrc.me/category/films/hd/';
 
 const POST_RE = /class="post"\s+id="post-(\d+)"/g;
 const TITLE_RE =
+  // eslint-disable-next-line sonarjs/super-linear-regex -- applied to one post chunk of a listing page this adapter fetched
   /<h2>\s*<a\s+href="([^"]+)"[^>]*title="Goto\s+([^"]+)"[^>]*>([^<]+)<\/a>/;
 const IMDB_RE = /imdb\.com\/title\/(tt\d+)/i;
 const AUTHOR_RE = /<a\s+href="[^"]*\/author\/[^"]*"[^>]*>([^<]+)<\/a>/;
@@ -18,6 +19,7 @@ function parseScnsrcDate(raw: string | undefined): string | undefined {
     return undefined;
   }
   // Format observed: "Jun 5th, 2026, at 5:25 am"
+  // eslint-disable-next-line sonarjs/super-linear-regex -- the input is one short date string taken from a fetched post
   const cleaned = raw.replace(/(\d+)(st|nd|rd|th)/, '$1').replace(' at ', ' ');
   const parsed = new Date(cleaned);
   return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
@@ -60,27 +62,30 @@ export class ScnsrcSource implements Source {
       const end = next ? next.idx : html.length;
       const chunk = html.slice(start, end);
 
-      const titleMatch = chunk.match(TITLE_RE);
-      const imdbMatch = chunk.match(IMDB_RE);
+      const titleMatch = TITLE_RE.exec(chunk);
+      const imdbMatch = IMDB_RE.exec(chunk);
       if (!titleMatch || !imdbMatch) {
         return [];
       }
-      const url = titleMatch[1];
-      const title = titleMatch[3];
+      const [, url, , title] = titleMatch;
       const imdbId = imdbMatch[1];
-      if (url === undefined || title === undefined || imdbId === undefined) {
+      if (url === undefined || title === undefined) {
+        return [];
+      }
+      if (imdbId === undefined) {
         return [];
       }
 
-      const author = chunk.match(AUTHOR_RE)?.[1]?.trim();
-      const dateRaw = chunk.match(DATE_RE)?.[1]?.trim();
+      const author = AUTHOR_RE.exec(chunk)?.[1]?.trim();
+      const dateRaw = DATE_RE.exec(chunk)?.[1]?.trim();
       const categories = [...chunk.matchAll(CATEGORY_RE)]
         .map((match) => match[1]?.trim())
         .filter((category): category is string => category !== undefined);
-      const imageUrl = chunk.match(IMG_RE)?.[1];
-      const excerptRaw = chunk.match(EXCERPT_RE)?.[1];
+      const imageUrl = IMG_RE.exec(chunk)?.[1];
+      const excerptRaw = EXCERPT_RE.exec(chunk)?.[1];
       const excerpt = excerptRaw
         ? excerptRaw
+            // eslint-disable-next-line sonarjs/super-linear-regex -- the excerpt is one bounded post body, not user input
             .replaceAll(/<[^>]+>/g, '')
             .replaceAll(/\s+/g, ' ')
             .trim()

@@ -15,9 +15,8 @@ describe('posterUrl', () => {
   });
 
   it('routes the original through our own image proxy', () => {
-    expect(posterUrl('/abc.jpg', 'w185')).toBe(
-      `/img?url=${encodeURIComponent(`${ORIGINAL}/abc.jpg`)}&w=185`,
-    );
+    const original = encodeURIComponent(`${ORIGINAL}/abc.jpg`);
+    expect(posterUrl('/abc.jpg', 'w185')).toBe(`/img?url=${original}&w=185`);
   });
 
   it.each([
@@ -37,8 +36,9 @@ describe('backdropUrl', () => {
   });
 
   it('falls back to the poster so the hero is never blank', () => {
+    const original = encodeURIComponent(`${ORIGINAL}/poster.jpg`);
     expect(backdropUrl(null, '/poster.jpg', 'w780')).toBe(
-      `/img?url=${encodeURIComponent(`${ORIGINAL}/poster.jpg`)}&w=780`,
+      `/img?url=${original}&w=780`,
     );
   });
 

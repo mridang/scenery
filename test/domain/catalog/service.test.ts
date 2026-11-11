@@ -106,16 +106,19 @@ describe('CatalogService delegations', () => {
   const svc = new CatalogService(new FakeReader([]));
 
   it('forwards stats from the reader', async () => {
-    expect((await svc.stats()).movies).toBe(3);
+    const stats = await svc.stats();
+    expect(stats.movies).toBe(3);
   });
   it('forwards genres from the reader', async () => {
-    expect((await svc.genres()).get(28)).toBe('Action');
+    const genres = await svc.genres();
+    expect(genres.get(28)).toBe('Action');
   });
   it('forwards language counts from the reader', async () => {
     expect(await svc.languageCounts()).toEqual([{ code: 'en', count: 3 }]);
   });
   it('forwards last-update from the reader', async () => {
-    expect((await svc.lastUpdate()).scrapeSource).toBe('scnsrc');
+    const lastUpdate = await svc.lastUpdate();
+    expect(lastUpdate.scrapeSource).toBe('scnsrc');
   });
 });
 

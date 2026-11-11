@@ -7,7 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 import { readdirSync, readFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import path from 'node:path';
 
 import { APP_MIGRATIONS } from './lib/core/db/migrations';
 import { installCloudflareContext, sqliteD1 } from './lib/core/db/sqlite-d1';
@@ -30,6 +30,7 @@ interface Operation {
 }
 
 const document = JSON.parse(
+  // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: the spec is read once when the module loads
   readFileSync(new URL('../openapi.json', import.meta.url), 'utf8'),
 ) as {
   readonly openapi: string;
@@ -53,22 +54,23 @@ const documented = (): Map<string, Operation> => {
   return found;
 };
 
-const API = join(process.cwd(), 'src/app/api');
+const API = path.join(process.cwd(), 'src/app/api');
 
 const routeFiles = (dir: string): string[] =>
-  readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
-    entry.isDirectory()
-      ? routeFiles(join(dir, entry.name))
-      : entry.name === 'route.ts'
-        ? [join(dir, entry.name)]
-        : [],
-  );
+  // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: a directory walk used by sync checks
+  readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    if (entry.isDirectory()) {
+      return routeFiles(path.join(dir, entry.name));
+    }
+    return entry.name === 'route.ts' ? [path.join(dir, entry.name)] : [];
+  });
 
 /** The documented path of a route file, with `[x]` as `{x}`. */
 const pathOf = (file: string): string =>
   (
     '/api/' +
-    relative(API, file)
+    path
+      .relative(API, file)
       .replace(/\/?route\.ts$/, '')
       .replaceAll(/\[([a-z_]+)\]/g, '{$1}')
   ).replace(/\/$/, '');
@@ -76,7 +78,8 @@ const pathOf = (file: string): string =>
 /** Every `METHOD /path` a route file under src/app/api exports, with `[x]` as `{x}`. */
 const registered = (): string[] =>
   routeFiles(API).flatMap((file) => {
-    const path = pathOf(file);
+    const route = pathOf(file);
+    // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: a sync read of each route file for a sync check
     const text = readFileSync(file, 'utf8');
     return ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
       .filter((method) =>
@@ -84,7 +87,7 @@ const registered = (): string[] =>
           String.raw`export (const \{[^}]*\b${method}\b|async function ${method}\b|function ${method}\b|const ${method}\b)`,
         ).test(text),
       )
-      .map((method) => `${method} ${path}`);
+      .map((method) => `${method} ${route}`);
   });
 
 /** Resolve a `#/components/...` reference. */
@@ -93,6 +96,16 @@ const resolve = (ref: string): Json =>
     .slice(2)
     .split('/')
     .reduce<unknown>((node, key) => (node as Json)[key], document) as Json;
+
+const actualType = (value: unknown): string => {
+  if (value === null) {
+    return 'null';
+  }
+  if (Array.isArray(value)) {
+    return 'array';
+  }
+  return Number.isInteger(value) ? 'integer' : typeof value;
+};
 
 /**
  * A small structural check of a value against a schema of this spec: type,
@@ -111,15 +124,8 @@ function check(value: unknown, schema: Json, at = '$'): string[] {
     return fits.length === 1 ? [] : [`${at}: matches ${fits.length} of oneOf`];
   }
   const errors: string[] = [];
-  const types = ([] as string[]).concat((schema['type'] as string[]) ?? []);
-  const actual =
-    value === null
-      ? 'null'
-      : Array.isArray(value)
-        ? 'array'
-        : Number.isInteger(value)
-          ? 'integer'
-          : typeof value;
+  const types = [(schema['type'] as string[]) ?? []].flat();
+  const actual = actualType(value);
   if (
     types.length > 0 &&
     !types.includes(actual) &&
@@ -187,6 +193,8 @@ function check(value: unknown, schema: Json, at = '$'): string[] {
         errors.push(...check(member, properties[key], `${at}.${key}`));
       } else if (schema['additionalProperties'] === false) {
         errors.push(`${at}.${key}: not allowed`);
+      } else {
+        // Extra members are allowed unless the schema forbids them.
       }
     }
   }
@@ -432,6 +440,7 @@ const subjects: readonly Subject[] = [
       {
         name: 'not an https endpoint',
         call: () =>
+          // eslint-disable-next-line unicorn/prefer-https -- test fixture
           subscriptionsPost({ ...SUBSCRIPTION, endpoint: 'http://push.test' }),
       },
       { name: 'not an object', call: () => subscriptionsPost('x') },
@@ -539,7 +548,7 @@ describe('openapi.json', () => {
   it('is tested through every route file', () => {
     expect(
       routeFiles(API)
-        .map(pathOf)
+        .map((file) => pathOf(file))
         .toSorted((a, b) => a.localeCompare(b)),
     ).toEqual(Object.keys(MODULES).toSorted((a, b) => a.localeCompare(b)));
   });
@@ -572,7 +581,9 @@ describe('openapi.json', () => {
       expect(operation.summary).toBeTruthy();
       expect(operation.security).toBeDefined();
       expect(
-        Object.keys(operation.responses).some((status) => status >= '400'),
+        Object.keys(operation.responses).some(
+          (status) => Number(status) >= 400,
+        ),
       ).toBe(true);
       expect(responseFor(operation, 429)).toBeDefined();
       const schemes = Object.keys(document.components['securitySchemes'] ?? {});
@@ -724,17 +735,19 @@ describe('documented statuses', () => {
   it('are all produced by some case, except the platform rate limit', async () => {
     const seen = new Map<string, Set<number>>();
     for (const subject of subjects) {
-      const statuses = new Set<number>();
-      statuses.add((await send(await subject.valid())).status);
+      const first = await send(await subject.valid());
+      const statuses = new Set<number>([first.status]);
       for (const scenario of subject.invalid) {
-        statuses.add((await send(await scenario.call())).status);
+        const response = await send(await scenario.call());
+        statuses.add(response.status);
       }
       if ((documented().get(subject.key)?.security ?? []).length > 0) {
         const call = await subject.valid();
-        statuses.add(
-          (await send({ ...call, init: { ...call.init, headers: JSON_TYPE } }))
-            .status,
-        );
+        const repeated = await send({
+          ...call,
+          init: { ...call.init, headers: JSON_TYPE },
+        });
+        statuses.add(repeated.status);
       }
       seen.set(subject.key, statuses);
     }
@@ -755,7 +768,8 @@ describe('documented statuses', () => {
   });
 
   it('includes both 200 and 201 for a repeated subscription', async () => {
-    expect((await send(subscriptionsPost(SUBSCRIPTION))).status).toBe(201);
+    const created = await send(subscriptionsPost(SUBSCRIPTION));
+    expect(created.status).toBe(201);
     const again = await send(subscriptionsPost(SUBSCRIPTION));
     expect(again.status).toBe(200);
     expect(await conforms('POST /api/push/subscriptions', again)).toEqual([]);

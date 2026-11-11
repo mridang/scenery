@@ -13,10 +13,10 @@ import { posterUrl } from '../_lib/tmdb-image';
 export function ComingSoon({
   movies,
   seeMoreHref,
-}: {
+}: Readonly<{
   movies: readonly ScoredMovie[];
   seeMoreHref: string;
-}) {
+}>) {
   if (movies.length === 0) {
     return null;
   }
@@ -41,7 +41,7 @@ export function ComingSoon({
   );
 }
 
-function ComingSoonRow({ movie }: { movie: ScoredMovie }) {
+function ComingSoonRow({ movie }: Readonly<{ movie: ScoredMovie }>) {
   const { row, genres, cast } = movie;
   const title = row.tmdb_title ?? row.latest_release_title ?? row.imdb_id;
   // Sidebar thumb is 58 CSS px → ~174 device px at 3×; w185 was right at

@@ -16,7 +16,9 @@ import { Hero } from './hero';
  * visitors still see a useful hero — the client just takes over the
  * paging once it hydrates.
  */
-export function HeroCarousel({ movies }: { movies: readonly ScoredMovie[] }) {
+export function HeroCarousel({
+  movies,
+}: Readonly<{ movies: readonly ScoredMovie[] }>) {
   const slides = movies.filter((movie) => movie.row.poster_path);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -36,7 +38,7 @@ export function HeroCarousel({ movies }: { movies: readonly ScoredMovie[] }) {
 
   useEffect(() => {
     if (paused || count <= 1) {
-      return;
+      return undefined;
     }
     const handle = setTimeout(() => goTo(index + 1), 8000);
     return () => clearTimeout(handle);
@@ -82,10 +84,10 @@ export function HeroCarousel({ movies }: { movies: readonly ScoredMovie[] }) {
 function CarouselButton({
   direction,
   onClick,
-}: {
+}: Readonly<{
   direction: 'prev' | 'next';
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
-}) {
+}>) {
   const sideCls =
     direction === 'prev' ? 'left-3 sm:left-5' : 'right-3 sm:right-5';
   const path =
@@ -106,6 +108,7 @@ function CarouselButton({
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
+        aria-hidden="true"
       >
         <path d={path} />
       </svg>
@@ -117,11 +120,11 @@ function Dots({
   count,
   index,
   onSelect,
-}: {
+}: Readonly<{
   count: number;
   index: number;
   onSelect: (next: number) => void;
-}) {
+}>) {
   return (
     <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">
       {Array.from({ length: count }, (_, i) => i).map((slot) => {

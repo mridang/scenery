@@ -66,7 +66,9 @@ describe('GET /api/operations/:id', () => {
 
   it('answers 401 without the operator token where a secret is set', async () => {
     await install({ CRON_SECRET: 'shh' });
-    expect((await get(ID)).status).toBe(401);
-    expect((await get(ID, { authorization: 'Bearer shh' })).status).toBe(200);
+    const anonymous = await get(ID);
+    expect(anonymous.status).toBe(401);
+    const authorized = await get(ID, { authorization: 'Bearer shh' });
+    expect(authorized.status).toBe(200);
   });
 });

@@ -29,10 +29,16 @@ export function getEnv(): CloudflareEnv {
  * never turn a successful request into an error. Falls back to a floating
  * promise outside a Workers request (tests, scripts).
  */
-export function runInBackground(work: Promise<unknown>): void {
-  const guarded = work.catch((error: unknown) => {
+async function guard(work: Promise<unknown>): Promise<void> {
+  try {
+    await work;
+  } catch (error: unknown) {
     console.error('background task failed', error);
-  });
+  }
+}
+
+export function runInBackground(work: Promise<unknown>): void {
+  const guarded = guard(work);
   try {
     getCloudflareContext().ctx.waitUntil(guarded);
   } catch {

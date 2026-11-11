@@ -28,12 +28,12 @@ export function descriptionFor(movie: ScoredMovie): string {
           return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
         })()
       : null;
+  const voteCount =
+    row.vote_count == null ? '' : ` (${countOf(row.vote_count, 'vote')})`;
   const rating =
     row.vote_average == null
       ? null
-      : `${formatRating(row.vote_average)}${
-          row.vote_count == null ? '' : ` (${countOf(row.vote_count, 'vote')})`
-        }`;
+      : `${formatRating(row.vote_average)}${voteCount}`;
   const torrent = row.best_torrent_title
     ? `${row.best_torrent_title} (${[
         row.best_quality,

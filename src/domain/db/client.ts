@@ -11,7 +11,35 @@ import {
   type Database as GenericDatabase,
 } from '@/lib/core/db/client';
 import { getDB } from '@/lib/core/runtime';
-import * as schema from './schema';
+import {
+  fetchAttempts,
+  movies,
+  operations,
+  pageSnapshots,
+  pushSubscriptions,
+  releases,
+  sources,
+  tmdbGenres,
+  tmdbMovies,
+  tmdbPeople,
+  torrentLookups,
+  torrents,
+} from './schema';
+
+const schema = {
+  fetchAttempts,
+  movies,
+  operations,
+  pageSnapshots,
+  pushSubscriptions,
+  releases,
+  sources,
+  tmdbGenres,
+  tmdbMovies,
+  tmdbPeople,
+  torrentLookups,
+  torrents,
+};
 
 /** A Drizzle client typed against this app's schema. @public */
 export type Database = GenericDatabase<typeof schema>;

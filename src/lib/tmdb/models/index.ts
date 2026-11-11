@@ -6,7 +6,21 @@
  * stays a thin map of endpoint to typed result.
  */
 
-export * from './genres-response';
-export * from './find-response';
-export * from './movie-response';
-export * from './person-response';
+export { TmdbGenreSchema, TmdbGenresResponseSchema } from './genres-response';
+export type { TmdbGenre, TmdbGenresResponse } from './genres-response';
+export { TmdbFindMovieSchema, TmdbFindResponseSchema } from './find-response';
+export type { TmdbFindMovie, TmdbFindResponse } from './find-response';
+export {
+  TmdbCastEntrySchema,
+  TmdbCrewEntrySchema,
+  TmdbCompanySchema,
+  TmdbMovieResponseSchema,
+} from './movie-response';
+export type {
+  TmdbCastEntry,
+  TmdbCrewEntry,
+  TmdbCompany,
+  TmdbMovieResponse,
+} from './movie-response';
+export { TmdbPersonResponseSchema } from './person-response';
+export type { TmdbPersonResponse } from './person-response';

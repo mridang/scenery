@@ -7,6 +7,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
 import { ScrapingRepository } from '@/domain/scraping/repository';
@@ -282,7 +283,8 @@ describe('the newest-release gate against its previous form', () => {
     const repo = new TorrentRepository(db);
     expect(await repo.candidates(10)).toEqual(legacy(false));
     expect(await repo.candidates(10, true)).toEqual(legacy(true));
-    expect((await repo.candidates(10)).length).toBeGreaterThan(1);
+    const found = await repo.candidates(10);
+    expect(found.length).toBeGreaterThan(1);
   });
 
   it('counts the same too-fresh movies as the subquery did', async () => {

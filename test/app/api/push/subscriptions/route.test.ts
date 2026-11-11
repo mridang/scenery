@@ -61,6 +61,7 @@ describe('POST /api/push/subscriptions', () => {
   it.each([
     [{ keys: GOOD.keys }, 'endpoint: must be an https URL.'],
     [
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture: an insecure endpoint the route must reject
       { endpoint: 'http://push.test/x', keys: GOOD.keys },
       'endpoint: must be an https URL.',
     ],
@@ -77,6 +78,7 @@ describe('POST /api/push/subscriptions', () => {
   });
 
   it('415s for a body that is not JSON', async () => {
-    expect((await POST(post(GOOD, 'text/plain'))).status).toBe(415);
+    const res = await POST(post(GOOD, 'text/plain'));
+    expect(res.status).toBe(415);
   });
 });

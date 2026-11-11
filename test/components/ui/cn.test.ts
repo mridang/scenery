@@ -18,3 +18,5 @@ describe('cn', () => {
     expect(cn()).toBe('');
   });
 });
+
+/* eslint-enable tailwindcss/no-custom-classname -- end of the fixture class names disabled above. */

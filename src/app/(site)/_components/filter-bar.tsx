@@ -38,7 +38,7 @@ interface Pill {
   href: string;
 }
 
-function PillGroup({ pills }: { pills: readonly Pill[] }) {
+function PillGroup({ pills }: Readonly<{ pills: readonly Pill[] }>) {
   return (
     <div className={PILL_GROUP}>
       {pills.map((pill) => (
@@ -65,19 +65,21 @@ export function FilterBar({
   total,
   withTorrents,
   feedHref,
-}: {
+}: Readonly<{
   opts: PageViewOptions;
   langs: readonly LangCount[];
   total: number;
   withTorrents: number;
   feedHref: string;
-}) {
-  const sortLabel =
-    opts.pageSort === 'score'
-      ? 'score'
-      : opts.pageSort === 'rating'
-        ? 'rating'
-        : 'release date';
+}>) {
+  let sortLabel: string;
+  if (opts.pageSort === 'score') {
+    sortLabel = 'score';
+  } else if (opts.pageSort === 'rating') {
+    sortLabel = 'rating';
+  } else {
+    sortLabel = 'release date';
+  }
   const planHref = patchHref(opts, { view: 'plan' });
 
   const statusPills: Pill[] = [
@@ -132,7 +134,13 @@ export function FilterBar({
             aria-label="RSS feed"
             className="flex size-[38px] flex-none items-center justify-center rounded-[10px] bg-white/5 no-underline hover:bg-[rgba(238,128,47,0.16)]"
           >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="#ee802f">
+            <svg
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="#ee802f"
+              aria-hidden="true"
+            >
               <circle cx="6.18" cy="17.82" r="2.18" />
               <path d="M4 4.44v2.83c7.03 0 12.73 5.7 12.73 12.73h2.83C19.56 11.4 12.6 4.44 4 4.44z" />
               <path d="M4 10.1v2.83c3.9 0 7.07 3.17 7.07 7.07h2.83C13.9 14.4 9.6 10.1 4 10.1z" />
@@ -152,10 +160,10 @@ export function FilterBar({
 function LanguageDropdown({
   opts,
   langs,
-}: {
+}: Readonly<{
   opts: PageViewOptions;
   langs: readonly LangCount[];
-}) {
+}>) {
   const current = opts.lang;
   const label = current === 'all' ? 'All langs' : current.toUpperCase();
   const ordered = [
@@ -179,6 +187,7 @@ function LanguageDropdown({
             fill="none"
             stroke="#8a8a92"
             strokeWidth="1.6"
+            aria-hidden="true"
           >
             <path d="M2.5 4.5 L6 8 L9.5 4.5" strokeLinecap="round" />
           </svg>

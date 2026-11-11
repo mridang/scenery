@@ -26,7 +26,7 @@ const PAGE_SIZE = 48;
 
 export default async function Home({
   searchParams,
-}: {
+}: Readonly<{
   searchParams: Promise<{
     lang?: string;
     sort?: string;
@@ -36,7 +36,7 @@ export default async function Home({
     q?: string;
     page?: string;
   }>;
-}) {
+}>) {
   const opts = parsePageViewOptions(await searchParams);
 
   const catalog = CatalogService.fromDatabase(database());

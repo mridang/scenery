@@ -85,7 +85,7 @@ export class ScrapingRepository {
     error?: string;
     responseBody?: string;
   }): Promise<void> {
-    await this.db.insert(fetchAttempts).values({
+    const write = this.db.insert(fetchAttempts).values({
       source_id: opts.sourceId,
       page_number: opts.pageNumber,
       page_url: opts.pageUrl,
@@ -97,6 +97,7 @@ export class ScrapingRepository {
       error: opts.error ?? null,
       response_body: opts.responseBody ?? null,
     });
+    await write;
   }
 
   /** Persist a successful page snapshot and return its PK. */
@@ -142,7 +143,7 @@ export class ScrapingRepository {
     httpStatus?: number;
     snapshotId: number;
   }): Promise<void> {
-    await this.db.insert(fetchAttempts).values({
+    const write = this.db.insert(fetchAttempts).values({
       source_id: opts.sourceId,
       page_number: opts.pageNumber,
       page_url: opts.pageUrl,
@@ -153,6 +154,7 @@ export class ScrapingRepository {
       http_status: opts.httpStatus ?? null,
       snapshot_id: opts.snapshotId,
     });
+    await write;
   }
 
   /** Upsert one extracted release together with its parent movie row. */

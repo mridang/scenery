@@ -6,6 +6,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
 import type { OperationRequest } from '@/domain/operations/types';
@@ -42,10 +43,9 @@ beforeEach(() => {
 
 afterEach(() => restore());
 
-const post = (
-  body: string,
-  headers: Record<string, string> = { 'content-type': 'application/json' },
-) =>
+const JSON_HEADERS = { 'content-type': 'application/json' };
+
+const post = (body: string, headers: Record<string, string> = JSON_HEADERS) =>
   POST(
     new Request('https://app.test/api/operations', {
       method: 'POST',
@@ -113,11 +113,12 @@ describe('POST /api/operations', () => {
   });
 
   it('answers 415 to a body that is not JSON and 400 to JSON that is not an object', async () => {
-    expect(
-      (await post('type=push_trigger', { 'content-type': 'text/plain' }))
-        .status,
-    ).toBe(415);
-    expect((await post('[]')).status).toBe(400);
+    const notJson = await post('type=push_trigger', {
+      'content-type': 'text/plain',
+    });
+    expect(notJson.status).toBe(415);
+    const notObject = await post('[]');
+    expect(notObject.status).toBe(400);
     expect(runOperation).not.toHaveBeenCalled();
   });
 

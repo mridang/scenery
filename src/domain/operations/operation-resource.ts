@@ -38,14 +38,24 @@ export function operationResource(
     type: row.type,
     status: abandoned ? 'failed' : row.status,
     parameters: JSON.parse(row.parameters) as unknown,
-    ...(abandoned
-      ? { result: { error: 'The run did not finish.' } }
-      : row.result === null
-        ? {}
-        : { result: JSON.parse(row.result) as unknown }),
+    ...storedResult(row, abandoned),
     created_at: row.created_at,
     ...(row.finished_at === null ? {} : { finished_at: row.finished_at }),
   };
+}
+
+/** The result of a stored operation: an error if the run was cut short, none if it never ended. */
+function storedResult(
+  row: Readonly<OperationRow>,
+  abandoned: boolean,
+): { readonly result?: unknown } {
+  if (abandoned) {
+    return { result: { error: 'The run did not finish.' } };
+  }
+  if (row.result === null) {
+    return {};
+  }
+  return { result: JSON.parse(row.result) as unknown };
 }
 
 /** Whether `id` has the shape of an operation id (a lowercase UUID). */

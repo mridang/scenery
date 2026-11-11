@@ -11,11 +11,14 @@
 
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
+import { authenticate, mayFetch, signatureFor, signatureValid } from './access';
 import { isImagesBinding, type ImagesLike } from './proxy';
 import { serveImage, type ImageCache, type ImageServiceDeps } from './service';
 
 export type { ImageAccess } from './service';
-export * as access from './access';
+
+/** The app's access rules, as the request service reads them. */
+export const access = { authenticate, mayFetch, signatureFor, signatureValid };
 
 /** The Images binding, where the deployment has one. */
 export function imagesBinding(): ImagesLike | undefined {
@@ -53,9 +56,13 @@ export function imageCache(): ImageCache | undefined {
  * into an error. Outside a Workers request the promise simply runs on its own.
  */
 export function runInBackground(work: Promise<unknown>): void {
-  const guarded = work.catch((error: unknown) => {
-    console.error('image background task failed', error);
-  });
+  const guarded = (async (): Promise<void> => {
+    try {
+      await work;
+    } catch (error: unknown) {
+      console.error('image background task failed', error);
+    }
+  })();
   try {
     getCloudflareContext().ctx.waitUntil(guarded);
   } catch {
