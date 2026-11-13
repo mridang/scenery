@@ -154,7 +154,7 @@ describe('readInstallEnvironment', () => {
     expect(readInstallEnvironment(host()).standalone).toBe(false);
   });
 
-  it('keeps the storage key lowercase, whatever the display name', () => {
+  it('keeps the dismissal key lower case, so a change to how the name is written does not bring the tip back', () => {
     expect(IOS_HINT_STORAGE_KEY).toBe(IOS_HINT_STORAGE_KEY.toLowerCase());
   });
 
