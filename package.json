@@ -50,12 +50,12 @@
   "homepage": "https://github.com/mridang/scenery",
   "bugs": "https://github.com/mridang/scenery/issues",
   "dependencies": {
-    "@opennextjs/cloudflare": "^1.20.12",
+    "@opennextjs/cloudflare": "^1.20.16",
     "drizzle-orm": "^0.45.4",
-    "feed": "^5.2.1",
-    "next": "16.4.2",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
+    "feed": "^6.0.0",
+    "next": "16.4.5",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -67,20 +67,20 @@
     "@tailwindcss/postcss": "^4",
     "@tsconfig/node24": "^24.0.5",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.13.1",
+    "@types/node": "^26.6.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "cypress": "^16.2.0",
-    "eslint": "^9.39.5",
+    "cypress": "^16.2.1",
+    "eslint": "^10.14.0",
     "eslint-plugin-drizzle": "^0.2.3",
     "jest": "^30.0.3",
     "jest-junit": "^17.0.0",
-    "knip": "^6.17.1",
+    "knip": "^6.44.2",
     "prettier": "^3.9.10",
     "tailwindcss": "^4",
     "ts-jest": "^29.4.0",
     "typescript": "~6.0.3",
-    "wrangler": "^4.151.1"
+    "wrangler": "^4.158.0"
   },
   "overrides": {
     "@eslint/core": "1.2.1",
