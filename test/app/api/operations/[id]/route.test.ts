@@ -32,10 +32,10 @@ const install = async (env: Record<string, unknown> = {}) => {
   );
 };
 
-beforeEach(() => install());
+beforeEach(async () => install());
 afterEach(() => restore());
 
-const get = (id: string, headers: Record<string, string> = {}) =>
+const get = async (id: string, headers: Record<string, string> = {}) =>
   GET(new Request(`https://app.test/api/operations/${id}`, { headers }), {
     params: Promise.resolve({ id }),
   });

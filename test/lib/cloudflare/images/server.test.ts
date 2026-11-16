@@ -101,9 +101,9 @@ describe('ImageService', () => {
     const refusal = new Response('no', { status: 403 });
     const service = new ImageService({
       access: {
-        authenticate: () => Promise.resolve(refusal),
-        signatureValid: () => Promise.resolve(true),
-        mayFetch: () => Promise.resolve(true),
+        authenticate: async () => refusal,
+        signatureValid: async () => true,
+        mayFetch: async () => true,
       },
       background: () => undefined,
     });

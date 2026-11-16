@@ -11,7 +11,7 @@ interface PipelineRunRequest {
 /** The sentence to show for a failed response: the problem's `detail`, else its status. */
 async function failureMessage(res: Response): Promise<string> {
   try {
-    const body = (await res.json()) as { detail?: unknown };
+    const body = await res.json<{ detail?: unknown }>();
     if (typeof body.detail === 'string') {
       return body.detail;
     }

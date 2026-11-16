@@ -54,9 +54,10 @@ describe('magnetPath', () => {
 describe('bestTrackers', () => {
   beforeEach(() => resetTrackerCache());
 
-  const ok = (body: string): typeof fetch =>
-    (() =>
-      Promise.resolve(new Response(body, { status: 200 }))) as typeof fetch;
+  const ok =
+    (body: string): typeof fetch =>
+    async () =>
+      new Response(body, { status: 200 });
 
   it('parses non-empty lines from the fetched list', async () => {
     const transport = ok('udp://a\n\n  udp://b  \nudp://c\n');
@@ -65,14 +66,15 @@ describe('bestTrackers', () => {
   });
 
   it('falls back when the request errors', async () => {
-    const transport = (() =>
-      Promise.reject(new Error('network'))) as typeof fetch;
+    const transport = (async () => {
+      throw new Error('network');
+    }) as typeof fetch;
     expect(await bestTrackers(transport)).toEqual(FALLBACK_TRACKERS);
   });
 
   it('falls back on a non-200 response', async () => {
-    const transport = (() =>
-      Promise.resolve(new Response('', { status: 503 }))) as typeof fetch;
+    const transport = (async () =>
+      new Response('', { status: 503 })) as typeof fetch;
     expect(await bestTrackers(transport)).toEqual(FALLBACK_TRACKERS);
   });
 });

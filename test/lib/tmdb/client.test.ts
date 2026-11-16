@@ -23,12 +23,12 @@ function stubTransport(
   handler: (url: string) => { status: number; body: string },
 ): { transport: typeof fetch; calls: string[] } {
   const calls: string[] = [];
-  const transport = (async (input: URL | RequestInfo): Promise<Response> => {
-    const url = input instanceof URL ? input.toString() : String(input);
+  const transport = async (input: URL | RequestInfo): Promise<Response> => {
+    const url = input instanceof Request ? input.url : String(input);
     calls.push(url);
     const { status, body } = handler(url);
     return new Response(body, { status });
-  }) as unknown as typeof fetch;
+  };
   return { transport, calls };
 }
 

@@ -129,7 +129,7 @@ export class ScrapingRepository {
       })
       .returning({ id: pageSnapshots.id })
       .get();
-    return Number(row.id);
+    return row.id;
   }
 
   /** Record a successful attempt linked to a snapshot row. */

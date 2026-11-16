@@ -11,7 +11,7 @@ const IN_SCOPE_TEXT = /In scope/;
 const OUT_OF_SCOPE_TEXT = /Out of scope/;
 const GOOD_FAITH_TEXT = /good faith/;
 
-const read = (name: string) =>
+const read = async (name: string) =>
   readFile(path.join(process.cwd(), 'public', name), 'utf8');
 
 /** Plain-text files are served without a charset, so they must be ASCII. */

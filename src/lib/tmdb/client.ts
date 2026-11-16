@@ -67,7 +67,7 @@ export class TmdbClient {
   }
 
   /** Look up a movie by IMDb id (returns the first movie match, if any). */
-  public findByImdb(imdbId: string): Promise<Result<TmdbFindResponse>> {
+  public async findByImdb(imdbId: string): Promise<Result<TmdbFindResponse>> {
     return this.http.request(
       {
         path: `/find/${encodeURIComponent(imdbId)}`,
@@ -79,7 +79,7 @@ export class TmdbClient {
   }
 
   /** Fetch a movie with its credits appended in one round-trip. */
-  public getMovieWithCredits(
+  public async getMovieWithCredits(
     tmdbId: number,
   ): Promise<Result<TmdbMovieResponse>> {
     return this.http.request(
@@ -93,7 +93,7 @@ export class TmdbClient {
   }
 
   /** Fetch a person with their full filmography. */
-  public getPersonWithCredits(
+  public async getPersonWithCredits(
     personId: number,
   ): Promise<Result<TmdbPersonResponse>> {
     return this.http.request(

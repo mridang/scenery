@@ -12,7 +12,7 @@ afterEach(() => {
 });
 
 function stubFetch(res: Response | Error) {
-  const spy = jest.fn<typeof fetch>(() =>
+  const spy = jest.fn<typeof fetch>(async () =>
     res instanceof Error ? Promise.reject(res) : Promise.resolve(res),
   );
   globalThis.fetch = spy;

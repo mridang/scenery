@@ -2,17 +2,13 @@ import { describe, expect, it } from '@jest/globals';
 
 import { TorrentioProvider } from '@/lib/torrents/providers/torrentio';
 
-const transportOf = (
-  body: unknown,
-  init: { status?: number } = {},
-): typeof fetch =>
-  (() =>
-    Promise.resolve(
-      new Response(typeof body === 'string' ? body : JSON.stringify(body), {
-        status: init.status ?? 200,
-        headers: { 'content-type': 'application/json' },
-      }),
-    )) as typeof fetch;
+const transportOf =
+  (body: unknown, init: { status?: number } = {}): typeof fetch =>
+  async () =>
+    new Response(typeof body === 'string' ? body : JSON.stringify(body), {
+      status: init.status ?? 200,
+      headers: { 'content-type': 'application/json' },
+    });
 
 /** Returns the item at `index`, failing the test loudly when it is absent. */
 function nth<T>(items: readonly T[], index: number): T {
@@ -68,8 +64,9 @@ describe('TorrentioProvider', () => {
   });
 
   it("returns 'error' on network failure without throwing", async () => {
-    const transport = (() =>
-      Promise.reject(new Error('ECONNRESET'))) as typeof fetch;
+    const transport = (async () => {
+      throw new Error('ECONNRESET');
+    }) as typeof fetch;
     const r = await new TorrentioProvider({}, transport).search('tt0000001');
     expect(r.status).toBe('error');
     expect(r.error).toContain('ECONNRESET');

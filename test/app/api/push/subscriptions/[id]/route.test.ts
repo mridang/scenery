@@ -22,7 +22,7 @@ jest.unstable_mockModule('@/domain/push/repository', () => ({
 
 const { DELETE } = await import('@/app/api/push/subscriptions/[id]/route');
 
-const del = (id: string) =>
+const del = async (id: string) =>
   DELETE(
     new Request(`https://x/api/push/subscriptions/${id}`, { method: 'DELETE' }),
     {

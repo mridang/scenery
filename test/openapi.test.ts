@@ -157,8 +157,8 @@ function check(value: unknown, schema: Json, at = '$'): string[] {
   }
   if (typeof value === 'string') {
     if (
-      schema['pattern'] &&
-      !new RegExp(String(schema['pattern'])).test(value)
+      typeof schema['pattern'] === 'string' &&
+      !new RegExp(schema['pattern']).test(value)
     ) {
       errors.push(`${at}: does not match pattern`);
     }
@@ -276,8 +276,8 @@ const SUBSCRIPTION = {
   keys: { p256dh: 'p', auth: 'a' },
 };
 
-const send = ({ key, path, init, id }: Call): Promise<Response> => {
-  const handler = handlers.get(key) as Handler;
+const send = async ({ key, path, init, id }: Call): Promise<Response> => {
+  const handler = handlers.get(key)!;
   return handler(
     new Request(`${ORIGIN}${path}`, { method: key.split(' ', 1)[0], ...init }),
     id === undefined ? undefined : { params: Promise.resolve({ id }) },
@@ -312,7 +312,8 @@ const createOperation = async (): Promise<string> => {
     path: '/api/operations',
     init: body({ type: 'push_trigger' }, AUTH),
   });
-  return ((await res.json()) as { id: string }).id;
+  const { id } = await res.json<{ id: string }>();
+  return id;
 };
 
 const operationsPost = (value: unknown, headers = AUTH): Call => ({
@@ -491,7 +492,7 @@ const subjects: readonly Subject[] = [
     key: 'DELETE /api/push/subscriptions/{id}',
     valid: async () => {
       const created = await send(subscriptionsPost(SUBSCRIPTION));
-      const { id } = (await created.json()) as { id: string };
+      const { id } = await created.json<{ id: string }>();
       return {
         key: 'DELETE /api/push/subscriptions/{id}',
         path: `/api/push/subscriptions/${id}`,
@@ -532,7 +533,7 @@ const responseFor = (
 
 /** Check a response against the spec: documented status, headers, problem body, schema. */
 async function conforms(key: string, res: Response): Promise<string[]> {
-  const operation = documented().get(key) as Operation;
+  const operation = documented().get(key)!;
   const response = responseFor(operation, res.status);
   if (!response) {
     return [`${key}: undocumented status ${res.status}`];
@@ -557,7 +558,10 @@ async function conforms(key: string, res: Response): Promise<string[]> {
   if (!(res.headers.get('content-type') ?? '').startsWith(media)) {
     return [...errors, `${key} ${res.status}: content type is not ${media}`];
   }
-  const schema = content[media]?.schema as Json;
+  const schema = content[media]?.schema;
+  if (!schema) {
+    return [...errors, `${key} ${res.status}: no schema for ${media}`];
+  }
   return [...errors, ...check(await res.clone().json(), schema)];
 }
 
@@ -594,8 +598,8 @@ describe('openapi.json', () => {
     const ids = new Set<string>();
     for (const [key, operation] of documented().entries()) {
       expect(operation.operationId).toBeTruthy();
-      expect(ids.has(operation.operationId as string)).toBe(false);
-      ids.add(operation.operationId as string);
+      expect(ids.has(operation.operationId!)).toBe(false);
+      ids.add(operation.operationId!);
       expect(operation.tags?.length).toBeGreaterThan(0);
       expect(operation.summary).toBeTruthy();
       expect(operation.security).toBeDefined();
@@ -635,7 +639,7 @@ describe('openapi.json', () => {
 });
 
 describe.each(subjects)('$key', ({ key, valid, invalid }) => {
-  const operation = documented().get(key) as Operation;
+  const operation = documented().get(key)!;
   const secured = (operation.security ?? []).length > 0;
 
   it('has a test subject for every documented operation', () => {
@@ -674,8 +678,10 @@ describe.each(subjects)('$key', ({ key, valid, invalid }) => {
   }
 
   if (operation.requestBody) {
-    const schema = operation.requestBody.content['application/json']
-      ?.schema as Json;
+    const schema = operation.requestBody.content['application/json']?.schema;
+    if (!schema) {
+      throw new Error(`${key}: the request body has no JSON schema`);
+    }
 
     it.each(
       invalid
@@ -688,13 +694,20 @@ describe.each(subjects)('$key', ({ key, valid, invalid }) => {
         .map((scenario) => [scenario.name, scenario] as const),
     )('the schema also rejects the body of: %s', async (_name, scenario) => {
       const call = await scenario.call();
-      const sent = JSON.parse(String(call.init?.body)) as unknown;
+      const sent = JSON.parse(
+        typeof call.init?.body === 'string' ? call.init.body : '',
+      ) as unknown;
       expect(check(sent, schema)).not.toEqual([]);
     });
 
     it('the schema accepts the body of the valid call', async () => {
       const call = await valid();
-      expect(check(JSON.parse(String(call.init?.body)), schema)).toEqual([]);
+      expect(
+        check(
+          JSON.parse(typeof call.init?.body === 'string' ? call.init.body : ''),
+          schema,
+        ),
+      ).toEqual([]);
     });
   }
 
@@ -769,7 +782,7 @@ describe('documented statuses', () => {
       seen.set(subject.key, statuses);
     }
     for (const [key, operation] of documented().entries()) {
-      const produced = seen.get(key) as Set<number>;
+      const produced = seen.get(key)!;
       const promised = Object.keys(operation.responses)
         .map(Number)
         .filter((status) => status !== 429 && status !== 200 && status !== 201);

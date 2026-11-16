@@ -66,19 +66,19 @@ class FakeReader implements CatalogReader {
   public lastArgs: { lang: string; sort: string; view: string } | null = null;
   public constructor(private readonly movies: ScoredRow[]) {}
 
-  public loadMovies(
+  public async loadMovies(
     lang: string,
     sort: string,
     view: string,
   ): Promise<ScoredRow[]> {
     this.lastArgs = { lang, sort, view };
-    return Promise.resolve(this.movies);
+    return this.movies;
   }
-  public loadGenres(): Promise<Map<number, string>> {
-    return Promise.resolve(new Map([[28, 'Action']]));
+  public async loadGenres(): Promise<Map<number, string>> {
+    return new Map([[28, 'Action']]);
   }
-  public loadStats(): Promise<CatalogStats> {
-    return Promise.resolve({
+  public async loadStats(): Promise<CatalogStats> {
+    return {
       releases: 5,
       movies: 3,
       snapshots: 2,
@@ -86,19 +86,19 @@ class FakeReader implements CatalogReader {
       tmdb_found: 3,
       tmdb_not_found: 0,
       tmdb_pending: 0,
-    });
+    };
   }
-  public loadLanguageCounts(): Promise<LangCount[]> {
-    return Promise.resolve([{ code: 'en', count: 3 }]);
+  public async loadLanguageCounts(): Promise<LangCount[]> {
+    return [{ code: 'en', count: 3 }];
   }
-  public loadLastUpdate(): Promise<LastUpdate> {
-    return Promise.resolve({
+  public async loadLastUpdate(): Promise<LastUpdate> {
+    return {
       scrapeAt: '2026-06-07T00:00:00.000Z',
       scrapeSource: 'scnsrc',
       enrichAt: null,
       torrentsAt: null,
       torrentsProvider: null,
-    });
+    };
   }
 }
 

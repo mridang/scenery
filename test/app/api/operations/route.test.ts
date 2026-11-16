@@ -45,7 +45,10 @@ afterEach(() => restore());
 
 const JSON_HEADERS = { 'content-type': 'application/json' };
 
-const post = (body: string, headers: Record<string, string> = JSON_HEADERS) =>
+const post = async (
+  body: string,
+  headers: Record<string, string> = JSON_HEADERS,
+) =>
   POST(
     new Request('https://app.test/api/operations', {
       method: 'POST',
@@ -54,7 +57,7 @@ const post = (body: string, headers: Record<string, string> = JSON_HEADERS) =>
     }),
   );
 
-const start = (body: unknown, headers?: Record<string, string>) =>
+const start = async (body: unknown, headers?: Record<string, string>) =>
   post(JSON.stringify(body), {
     'content-type': 'application/json',
     ...headers,
@@ -69,7 +72,7 @@ describe('POST /api/operations', () => {
       parameters: { limit: 5 },
     });
     expect(res.status).toBe(201);
-    const operation = (await res.json()) as Record<string, unknown>;
+    const operation = await res.json<Record<string, unknown>>();
     expect(operation).toMatchObject({
       type: 'omdb_backfill',
       status: 'succeeded',
@@ -77,7 +80,7 @@ describe('POST /api/operations', () => {
       result: { done: true },
     });
     expect(res.headers.get('location')).toBe(
-      `https://app.test/api/operations/${operation['id']}`,
+      `https://app.test/api/operations/${String(operation['id'])}`,
     );
     expect(Date.parse(String(operation['created_at']))).not.toBeNaN();
     expect(Date.parse(String(operation['finished_at']))).not.toBeNaN();
@@ -105,9 +108,8 @@ describe('POST /api/operations', () => {
     });
     expect(res.status).toBe(400);
     expect(res.headers.get('content-type')).toBe('application/problem+json');
-    expect(((await res.json()) as { errors: string[] }).errors).toEqual([
-      'parameters.limit: a whole number from 1 to 200.',
-    ]);
+    const { errors } = await res.json<{ errors: string[] }>();
+    expect(errors).toEqual(['parameters.limit: a whole number from 1 to 200.']);
     expect(runOperation).not.toHaveBeenCalled();
     expect(stored()).toHaveLength(0);
   });
@@ -123,7 +125,7 @@ describe('POST /api/operations', () => {
   });
 
   describe('where a secret is set', () => {
-    beforeEach(() => install({ CRON_SECRET: 'shh' }));
+    beforeEach(async () => install({ CRON_SECRET: 'shh' }));
 
     it('answers 401 asking for a bearer token, without running anything', async () => {
       const res = await start({ type: 'push_trigger' });

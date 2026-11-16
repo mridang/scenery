@@ -85,7 +85,7 @@ export function RatingsRow({
             width={big ? 28 : 22}
             height={big ? 16 : 12}
           />
-          <span className="font-semibold">{formatRating(imdbRating!)}</span>
+          <span className="font-semibold">{formatRating(imdbRating)}</span>
         </span>
       ) : null}
       {mcScore === null ? null : (

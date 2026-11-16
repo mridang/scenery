@@ -61,9 +61,12 @@ describe('GET /feed.xml', () => {
   });
 
   it('emits at least one <item> once a movie + release are seeded', async () => {
-    const src = (await d1
+    const src = await d1
       .prepare("SELECT id FROM sources WHERE slug = 'scnsrc'")
-      .first()) as { id: number };
+      .first<{ id: number }>();
+    if (src === null) {
+      throw new Error('the scnsrc source is not seeded');
+    }
 
     const repo = new ScrapingRepository(databaseFrom(d1));
     await repo.upsertRelease(

@@ -46,7 +46,7 @@ export function scrapingAntTransport(
   const timeoutMs = opts.timeoutMs ?? (browser ? 60_000 : 15_000);
   const extraParams = opts.extraParams ?? {};
 
-  return (input, init) => {
+  return async (input, init) => {
     const target =
       typeof input === 'string' || input instanceof URL
         ? input.toString()

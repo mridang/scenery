@@ -32,7 +32,7 @@ describe('isRetryableStatus', () => {
 
 describe('withRetry', () => {
   it('returns on the first successful attempt without retrying', async () => {
-    const transport = jest.fn<typeof fetch>(() => Promise.resolve(res(200)));
+    const transport = jest.fn<typeof fetch>(async () => res(200));
     const wrapped = withRetry(transport, FAST);
 
     const response = await wrapped('https://x');

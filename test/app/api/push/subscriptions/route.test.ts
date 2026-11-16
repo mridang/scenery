@@ -9,17 +9,14 @@ jest.unstable_mockModule('@/domain/db/client', () => ({
 }));
 jest.unstable_mockModule('@/domain/push/repository', () => ({
   PushSubscriptionRepository: class {
-    public listAll() {
-      return Promise.resolve(
-        Array.from(store.keys(), (endpoint) => ({ endpoint })),
-      );
+    public async listAll() {
+      return Array.from(store.keys(), (endpoint) => ({ endpoint }));
     }
-    public has(endpoint: string) {
-      return Promise.resolve(store.has(endpoint));
+    public async has(endpoint: string) {
+      return store.has(endpoint);
     }
-    public upsert(r: { endpoint: string; p256dh: string; auth: string }) {
+    public async upsert(r: { endpoint: string; p256dh: string; auth: string }) {
       store.set(r.endpoint, { p256dh: r.p256dh, auth: r.auth });
-      return Promise.resolve();
     }
   },
 }));
@@ -71,9 +68,8 @@ describe('POST /api/push/subscriptions', () => {
     const res = await POST(post(body));
     expect(res.status).toBe(400);
     expect(res.headers.get('content-type')).toBe('application/problem+json');
-    expect(((await res.json()) as { errors: string[] }).errors).toContain(
-      error,
-    );
+    const { errors } = await res.json<{ errors: string[] }>();
+    expect(errors).toContain(error);
     expect(store.size).toBe(0);
   });
 

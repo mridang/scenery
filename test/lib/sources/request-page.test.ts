@@ -4,13 +4,11 @@ import { requestPage } from '@/lib/sources/request-page';
 
 describe('requestPage', () => {
   it('returns ok with the body and headers on a 200', async () => {
-    const transport = (() =>
-      Promise.resolve(
-        new Response('<html>ok</html>', {
-          status: 200,
-          headers: { 'content-type': 'text/html' },
-        }),
-      )) as unknown as typeof fetch;
+    const transport = (async () =>
+      new Response('<html>ok</html>', {
+        status: 200,
+        headers: { 'content-type': 'text/html' },
+      })) as unknown as typeof fetch;
 
     const result = await requestPage(transport, 'https://example.test/');
 
@@ -23,10 +21,8 @@ describe('requestPage', () => {
   });
 
   it('returns not-ok with the status and partial body on a non-2xx', async () => {
-    const transport = (() =>
-      Promise.resolve(
-        new Response('blocked', { status: 403 }),
-      )) as unknown as typeof fetch;
+    const transport = (async () =>
+      new Response('blocked', { status: 403 })) as unknown as typeof fetch;
 
     const result = await requestPage(transport, 'https://example.test/');
 
@@ -38,8 +34,9 @@ describe('requestPage', () => {
   });
 
   it('returns not-ok with the error message when the transport throws', async () => {
-    const transport = (() =>
-      Promise.reject(new Error('network down'))) as unknown as typeof fetch;
+    const transport = (async () => {
+      throw new Error('network down');
+    }) as unknown as typeof fetch;
 
     const result = await requestPage(transport, 'https://example.test/');
 
@@ -50,7 +47,10 @@ describe('requestPage', () => {
   });
 
   it('stringifies non-Error throws', async () => {
-    const transport = (() => Promise.reject('boom')) as unknown as typeof fetch;
+    const transport = (async () => {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error -- the test checks that a thrown non-Error value is stringified
+      throw 'boom';
+    }) as unknown as typeof fetch;
 
     const result = await requestPage(transport, 'https://example.test/');
 

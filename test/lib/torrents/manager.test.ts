@@ -13,7 +13,7 @@ function fakeProvider(
   name: TorrentProviderName,
   result: LookupResult,
 ): TorrentProvider {
-  return { name, search: () => Promise.resolve(result) };
+  return { name, search: async () => result };
 }
 
 const SUCCESS: LookupResult = {
@@ -103,7 +103,9 @@ describe('TorrentLookupManager', () => {
   it('treats thrown errors as a failure attempt and continues', async () => {
     const provider: TorrentProvider = {
       name: 'apibay',
-      search: () => Promise.reject(new Error('network')),
+      search: async () => {
+        throw new Error('network');
+      },
     };
     const m = new TorrentLookupManager([
       provider,
