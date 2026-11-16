@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import { scrapingAntTransport } from '@/lib/transport/providers/scrapingant';
 
+const API_KEY_ERROR = /API key/;
+
 const realFetch = globalThis.fetch;
 const ENDPOINT = 'https://api.scrapingant.com/v2/general';
 
@@ -32,7 +34,7 @@ afterEach(() => {
 
 describe('scrapingAntTransport', () => {
   it('throws when the API key is empty', () => {
-    expect(() => scrapingAntTransport('')).toThrow(/API key/);
+    expect(() => scrapingAntTransport('')).toThrow(API_KEY_ERROR);
   });
 
   it('builds a ScrapingAnt URL with the target as the url param', async () => {

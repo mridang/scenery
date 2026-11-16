@@ -11,16 +11,18 @@ import {
   RARELY_CHANGING,
 } from '@/lib/core/http/site';
 
+const COLLATOR = new Intl.Collator();
+
 describe('site settings', () => {
   it('lets the edge keep the catalog page and its feed, though nothing is indexed', () => {
     expect(
-      [...EDGE_CACHED_PAGES].toSorted((a, b) => a.localeCompare(b)),
+      [...EDGE_CACHED_PAGES].toSorted((a, b) => COLLATOR.compare(a, b)),
     ).toEqual(['/', '/feed.xml']);
   });
 
   it('lets a kept page carry only the names the catalog page reads', () => {
     expect(
-      [...CACHED_QUERY_PARAMS].toSorted((a, b) => a.localeCompare(b)),
+      [...CACHED_QUERY_PARAMS].toSorted((a, b) => COLLATOR.compare(a, b)),
     ).toEqual(['lang', 'layout', 'q', 'sort', 'status', 'view']);
   });
 
@@ -58,16 +60,16 @@ describe('site settings', () => {
   );
 
   it('lets the social cards, the icons and the manifest be cached for a day', () => {
-    expect([...RARELY_CHANGING].toSorted((a, b) => a.localeCompare(b))).toEqual(
-      [
-        '/apple-icon.png',
-        '/favicon.ico',
-        '/icon.svg',
-        '/manifest.webmanifest',
-        '/opengraph-image.png',
-        '/twitter-image.png',
-      ],
-    );
+    expect(
+      [...RARELY_CHANGING].toSorted((a, b) => COLLATOR.compare(a, b)),
+    ).toEqual([
+      '/apple-icon.png',
+      '/favicon.ico',
+      '/icon.svg',
+      '/manifest.webmanifest',
+      '/opengraph-image.png',
+      '/twitter-image.png',
+    ]);
   });
 
   it('adds no outside picture sources: every picture comes through this site', () => {

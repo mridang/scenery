@@ -3,6 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import { TmdbClient } from '@/lib/tmdb/client';
 import type { TmdbFindResponse } from '@/lib/tmdb';
 
+const API_KEY_OPTION = /apiKey/;
+
 /** Returns the item at `index`, failing the test loudly when it is absent. */
 function nth<T>(items: readonly T[], index: number): T {
   const item = items[index];
@@ -46,7 +48,9 @@ const FOUND_MOVIE: TmdbFindResponse = {
 describe('TmdbClient', () => {
   it('throws when constructed without an api key', () => {
     const { transport } = stubTransport(() => ({ status: 200, body: '{}' }));
-    expect(() => new TmdbClient({ apiKey: '' }, transport)).toThrow(/apiKey/);
+    expect(() => new TmdbClient({ apiKey: '' }, transport)).toThrow(
+      API_KEY_OPTION,
+    );
   });
 
   it('builds the find request URL with the imdb id, external_source and api key', async () => {

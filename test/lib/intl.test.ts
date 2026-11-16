@@ -21,6 +21,8 @@ import {
   truncate,
 } from '@/lib/intl';
 
+const TRUNCATED_FAMILY_EMOJI = /^ab( 👨‍👩‍👧)?…$/;
+
 describe('compareText', () => {
   it('alphabetises accented letters with their base letter', () => {
     expect(
@@ -192,7 +194,7 @@ describe('truncate', () => {
   });
 
   it('never cuts an emoji in half', () => {
-    expect(truncate('ab 👨‍👩‍👧👨‍👩‍👧 cd', 4)).toMatch(/^ab( 👨‍👩‍👧)?…$/);
+    expect(truncate('ab 👨‍👩‍👧👨‍👩‍👧 cd', 4)).toMatch(TRUNCATED_FAMILY_EMOJI);
     expect(characterCount('👨‍👩‍👧')).toBe(1);
   });
 });

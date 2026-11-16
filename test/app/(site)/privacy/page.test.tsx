@@ -3,12 +3,16 @@ import { describe, expect, it } from '@jest/globals';
 import PrivacyPage, { metadata } from '@/app/(site)/privacy/page';
 import { html } from '../../../components/render';
 
+const PRIVACY_POLICY_HEADING = /<h1[^>]*>Privacy Policy<\/h1>/;
+const TERMS_LINK = /<a [^>]*href="\/terms"[^>]*>terms of service<\/a>/;
+const BACK_TO_SCENERY_LINK = /<a [^>]*href="\/"[^>]*>.*Back to Scenery<\/a>/;
+
 describe('PrivacyPage', () => {
   const out = html(<PrivacyPage />);
 
   it('has one heading, the policy’s title', () => {
     expect(out.match(/<h1/g)).toHaveLength(1);
-    expect(out).toMatch(/<h1[^>]*>Privacy Policy<\/h1>/);
+    expect(out).toMatch(PRIVACY_POLICY_HEADING);
   });
 
   it('says when it last changed', () => {
@@ -45,8 +49,8 @@ describe('PrivacyPage', () => {
   });
 
   it('links the terms and back home', () => {
-    expect(out).toMatch(/<a [^>]*href="\/terms"[^>]*>terms of service<\/a>/);
-    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Back to Scenery<\/a>/);
+    expect(out).toMatch(TERMS_LINK);
+    expect(out).toMatch(BACK_TO_SCENERY_LINK);
   });
 });
 

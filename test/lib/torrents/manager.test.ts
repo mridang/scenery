@@ -7,6 +7,8 @@ import type {
   TorrentProviderName,
 } from '@/lib/torrents/types';
 
+const AT_LEAST_ONE_ERROR = /at least one/;
+
 function fakeProvider(
   name: TorrentProviderName,
   result: LookupResult,
@@ -116,6 +118,6 @@ describe('TorrentLookupManager', () => {
   });
 
   it('throws on construction when no providers are supplied', () => {
-    expect(() => new TorrentLookupManager([])).toThrow(/at least one/);
+    expect(() => new TorrentLookupManager([])).toThrow(AT_LEAST_ONE_ERROR);
   });
 });

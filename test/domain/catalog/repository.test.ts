@@ -12,6 +12,8 @@ import {
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
 
+const COLLATOR = new Intl.Collator();
+
 /**
  * Tests for the catalog read model: the language filter, the
  * counters, and the all-SQL scoring / tier / prestige / 1 TB-budget
@@ -30,7 +32,7 @@ beforeEach(async () => {
 
 /** Seed a release for the seeded `scnsrc` source. */
 async function seedRelease(
-  ext: string,
+  extension: string,
   imdb: string,
   postedAt: string,
 ): Promise<void> {
@@ -39,10 +41,10 @@ async function seedRelease(
   await scraping.upsertRelease(
     sourceId,
     {
-      externalId: ext,
+      externalId: extension,
       imdbId: imdb,
-      title: `Release ${ext}`,
-      url: `https://example.test/${ext}`,
+      title: `Release ${extension}`,
+      url: `https://example.test/${extension}`,
       postHtml: '<p>body</p>',
       postedAt,
     },
@@ -69,7 +71,7 @@ describe('CatalogRepository (SQLite-backed D1)', () => {
 
     const all = await catalog.loadMovies('all', 'date', 'catalog');
     expect(
-      all.map((m) => m.imdb_id).toSorted((a, b) => a.localeCompare(b)),
+      all.map((m) => m.imdb_id).toSorted((a, b) => COLLATOR.compare(a, b)),
     ).toEqual(['tt2000001', 'tt2000002']);
 
     const english = await catalog.loadMovies('en', 'date', 'catalog');

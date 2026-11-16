@@ -4,6 +4,10 @@ import { ERROR_REASSURANCE } from '@/app/_brand';
 import ErrorPage from '@/app/error';
 import { html } from '../components/render';
 
+const ERROR_HEADING = /<h1[^>]*>That didn&#x27;t work<\/h1>/;
+const TRY_AGAIN_BUTTON = /<button[^>]*type="button"[^>]*>Try again<\/button>/;
+const BACK_TO_HOME_LINK = /<a [^>]*href="\/"[^>]*>Back to the home page<\/a>/;
+
 describe('ErrorPage', () => {
   const retry = () => undefined;
 
@@ -11,7 +15,7 @@ describe('ErrorPage', () => {
     const out = html(
       <ErrorPage error={new Error('boom')} unstable_retry={retry} />,
     );
-    expect(out).toMatch(/<h1[^>]*>That didn&#x27;t work<\/h1>/);
+    expect(out).toMatch(ERROR_HEADING);
     expect(out).toContain(ERROR_REASSURANCE);
   });
 
@@ -19,8 +23,8 @@ describe('ErrorPage', () => {
     const out = html(
       <ErrorPage error={new Error('boom')} unstable_retry={retry} />,
     );
-    expect(out).toMatch(/<button[^>]*type="button"[^>]*>Try again<\/button>/);
-    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>Back to the home page<\/a>/);
+    expect(out).toMatch(TRY_AGAIN_BUTTON);
+    expect(out).toMatch(BACK_TO_HOME_LINK);
   });
 
   it('does not show the error’s message, which may say more than it should', () => {

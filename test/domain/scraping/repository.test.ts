@@ -110,7 +110,7 @@ describe('ScrapingRepository (SQLite-backed D1)', () => {
 describe('ScrapingRepository.upsertRelease and movies.newest_posted_at', () => {
   const release = (
     externalId: string,
-    postedAt: string | undefined,
+    postedAt?: string,
   ): ExtractedRelease => ({
     externalId,
     imdbId: 'tt8000001',
@@ -146,11 +146,7 @@ describe('ScrapingRepository.upsertRelease and movies.newest_posted_at', () => {
   it('falls back to first_seen_at for a release without a date', async () => {
     const repo = new ScrapingRepository(db);
     const sourceId = (await repo.findSource('scnsrc'))!.id;
-    await repo.upsertRelease(
-      sourceId,
-      release('a', undefined),
-      '2026-06-09T00:00:00Z',
-    );
+    await repo.upsertRelease(sourceId, release('a'), '2026-06-09T00:00:00Z');
     expect(newest()).toBe('2026-06-09T00:00:00Z');
   });
 

@@ -12,6 +12,8 @@ import { created, ok, problems, readJsonObject } from '@/lib/core/api';
 import { isSubscriptionId, subscriptionId } from '@/lib/push/subscription-id';
 import { PushSubscriptionRepository } from './repository';
 
+const HTTPS_URL_PREFIX = /^https:\/\//;
+
 /** Per-request context for the push subscriptions API. */
 interface PushCtx {
   readonly request: Request;
@@ -42,7 +44,7 @@ function checkSubscription(
   const { endpoint, keys } = body;
   const { p256dh, auth } = (keys ?? {}) as Readonly<Record<string, unknown>>;
   const errors: string[] = [];
-  if (typeof endpoint !== 'string' || !/^https:\/\//.test(endpoint)) {
+  if (typeof endpoint !== 'string' || !HTTPS_URL_PREFIX.test(endpoint)) {
     errors.push('endpoint: must be an https URL.');
   }
   if (typeof p256dh !== 'string' || !p256dh) {
@@ -120,6 +122,5 @@ export const subscriptionsItem = new ApiController<PushCtx>({
     if (!(await repo.removeById(id))) {
       throw problems.notFound('push subscription');
     }
-    return undefined;
   },
 });

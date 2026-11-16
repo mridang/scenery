@@ -9,6 +9,8 @@ import type {
   TmdbPersonResponse,
 } from '@/lib/tmdb';
 
+const TMDB_GENRES_ERROR = /tmdb genres/;
+
 /** Returns the item at `index`, failing the test loudly when it is absent. */
 function nth<T>(items: readonly T[], index: number): T {
   const item = items[index];
@@ -205,7 +207,7 @@ describe('TmdbEnricher.refreshGenres', () => {
     });
     const enricher = new TmdbEnricher(client, repo);
 
-    await expect(enricher.refreshGenres()).rejects.toThrow(/tmdb genres/);
+    await expect(enricher.refreshGenres()).rejects.toThrow(TMDB_GENRES_ERROR);
   });
 
   it('upserts every genre and returns the count', async () => {

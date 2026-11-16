@@ -44,7 +44,7 @@ beforeEach(async () => {
 
 /** Seed a movie + release for the seeded `scnsrc` source with a posted_at. */
 async function seedRelease(
-  ext: string,
+  extension: string,
   imdb: string,
   postedAt: string,
 ): Promise<void> {
@@ -53,10 +53,10 @@ async function seedRelease(
   await scraping.upsertRelease(
     sourceId,
     {
-      externalId: ext,
+      externalId: extension,
       imdbId: imdb,
-      title: `Release ${ext}`,
-      url: `https://example.test/${ext}`,
+      title: `Release ${extension}`,
+      url: `https://example.test/${extension}`,
       postHtml: '<p>body</p>',
       postedAt,
     },

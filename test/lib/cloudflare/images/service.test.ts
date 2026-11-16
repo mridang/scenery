@@ -18,6 +18,9 @@ import {
   DEFAULT_WIDTH,
 } from '@/lib/cloudflare/images/site';
 
+const QUOTED_MD5_ETAG = /^"[0-9a-f]{32}"$/;
+const USER_AGENT_HEADER = /"scenery\/1\.0 /;
+
 const HOST = ALLOWED_HOSTS?.[0] ?? 'photos.example.org';
 const PHOTO = `https://${HOST}/soup.jpg`;
 const WIDTH = ALLOWED_WIDTHS[0] ?? DEFAULT_WIDTH;
@@ -48,7 +51,7 @@ const open: ImageAccess = {
 };
 
 /** A cache that remembers what it is given. */
-function fakeCache(initial: Response | undefined = undefined) {
+function fakeCache(initial?: Response | undefined) {
   const stored: [string, Response][] = [];
   const cache: ImageCache = {
     match: async () => initial?.clone(),
@@ -135,7 +138,7 @@ describe('serveImage', () => {
     expect(response.headers.get('cache-control')).toBe(
       imageHeaders('image/jpeg', '"x"').get('cache-control'),
     );
-    expect(response.headers.get('etag')).toMatch(/^"[0-9a-f]{32}"$/);
+    expect(response.headers.get('etag')).toMatch(QUOTED_MD5_ETAG);
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(
       new Uint8Array([1, 2, 3]),
     );
@@ -159,7 +162,7 @@ describe('serveImage', () => {
       background: () => undefined,
     });
     const init = fetcher.mock.calls[0]?.[1] as RequestInit | undefined;
-    expect(JSON.stringify(init?.headers)).toMatch(/"scenery\/1\.0 /);
+    expect(JSON.stringify(init?.headers)).toMatch(USER_AGENT_HEADER);
   });
 
   it('works without any cache', async () => {

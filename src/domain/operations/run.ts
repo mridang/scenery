@@ -88,7 +88,10 @@ async function scrape(
   );
   const pages =
     parameters.backfill_pages > 0
-      ? Array.from({ length: parameters.backfill_pages }, (_, i) => i + 1)
+      ? Array.from(
+          { length: parameters.backfill_pages },
+          (_, index) => index + 1,
+        )
       : [1];
   const entries = await slugs.reduce<Promise<(readonly [string, unknown])[]>>(
     async (accP, slug) => {

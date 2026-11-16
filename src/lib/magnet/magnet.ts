@@ -40,12 +40,12 @@ export function buildMagnet(
   name: string | null,
   trackers: readonly string[],
 ): string {
-  const displayNameParam =
+  const displayNameParameter =
     name === null || name === '' ? '' : `&dn=${encodeURIComponent(name)}`;
   const trackerParams = trackers
     .map((tracker) => `&tr=${encodeURIComponent(tracker)}`)
     .join('');
-  return `magnet:?xt=urn:btih:${infoHash}${displayNameParam}${trackerParams}`;
+  return `magnet:?xt=urn:btih:${infoHash}${displayNameParameter}${trackerParams}`;
 }
 
 /** The relative URL of the magnet endpoint for a given torrent. */

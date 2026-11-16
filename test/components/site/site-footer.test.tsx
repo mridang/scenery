@@ -3,6 +3,10 @@ import { describe, expect, it } from '@jest/globals';
 import { LEGAL_LINKS, SiteFooter } from '@/components/site/site-footer';
 import { html } from '../render';
 
+const PRIVACY_LINK = /<a [^>]*href="\/privacy"[^>]*>Privacy<\/a>/;
+const TERMS_LINK = /<a [^>]*href="\/terms"[^>]*>Terms<\/a>/;
+const SHOWN_COUNT = />3<\/span> of\s*5\s*shown/;
+
 describe('SiteFooter', () => {
   const out = html(
     <SiteFooter
@@ -25,11 +29,11 @@ describe('SiteFooter', () => {
       '/privacy',
       '/terms',
     ]);
-    expect(out).toMatch(/<a [^>]*href="\/privacy"[^>]*>Privacy<\/a>/);
-    expect(out).toMatch(/<a [^>]*href="\/terms"[^>]*>Terms<\/a>/);
+    expect(out).toMatch(PRIVACY_LINK);
+    expect(out).toMatch(TERMS_LINK);
   });
 
   it('shows how many movies are shown of how many', () => {
-    expect(out).toMatch(/>3<\/span> of\s*5\s*shown/);
+    expect(out).toMatch(SHOWN_COUNT);
   });
 });

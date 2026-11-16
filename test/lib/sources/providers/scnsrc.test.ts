@@ -211,9 +211,9 @@ describe('findTitleLink', () => {
       '\n',
       'z',
     ];
-    for (let i = 0; i < 20_000; i += 1) {
+    for (let index = 0; index < 20_000; index += 1) {
       let chunk = '';
-      for (let j = 0; j < 14; j += 1) {
+      for (let index = 0; index < 14; index += 1) {
         chunk += pieces[Math.floor(random() * pieces.length)];
       }
       expect({ chunk, got: findTitleLink(chunk) }).toEqual({

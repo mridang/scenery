@@ -18,6 +18,7 @@
  * limits is in its own `extras.ts`, which has the same exports everywhere.
  */
 
+// eslint-disable-next-line unicorn/no-keyword-prefix -- newNonce is an exported name used across modules and in tests; renaming it would change the module API
 import { buildCsp, cspSurfaceFor, forwardedHeaders, newNonce } from './csp';
 import {
   edgeCache,

@@ -23,6 +23,8 @@ import {
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
 
+const COLLATOR = new Intl.Collator();
+
 /** Every table of the schema file, by its export name. */
 const schema = {
   fetchAttempts,
@@ -45,7 +47,7 @@ function columnsOf(raw: DatabaseSync, table: string): readonly string[] {
     .prepare(`PRAGMA table_info(${table})`)
     .all()
     .map((row) => String(row['name']))
-    .toSorted((a, b) => a.localeCompare(b));
+    .toSorted((a, b) => COLLATOR.compare(a, b));
 }
 
 /** The names of the indexes SQLite reports for a table. */
@@ -83,14 +85,13 @@ describe('the schema file and the migrations', () => {
       expect(columnsOf(raw, name)).toEqual(
         config.columns
           .map((column) => column.name)
-          .toSorted((a, b) => a.localeCompare(b)),
+          .toSorted((a, b) => COLLATOR.compare(a, b)),
       );
       // Every index the schema names exists (the database may carry more, such
       // as the legacy unique constraint on recipes.drive_file_id).
       const present = indexesOf(raw, name);
-      config.indexes.forEach((index) =>
-        expect(present).toContain(index.config.name),
-      );
+      for (const index of config.indexes)
+        expect(present).toContain(index.config.name);
     },
   );
 });

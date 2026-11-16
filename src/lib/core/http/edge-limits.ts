@@ -35,6 +35,8 @@ import { CSP_REPORT_PATH } from './reporting';
 import { DISCOVERY_PATHS, STATIC_PREFIXES } from './site';
 import { errorMessage, logError } from '@/utils/logging';
 
+const BEARER_TOKEN = /^Bearer\s+(\S+)$/i;
+
 /** One Workers Rate Limiting binding: `limit` says whether `key` may go ahead. */
 export interface RateLimitBinding {
   limit(options: {
@@ -140,7 +142,7 @@ export function genericClass(pathname: string): GenericClass | undefined {
 }
 
 /** The limits of an app that has only the {@link GENERIC_CLASSES}. */
-export function genericLimits(sessionCookie: string | undefined): EdgeLimits {
+export function genericLimits(sessionCookie?: string): EdgeLimits {
   return {
     classes: GENERIC_CLASSES,
     classify: (request) => genericClass(new URL(request.url).pathname),
@@ -178,7 +180,7 @@ async function digestKey(text: string): Promise<string> {
 export async function counterKey(
   counted: Counted,
   headers: Headers,
-  sessionCookie: string | undefined,
+  sessionCookie?: string,
 ): Promise<string> {
   if (counted === 'person') {
     const session =
@@ -190,9 +192,7 @@ export async function counterKey(
       : `a:${clientSubject(headers)}`;
   }
   if (counted === 'token') {
-    const token = /^Bearer\s+(\S+)$/i.exec(
-      headers.get('authorization') ?? '',
-    )?.[1];
+    const token = BEARER_TOKEN.exec(headers.get('authorization') ?? '')?.[1];
     return token
       ? `t:${await digestKey(token)}`
       : `a:${clientSubject(headers)}`;

@@ -13,6 +13,14 @@ import { APP_MIGRATIONS } from './lib/core/db/migrations';
 import { installCloudflareContext, sqliteD1 } from './lib/core/db/sqlite-d1';
 import insecure from './fixtures/insecure-urls.json';
 
+const COLLATOR = new Intl.Collator();
+
+const ROUTE_FILE_SUFFIX = /\/?route\.ts$/;
+const TRAILING_SLASH = /\/$/;
+const OPENAPI_31_VERSION = /^3\.1\./;
+const API_PATH_PREFIX = /^\/api\//;
+const SNAKE_CASE_NAME = /^[a-z][a-z0-9_]*$/;
+
 /**
  * Ties `openapi.json` to the route files and the controllers behind them: the
  * spec and the code are the same contract, so drift in either fails here.
@@ -75,9 +83,9 @@ const pathOf = (file: string): string =>
     '/api/' +
     path
       .relative(API, file)
-      .replace(/\/?route\.ts$/, '')
+      .replace(ROUTE_FILE_SUFFIX, '')
       .replaceAll(/\[([a-z_]+)\]/g, '{$1}')
-  ).replace(/\/$/, '');
+  ).replace(TRAILING_SLASH, '');
 
 /** Every `METHOD /path` a route file under src/app/api exports, with `[x]` as `{x}`. */
 const registered = async (): Promise<string[]> => {
@@ -177,19 +185,18 @@ function check(value: unknown, schema: Json, at = '$'): string[] {
       errors.push(`${at}: repeated items`);
     }
     if (schema['items']) {
-      value.forEach((item, index) =>
-        errors.push(...check(item, schema['items'] as Json, `${at}[${index}]`)),
-      );
+      for (const [index, item] of value.entries())
+        errors.push(...check(item, schema['items'] as Json, `${at}[${index}]`));
     }
   }
   if (actual === 'object') {
     const object = value as Json;
     const properties = (schema['properties'] ?? {}) as Record<string, Json>;
-    ((schema['required'] ?? []) as string[]).forEach((key) => {
+    for (const key of (schema['required'] ?? []) as string[]) {
       if (!(key in object)) {
         errors.push(`${at}.${key}: required`);
       }
-    });
+    }
     if (
       schema['maxProperties'] !== undefined &&
       Object.keys(object).length > Number(schema['maxProperties'])
@@ -532,12 +539,12 @@ async function conforms(key: string, res: Response): Promise<string[]> {
   }
   const errors: string[] = [];
   const headers = (response['headers'] ?? {}) as Record<string, Json>;
-  Object.keys(headers).forEach((name) => {
+  for (const name of Object.keys(headers)) {
     const required = headers[name]?.['required'];
     if ((required || name === 'Retry-After') && !res.headers.get(name)) {
       errors.push(`${key} ${res.status}: missing header ${name}`);
     }
-  });
+  }
   const content = (response['content'] ?? {}) as Record<
     string,
     { schema: Json }
@@ -558,32 +565,34 @@ describe('openapi.json', () => {
   it('is tested through every route file', async () => {
     const files = await routeFiles(API);
     expect(
-      files.map((file) => pathOf(file)).toSorted((a, b) => a.localeCompare(b)),
-    ).toEqual(Object.keys(MODULES).toSorted((a, b) => a.localeCompare(b)));
+      files
+        .map((file) => pathOf(file))
+        .toSorted((a, b) => COLLATOR.compare(a, b)),
+    ).toEqual(Object.keys(MODULES).toSorted((a, b) => COLLATOR.compare(a, b)));
   });
 
   it('is OpenAPI 3.1 and every reference resolves', () => {
-    expect(document.openapi).toMatch(/^3\.1\./);
-    const refs: string[] = [];
+    expect(document.openapi).toMatch(OPENAPI_31_VERSION);
+    const references: string[] = [];
     JSON.stringify(document, (key, value: unknown) => {
       if (key === '$ref') {
-        refs.push(String(value));
+        references.push(String(value));
       }
       return value;
     });
-    refs.forEach((ref) => expect(resolve(ref)).toBeDefined());
+    for (const ref of references) expect(resolve(ref)).toBeDefined();
   });
 
   it('describes exactly the routes under src/app/api, one operation each', async () => {
     const routes = await registered();
     expect(
-      [...documented().keys()].toSorted((a, b) => a.localeCompare(b)),
-    ).toEqual(routes.toSorted((a, b) => a.localeCompare(b)));
+      [...documented().keys()].toSorted((a, b) => COLLATOR.compare(a, b)),
+    ).toEqual(routes.toSorted((a, b) => COLLATOR.compare(a, b)));
   });
 
   it('gives every operation an id, tags, a summary, security and a problem response', () => {
     const ids = new Set<string>();
-    documented().forEach((operation, key) => {
+    for (const [key, operation] of documented().entries()) {
       expect(operation.operationId).toBeTruthy();
       expect(ids.has(operation.operationId as string)).toBe(false);
       ids.add(operation.operationId as string);
@@ -597,35 +606,31 @@ describe('openapi.json', () => {
       ).toBe(true);
       expect(responseFor(operation, 429)).toBeDefined();
       const schemes = Object.keys(document.components['securitySchemes'] ?? {});
-      (operation.security ?? []).forEach((requirement) =>
-        Object.keys(requirement).forEach((scheme) =>
+      for (const requirement of operation.security ?? [])
+        for (const scheme of Object.keys(requirement))
           expect({ key, scheme, known: schemes.includes(scheme) }).toEqual({
             key,
             scheme,
             known: true,
-          }),
-        ),
-      );
-    });
+          });
+    }
   });
 
   it('keeps everything outside /api out of the contract', () => {
-    Object.keys(document.paths).forEach((path) =>
-      expect(path).toMatch(/^\/api\//),
-    );
+    for (const path of Object.keys(document.paths))
+      expect(path).toMatch(API_PATH_PREFIX);
   });
 
   it('names its properties in snake_case, except the Push API members', () => {
     const names = new Set<string>();
     JSON.stringify(document.components['schemas'], (key, value: unknown) => {
       if (key === 'properties' && value && typeof value === 'object') {
-        Object.keys(value).forEach((name) => names.add(name));
+        for (const name of Object.keys(value)) names.add(name);
       }
       return value;
     });
-    [...names]
-      .filter((name) => name !== 'expirationTime')
-      .forEach((name) => expect(name).toMatch(/^[a-z][a-z0-9_]*$/));
+    for (const name of [...names].filter((name) => name !== 'expirationTime'))
+      expect(name).toMatch(SNAKE_CASE_NAME);
   });
 });
 
@@ -635,8 +640,10 @@ describe.each(subjects)('$key', ({ key, valid, invalid }) => {
 
   it('has a test subject for every documented operation', () => {
     expect(
-      subjects.map((s) => s.key).toSorted((a, b) => a.localeCompare(b)),
-    ).toEqual([...documented().keys()].toSorted((a, b) => a.localeCompare(b)));
+      subjects.map((s) => s.key).toSorted((a, b) => COLLATOR.compare(a, b)),
+    ).toEqual(
+      [...documented().keys()].toSorted((a, b) => COLLATOR.compare(a, b)),
+    );
   });
 
   it('answers valid input with a documented success that fits its schema', async () => {
@@ -761,20 +768,19 @@ describe('documented statuses', () => {
       }
       seen.set(subject.key, statuses);
     }
-    documented().forEach((operation, key) => {
+    for (const [key, operation] of documented().entries()) {
       const produced = seen.get(key) as Set<number>;
       const promised = Object.keys(operation.responses)
         .map(Number)
         .filter((status) => status !== 429 && status !== 200 && status !== 201);
-      promised.forEach((status) =>
+      for (const status of promised)
         expect({ key, status, made: produced.has(status) }).toEqual({
           key,
           status,
           made: true,
-        }),
-      );
+        });
       expect([...produced].every((s) => responseFor(operation, s))).toBe(true);
-    });
+    }
   });
 
   it('includes both 200 and 201 for a repeated subscription', async () => {
