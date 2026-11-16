@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import vm from 'node:vm';
 
+const COLLATOR = new Intl.Collator();
+
 type Listener = (event: never) => void;
 
 /** What the worker did with a fetch event. */
@@ -104,7 +106,7 @@ describe('public/sw.js', () => {
   it('listens for install, activate and fetch', async () => {
     const { listeners } = await loadWorker({ online: true, preload: true });
     expect(
-      [...listeners.keys()].toSorted((a, b) => a.localeCompare(b)),
+      [...listeners.keys()].toSorted((a, b) => COLLATOR.compare(a, b)),
     ).toEqual(['activate', 'fetch', 'install', 'notificationclick', 'push']);
   });
 

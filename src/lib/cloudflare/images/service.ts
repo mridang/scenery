@@ -20,6 +20,8 @@ import { SITE_NAME, SITE_URL } from '@/utils/site';
 import { DEFAULT_WIDTH, isAllowedHost, snapWidth } from './address';
 import { fetchImage, type ImageFetch, type ImagesLike } from './proxy';
 
+const WEAK_ETAG_PREFIX = /^W\//;
+
 /** The two cache operations the service uses. */
 export type ImageCache = Pick<Cache, 'match' | 'put'>;
 
@@ -122,9 +124,9 @@ export function imageHeaders(type: string, etag: string): Headers {
 /** The first 16 bytes of the SHA-256 of `bytes` as a quoted entity tag. */
 async function etagOf(bytes: ArrayBuffer): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', bytes);
-  const hex = [...new Uint8Array(digest).subarray(0, 16)]
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('');
+  const hex = Array.from(new Uint8Array(digest).subarray(0, 16), (byte) =>
+    byte.toString(16).padStart(2, '0'),
+  ).join('');
   return `"${hex}"`;
 }
 
@@ -134,7 +136,7 @@ function isCurrent(ifNoneMatch: string | null, etag: string): boolean {
     ifNoneMatch !== null &&
     ifNoneMatch
       .split(',')
-      .map((tag) => tag.trim().replace(/^W\//, ''))
+      .map((tag) => tag.trim().replace(WEAK_ETAG_PREFIX, ''))
       .some((tag) => tag === '*' || tag === etag)
   );
 }

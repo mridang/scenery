@@ -41,6 +41,7 @@ export {
   CSP_REPORT_DIRECTIVES,
 } from './reporting';
 export {
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- newNonce is an exported name used across modules and in tests; renaming it would change the module API
   newNonce,
   buildCsp,
   cspSurfaceFor,

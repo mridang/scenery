@@ -7,6 +7,12 @@ const { nonceOf, genericLimits, serve, serverTiming } =
   await import('@/lib/core/http');
 import type { ServeApp } from '@/lib/core/http';
 
+const SHORT_UUID = /^[0-9a-f-]{36}$/;
+const SERVER_TIMING_SKIP =
+  /^total;dur=\d+(\.\d)?, edge;desc="skip", app;dur=\d+(\.\d)?$/;
+const SERVER_TIMING_TOTAL = /^total;dur=/;
+const SERVER_TIMING_WITH_DB = /^db;dur=3, total;/;
+
 /** What is rate limited in these tests: the classes every app has, with sessions in `app_session`. */
 const limits = genericLimits('app_session');
 /** The one page these tests let the edge keep a copy of. */
@@ -207,7 +213,7 @@ describe('serve — flow id', () => {
         { app, limits },
       );
       const id = response.headers.get('x-flow-id') ?? '';
-      expect(id).toMatch(/^[0-9a-f-]{36}$/);
+      expect(id).toMatch(SHORT_UUID);
       expect(app.seen[0]?.headers.get('x-flow-id')).toBe(id);
     }
   });
@@ -460,9 +466,7 @@ describe('serve — Server-Timing', () => {
       app: appAnswering(() => Response.json({})),
       limits,
     });
-    expect(response.headers.get('server-timing')).toMatch(
-      /^total;dur=\d+(\.\d)?, edge;desc="skip", app;dur=\d+(\.\d)?$/,
-    );
+    expect(response.headers.get('server-timing')).toMatch(SERVER_TIMING_SKIP);
   });
 
   it('reports a miss, then a hit without the app, for a kept page', async () => {
@@ -491,7 +495,7 @@ describe('serve — Server-Timing', () => {
       ctx().context,
       { app: appAnswering(html), limits },
     );
-    expect(response.headers.get('server-timing')).toMatch(/^total;dur=/);
+    expect(response.headers.get('server-timing')).toMatch(SERVER_TIMING_TOTAL);
     expect(response.headers.get('server-timing')).not.toContain('app;dur=');
   });
 
@@ -502,7 +506,9 @@ describe('serve — Server-Timing', () => {
       ),
       limits,
     });
-    expect(response.headers.get('server-timing')).toMatch(/^db;dur=3, total;/);
+    expect(response.headers.get('server-timing')).toMatch(
+      SERVER_TIMING_WITH_DB,
+    );
   });
 });
 

@@ -13,6 +13,9 @@ import {
   DEFAULT_WIDTH,
 } from '@/lib/cloudflare/images/site';
 
+const IMMUTABLE_CACHE_CONTROL =
+  /^public, max-age=\d+, s-maxage=\d+, immutable$/;
+
 /** What the mocked access rules answer. */
 const rules: { signed: boolean; allowed: boolean; refusal?: Response } = {
   signed: true,
@@ -91,9 +94,7 @@ describe('GET /img', () => {
     const res = await ask();
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('image/jpeg');
-    expect(res.headers.get('cache-control')).toMatch(
-      /^public, max-age=\d+, s-maxage=\d+, immutable$/,
-    );
+    expect(res.headers.get('cache-control')).toMatch(IMMUTABLE_CACHE_CONTROL);
     expect(res.headers.get('content-security-policy')).toContain('sandbox');
     expect(res.headers.get('content-disposition')).toBe('inline');
     expect(res.headers.get('x-content-type-options')).toBe('nosniff');

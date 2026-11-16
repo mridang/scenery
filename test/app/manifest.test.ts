@@ -6,6 +6,9 @@ import { BACKGROUND_COLOR, THEME_COLOR } from '@/app/_brand';
 import manifest from '@/app/manifest';
 import { pngSize } from '../png';
 
+const CAPITALISED_START = /^\p{Lu}/u;
+const ROOT_RELATIVE_PATH = /^\//;
+
 /** The names of the chunks a PNG file is made of, in order. */
 async function pngChunks(file: string): Promise<readonly string[]> {
   const bytes = await readFile(file);
@@ -23,22 +26,24 @@ describe('web app manifest', () => {
   const m = manifest();
 
   it('writes the app’s name with a capital letter, on the home screen and in the install dialog', () => {
-    expect(m.name).toMatch(/^\p{Lu}/u);
-    expect(m.short_name).toMatch(/^\p{Lu}/u);
+    expect(m.name).toMatch(CAPITALISED_START);
+    expect(m.short_name).toMatch(CAPITALISED_START);
   });
 
   it('meets what Chrome needs to offer an install', () => {
     expect(m.name).toBeTruthy();
     expect(m.short_name).toBeTruthy();
     expect(m.display).toBe('standalone');
-    expect(m.start_url).toMatch(/^\//);
-    const sizes = (m.icons ?? []).map((i) => i.sizes);
+    expect(m.start_url).toMatch(ROOT_RELATIVE_PATH);
+    const sizes = (m.icons ?? []).map((index) => index.sizes);
     expect(sizes).toContain('192x192');
     expect(sizes).toContain('512x512');
   });
 
   it('has a maskable icon so Android does not shrink it inside a white circle', () => {
-    expect((m.icons ?? []).some((i) => i.purpose === 'maskable')).toBe(true);
+    expect((m.icons ?? []).some((index) => index.purpose === 'maskable')).toBe(
+      true,
+    );
   });
 
   it('points every icon at a file that exists', async () => {
@@ -59,8 +64,10 @@ describe('web app manifest', () => {
   });
 
   it('has a monochrome icon for Android themed icons', () => {
-    const mono = (m.icons ?? []).filter((i) => i.purpose === 'monochrome');
-    expect(mono.map((i) => i.sizes)).toEqual(['512x512']);
+    const mono = (m.icons ?? []).filter(
+      (index) => index.purpose === 'monochrome',
+    );
+    expect(mono.map((index) => index.sizes)).toEqual(['512x512']);
   });
 
   it('reuses the open window when the installed app is launched again', () => {

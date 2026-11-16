@@ -4,6 +4,13 @@ import path from 'node:path';
 
 import { BRAND_NAME, BRAND_URL, SECURITY_CONTACT } from '@/app/_brand';
 
+const BLOCKQUOTE_LINE = /\n> .+/;
+const H2_LINE = /\n## .+/;
+const WHAT_TO_EXPECT_TEXT = /What to expect/;
+const IN_SCOPE_TEXT = /In scope/;
+const OUT_OF_SCOPE_TEXT = /Out of scope/;
+const GOOD_FAITH_TEXT = /good faith/;
+
 const read = (name: string) =>
   readFile(path.join(process.cwd(), 'public', name), 'utf8');
 
@@ -22,12 +29,15 @@ describe('public/llms.txt', () => {
 
   it('follows the llms.txt shape: a title, a summary and sections of links', () => {
     expect(text.startsWith(`# ${BRAND_NAME}\n`)).toBe(true);
-    expect(text).toMatch(/\n> .+/);
-    expect(text).toMatch(/\n## .+/);
+    expect(text).toMatch(BLOCKQUOTE_LINE);
+    expect(text).toMatch(H2_LINE);
   });
 
   it('links only to this site, outside the Optional section', () => {
-    const links = [...main.matchAll(/\]\((https?:[^)]+)\)/g)].map((m) => m[1]!);
+    const links = Array.from(
+      main.matchAll(/\]\((https?:[^)]+)\)/g),
+      (m) => m[1]!,
+    );
     expect(links.length).toBeGreaterThan(0);
     for (const link of links) {
       expect(link.startsWith(`${BRAND_URL}/`)).toBe(true);
@@ -62,10 +72,10 @@ describe('public/security-policy.txt', () => {
   });
 
   it('says what to expect, what is in scope and that good faith is safe', () => {
-    expect(text).toMatch(/What to expect/);
-    expect(text).toMatch(/In scope/);
-    expect(text).toMatch(/Out of scope/);
-    expect(text).toMatch(/good faith/);
+    expect(text).toMatch(WHAT_TO_EXPECT_TEXT);
+    expect(text).toMatch(IN_SCOPE_TEXT);
+    expect(text).toMatch(OUT_OF_SCOPE_TEXT);
+    expect(text).toMatch(GOOD_FAITH_TEXT);
   });
 
   it('is ASCII, since it is served with no charset', () => {

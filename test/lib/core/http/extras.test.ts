@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { GENERIC_CLASSES } from '@/lib/core/http/edge-limits';
 import { EDGE_LIMITS } from '@/lib/core/http/extras';
 
-const classOf = (pathname: string) =>
+const categoryOf = (pathname: string) =>
   EDGE_LIMITS.classify(new Request(`https://app.test${pathname}`));
 
 describe('EDGE_LIMITS', () => {
@@ -25,11 +25,11 @@ describe('EDGE_LIMITS', () => {
     ['/api/operations', 'api'],
     ['/api/push/subscriptions', 'api'],
   ])('puts %s in %s', (pathname, expected) => {
-    expect(classOf(pathname)).toBe(expected);
+    expect(categoryOf(pathname)).toBe(expected);
   });
 
   it('does not count the static files', () => {
-    expect(classOf('/_next/static/chunks/a.js')).toBeUndefined();
-    expect(classOf('/icons/icon-192.png')).toBeUndefined();
+    expect(categoryOf('/_next/static/chunks/a.js')).toBeUndefined();
+    expect(categoryOf('/icons/icon-192.png')).toBeUndefined();
   });
 });

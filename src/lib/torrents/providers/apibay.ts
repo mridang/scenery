@@ -73,7 +73,7 @@ export class ApibayProvider implements TorrentProvider {
     if (!stream.info_hash || stream.info_hash === EMPTY_HASH) {
       return null;
     }
-    const sizeNum = Number(stream.size);
+    const sizeNumber = Number(stream.size);
     const seeders = Number(stream.seeders);
     return {
       infoHash: stream.info_hash.toLowerCase(),
@@ -81,7 +81,8 @@ export class ApibayProvider implements TorrentProvider {
       rawTitle: stream.name,
       source: 'ThePirateBay',
       seeders: Number.isFinite(seeders) ? seeders : null,
-      sizeBytes: Number.isFinite(sizeNum) && sizeNum > 0 ? sizeNum : null,
+      sizeBytes:
+        Number.isFinite(sizeNumber) && sizeNumber > 0 ? sizeNumber : null,
       quality: detectQuality(stream.name),
       isHdr: detectHdr(stream.name),
       isRemux: detectRemux(stream.name),

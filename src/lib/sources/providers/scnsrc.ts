@@ -1,6 +1,8 @@
 import { requestPage } from '../request-page';
 import type { ExtractedRelease, FetchResult, Source } from '../types';
 
+const ORDINAL_SUFFIX = /(\d)(?:st|nd|rd|th)/;
+
 const BASE_URL = 'https://www.scnsrc.me/category/films/hd/';
 
 const POST_RE = /class="post"\s+id="post-(\d+)"/g;
@@ -145,7 +147,7 @@ function parseScnsrcDate(raw: string | undefined): string | undefined {
     return undefined;
   }
   // Format observed: "Jun 5th, 2026, at 5:25 am"
-  const cleaned = raw.replace(/(\d)(?:st|nd|rd|th)/, '$1').replace(' at ', ' ');
+  const cleaned = raw.replace(ORDINAL_SUFFIX, '$1').replace(' at ', ' ');
   const parsed = new Date(cleaned);
   return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
 }
@@ -174,16 +176,17 @@ export class ScnsrcSource implements Source {
   }
 
   public extract(html: string): ExtractedRelease[] {
-    const offsets = [...html.matchAll(POST_RE)]
-      .map((match) => ({ id: match[1], idx: match.index ?? 0 }))
-      .filter(
-        (offset): offset is { id: string; idx: number } =>
-          offset.id !== undefined,
-      );
+    const offsets = Array.from(html.matchAll(POST_RE), (match) => ({
+      id: match[1],
+      idx: match.index ?? 0,
+    })).filter(
+      (offset): offset is { id: string; idx: number } =>
+        offset.id !== undefined,
+    );
 
-    return offsets.flatMap((offset, i) => {
+    return offsets.flatMap((offset, index) => {
       const start = offset.idx;
-      const next = offsets[i + 1];
+      const next = offsets[index + 1];
       const end = next ? next.idx : html.length;
       const chunk = html.slice(start, end);
 
@@ -200,9 +203,9 @@ export class ScnsrcSource implements Source {
 
       const author = AUTHOR_RE.exec(chunk)?.[1]?.trim();
       const dateRaw = DATE_RE.exec(chunk)?.[1]?.trim();
-      const categories = [...chunk.matchAll(CATEGORY_RE)]
-        .map((match) => match[1]?.trim())
-        .filter((category): category is string => category !== undefined);
+      const categories = Array.from(chunk.matchAll(CATEGORY_RE), (match) =>
+        match[1]?.trim(),
+      ).filter((category): category is string => category !== undefined);
       const imageUrl = IMG_RE.exec(chunk)?.[1];
       const excerptRaw = EXCERPT_RE.exec(chunk)?.[1];
       const excerpt = excerptRaw

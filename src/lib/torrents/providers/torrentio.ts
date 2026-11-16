@@ -14,6 +14,10 @@ import type { LookupResult, ParsedTorrent, TorrentProvider } from '../types';
 import { TorrentioResponseSchema, type TorrentioStream } from './models';
 import type { ProviderOptions } from './types';
 
+const SEEDERS_LINE = /👤\s*([\d,]+)/;
+const SIZE_LINE = /💾\s*([\d.]+)\s*(GB|MB|TB|KB)/i;
+const SOURCE_LINE = /⚙️\s*(\S+)/;
+
 // Multipliers for the size units Torrentio emits in its 💾 annotation.
 const SIZE_UNIT_BYTES: Record<string, number> = {
   TB: 1_000_000_000_000,
@@ -69,19 +73,19 @@ export class TorrentioProvider implements TorrentProvider {
     const raw = stream.title ?? '';
     const firstLine = raw.split('\n', 1)[0] ?? '';
 
-    const seedersMatch = /👤\s*([\d,]+)/.exec(raw);
+    const seedersMatch = SEEDERS_LINE.exec(raw);
     const seeders =
       seedersMatch?.[1] === undefined
         ? null
         : Number(seedersMatch[1].replaceAll(',', ''));
 
-    const sizeMatch = /💾\s*([\d.]+)\s*(GB|MB|TB|KB)/i.exec(raw);
+    const sizeMatch = SIZE_LINE.exec(raw);
     const sizeBytes =
       sizeMatch?.[1] !== undefined && sizeMatch[2] !== undefined
         ? Number(sizeMatch[1]) * SIZE_UNIT_BYTES[sizeMatch[2].toUpperCase()]!
         : null;
 
-    const sourceMatch = /⚙️\s*(\S+)/.exec(raw);
+    const sourceMatch = SOURCE_LINE.exec(raw);
     const haystack = `${stream.name ?? ''} ${firstLine}`;
 
     return {

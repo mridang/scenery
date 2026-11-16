@@ -11,7 +11,7 @@ jest.unstable_mockModule('@/domain/push/repository', () => ({
   PushSubscriptionRepository: class {
     public listAll() {
       return Promise.resolve(
-        [...store.keys()].map((endpoint) => ({ endpoint })),
+        Array.from(store.keys(), (endpoint) => ({ endpoint })),
       );
     }
     public has(endpoint: string) {

@@ -37,14 +37,14 @@ export function useInstallPrompt(): Readonly<{
   const [event, setEvent] = useState<InstallPromptEvent | null>(null);
 
   useEffect(() => {
-    const onPrompt = (e: Event) => {
-      if (!isInstallPromptEvent(e)) {
+    const onPrompt = (candidate: Event) => {
+      if (!isInstallPromptEvent(candidate)) {
         return;
       }
       // Hold the prompt back until the person asks for it, rather than letting
       // the browser show its own mini-infobar.
-      e.preventDefault();
-      setEvent(e);
+      candidate.preventDefault();
+      setEvent(candidate);
     };
     const onInstalled = () => setEvent(null);
     globalThis.addEventListener('beforeinstallprompt', onPrompt);

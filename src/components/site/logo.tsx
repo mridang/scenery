@@ -10,7 +10,9 @@ import { cn } from '@/components/ui/cn';
  * brand colour unless a class sets another.
  */
 export function BrandMark({
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name, fixed by the DOM and JSX API
   className,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name, fixed by the DOM and JSX API
 }: Readonly<{ className?: string }>): ReactElement {
   return (
     <svg
@@ -27,7 +29,9 @@ export function BrandMark({
 
 /** The wordmark: the mark and the name, linking home. Used in the site header. */
 export function Logo({
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name, fixed by the DOM and JSX API
   className,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name, fixed by the DOM and JSX API
 }: Readonly<{ className?: string }>): ReactElement {
   return (
     <a

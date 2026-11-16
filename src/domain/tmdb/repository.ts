@@ -11,6 +11,8 @@ import type {
   TmdbPersonResponse,
 } from '@/lib/tmdb';
 
+const FOUR_DIGIT_YEAR_PREFIX = /^\d{4}/;
+
 /**
  * Database access for TMDB enrichment. The enricher orchestrates calls
  * against this class; the underlying schema is invisible to it.
@@ -131,7 +133,8 @@ export class TmdbRepository {
     now: string,
   ): Promise<void> {
     const year =
-      movie.release_date !== undefined && /^\d{4}/.test(movie.release_date)
+      movie.release_date !== undefined &&
+      FOUR_DIGIT_YEAR_PREFIX.test(movie.release_date)
         ? Number(movie.release_date.slice(0, 4))
         : null;
     const values = {

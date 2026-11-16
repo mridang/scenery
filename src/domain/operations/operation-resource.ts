@@ -7,6 +7,9 @@
 import type { OperationStatus, OperationType } from '@/domain/db/enums';
 import type { OperationRow } from './repository';
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
 /** An operation as the API shows it. Absent members are unknown, never null. */
 export interface OperationResource {
   readonly id: string;
@@ -60,7 +63,5 @@ function storedResult(
 
 /** Whether `id` has the shape of an operation id (a lowercase UUID). */
 export function isOperationId(id: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
-    id,
-  );
+  return UUID_PATTERN.test(id);
 }

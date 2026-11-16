@@ -33,10 +33,10 @@ export function HeroCarousel({
     },
     [count],
   );
-  const prev = useCallback(() => goTo(index - 1), [goTo, index]);
+  const previous = useCallback(() => goTo(index - 1), [goTo, index]);
   const next = useCallback(() => goTo(index + 1), [goTo, index]);
 
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (paused || count <= 1) {
       return undefined;
     }
@@ -64,7 +64,7 @@ export function HeroCarousel({
             direction="prev"
             onClick={(event) => {
               event.preventDefault();
-              prev();
+              previous();
             }}
           />
           <CarouselButton
@@ -127,7 +127,7 @@ function Dots({
 }>) {
   return (
     <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">
-      {Array.from({ length: count }, (_, i) => i).map((slot) => {
+      {Array.from({ length: count }, (_, position) => position).map((slot) => {
         const active = slot === index;
         return (
           <button
