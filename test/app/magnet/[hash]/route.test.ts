@@ -7,9 +7,9 @@ import { resetTrackerCache } from '@/lib/magnet/magnet';
 // The endpoint reaches the network via the transport layer; stub the
 // whole transport module so bestTrackers() reads a controlled body
 // instead of hitting cf.trackerslist.com.
-const fakeFetch = (() =>
-  Promise.resolve(
-    new Response('udp://test-tracker:1337/announce\n'),
+const fakeFetch = (async () =>
+  new Response(
+    'udp://test-tracker:1337/announce\n',
   )) as unknown as typeof fetch;
 
 jest.unstable_mockModule('@/lib/transport', () => ({

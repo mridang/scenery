@@ -25,10 +25,7 @@ function wellFormedPost(): string {
 }
 
 describe('ScnsrcSource.extract', () => {
-  const source = new ScnsrcSource(
-    (() => Promise.resolve(new Response(''))) as unknown as typeof fetch,
-    'test-fetcher',
-  );
+  const source = new ScnsrcSource(async () => new Response(''), 'test-fetcher');
 
   it('extracts all fields from a well-formed post', () => {
     const releases = source.extract(wellFormedPost());
@@ -136,10 +133,7 @@ describe('ScnsrcSource.extract', () => {
 });
 
 describe('ScnsrcSource.pageUrl', () => {
-  const source = new ScnsrcSource(
-    (() => Promise.resolve(new Response(''))) as unknown as typeof fetch,
-    'test-fetcher',
-  );
+  const source = new ScnsrcSource(async () => new Response(''), 'test-fetcher');
 
   it('returns the base url for page 1', () => {
     expect(source.pageUrl(1)).toBe(source.baseUrl);
@@ -153,10 +147,7 @@ describe('ScnsrcSource.pageUrl', () => {
 describe('ScnsrcSource.fetchPage', () => {
   it('returns the fetched html via the injected transport', async () => {
     const source = new ScnsrcSource(
-      (() =>
-        Promise.resolve(
-          new Response(wellFormedPost(), { status: 200 }),
-        )) as unknown as typeof fetch,
+      async () => new Response(wellFormedPost(), { status: 200 }),
       'test-fetcher',
     );
 

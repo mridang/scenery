@@ -27,7 +27,7 @@ function backoffMs(attempt: number, base: number, jitter: number): number {
   return base * 2 ** attempt + Math.floor((sample / 2 ** 32) * jitter);
 }
 
-function sleep(ms: number): Promise<void> {
+async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
@@ -43,14 +43,14 @@ export function withRetry(
   const baseDelayMs = opts.baseDelayMs ?? 200;
   const jitterMs = opts.jitterMs ?? 100;
 
-  return (input, init) => {
+  return async (input, init) => {
     const attempt = async (attemptNumber: number): Promise<Response> => {
       const isLast = attemptNumber === attempts - 1;
       try {
         const response = await transport(input, init);
         if (!isLast && isRetryableStatus(response.status)) {
           await sleep(backoffMs(attemptNumber, baseDelayMs, jitterMs));
-          return attempt(attemptNumber + 1);
+          return await attempt(attemptNumber + 1);
         }
         return response;
       } catch (error) {

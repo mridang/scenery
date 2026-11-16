@@ -65,7 +65,7 @@ function mosaicOrder(
   const out: Array<{ movie: ScoredMovie; big: boolean }> = [];
   let bi = 0;
   for (const [index, small] of smalls.entries()) {
-    out.push({ movie: small!, big: false });
+    out.push({ movie: small, big: false });
     if ((index + 1) % gapN === 0 && bi < bigs.length) {
       out.push({ movie: bigs[bi]!, big: true });
       bi += 1;

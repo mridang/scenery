@@ -79,7 +79,7 @@ export class ImageService {
   public constructor(private readonly deps: ImageServiceDeps) {}
 
   /** Serve the picture named by the request's `url` and `w` params. */
-  public serve(request: Request): Promise<Response> {
+  public async serve(request: Request): Promise<Response> {
     return serveImage(request, this.deps);
   }
 }

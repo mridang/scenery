@@ -51,7 +51,7 @@ const open: ImageAccess = {
 };
 
 /** A cache that remembers what it is given. */
-function fakeCache(initial?: Response | undefined) {
+function fakeCache(initial?: Response) {
   const stored: [string, Response][] = [];
   const cache: ImageCache = {
     match: async () => initial?.clone(),
@@ -126,7 +126,10 @@ describe('refuse', () => {
 describe('serveImage', () => {
   it('fetches the picture, keeps a copy at the edge in the background, and sends it', async () => {
     const { cache, stored } = fakeCache();
-    const background = jest.fn((work: Promise<unknown>) => work);
+    const pending: Promise<unknown>[] = [];
+    const background = jest.fn((work: Promise<unknown>): void => {
+      pending.push(work);
+    });
     const response = await serveImage(ask(), {
       access: open,
       cache,
@@ -143,7 +146,7 @@ describe('serveImage', () => {
       new Uint8Array([1, 2, 3]),
     );
     expect(background).toHaveBeenCalledTimes(1);
-    await background.mock.results[0]?.value;
+    await Promise.all(pending);
     expect(stored).toHaveLength(1);
     expect(stored[0]?.[0]).toBe(imageCacheKey(WIDTH, PHOTO).url);
     expect(stored[0]?.[1].headers.get('cache-control')).toBe(

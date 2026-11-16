@@ -30,7 +30,7 @@ function wellFormedPost(): string {
 
 describe('DdlvalleySource.extract', () => {
   const source = new DdlvalleySource(
-    (() => Promise.resolve(new Response(''))) as unknown as typeof fetch,
+    async () => new Response(''),
     'test-fetcher',
   );
 
@@ -145,7 +145,7 @@ describe('DdlvalleySource.extract', () => {
 
 describe('DdlvalleySource.pageUrl', () => {
   const source = new DdlvalleySource(
-    (() => Promise.resolve(new Response(''))) as unknown as typeof fetch,
+    async () => new Response(''),
     'test-fetcher',
   );
 
@@ -161,10 +161,7 @@ describe('DdlvalleySource.pageUrl', () => {
 describe('DdlvalleySource.fetchPage', () => {
   it('returns the fetched html via the injected transport', async () => {
     const source = new DdlvalleySource(
-      (() =>
-        Promise.resolve(
-          new Response(wellFormedPost(), { status: 200 }),
-        )) as unknown as typeof fetch,
+      async () => new Response(wellFormedPost(), { status: 200 }),
       'test-fetcher',
     );
 

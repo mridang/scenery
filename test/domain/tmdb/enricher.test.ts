@@ -35,9 +35,8 @@ function fakeRepo(overrides: Partial<Record<string, unknown>> = {}): {
   const calls: Call[] = [];
   const record =
     (method: string) =>
-    (...args: unknown[]): Promise<void> => {
+    async (...args: unknown[]): Promise<void> => {
       calls.push({ method, args });
-      return Promise.resolve();
     };
   const base: Record<string, unknown> = {
     recordMovieError: record('recordMovieError'),
@@ -73,7 +72,7 @@ describe('TmdbEnricher.enrichMovie', () => {
   it('records an error and returns "error" when /find fails', async () => {
     const { repo, calls } = fakeRepo();
     const client = fakeClient({
-      findByImdb: () => Promise.resolve(fail('http 500', 'boom')),
+      findByImdb: async () => fail('http 500', 'boom'),
     });
     const enricher = new TmdbEnricher(client, repo);
 
@@ -91,7 +90,7 @@ describe('TmdbEnricher.enrichMovie', () => {
     const { repo, calls } = fakeRepo();
     const empty: TmdbFindResponse = { movie_results: [] };
     const client = fakeClient({
-      findByImdb: () => Promise.resolve(ok(empty, '{"movie_results":[]}')),
+      findByImdb: async () => ok(empty, '{"movie_results":[]}'),
     });
     const enricher = new TmdbEnricher(client, repo);
 
@@ -109,8 +108,8 @@ describe('TmdbEnricher.enrichMovie', () => {
     };
     const movie: TmdbMovieResponse = { runtime: 148 };
     const client = fakeClient({
-      findByImdb: () => Promise.resolve(ok(find)),
-      getMovieWithCredits: () => Promise.resolve(ok(movie, '{"runtime":148}')),
+      findByImdb: async () => ok(find),
+      getMovieWithCredits: async () => ok(movie, '{"runtime":148}'),
     });
     const enricher = new TmdbEnricher(client, repo);
 
@@ -135,8 +134,8 @@ describe('TmdbEnricher.enrichMovie', () => {
       movie_results: [{ id: 27_205 }],
     };
     const client = fakeClient({
-      findByImdb: () => Promise.resolve(ok(find)),
-      getMovieWithCredits: () => Promise.resolve(fail('http 502', 'gateway')),
+      findByImdb: async () => ok(find),
+      getMovieWithCredits: async () => fail('http 502', 'gateway'),
     });
     const enricher = new TmdbEnricher(client, repo);
 
@@ -155,7 +154,7 @@ describe('TmdbEnricher.enrichPerson', () => {
   it('returns false and persists nothing when the person fetch fails', async () => {
     const { repo, calls } = fakeRepo();
     const client = fakeClient({
-      getPersonWithCredits: () => Promise.resolve(fail('http 500')),
+      getPersonWithCredits: async () => fail('http 500'),
     });
     const enricher = new TmdbEnricher(client, repo);
 
@@ -176,7 +175,7 @@ describe('TmdbEnricher.enrichPerson', () => {
       },
     };
     const client = fakeClient({
-      getPersonWithCredits: () => Promise.resolve(ok(person, '{}')),
+      getPersonWithCredits: async () => ok(person, '{}'),
     });
     const enricher = new TmdbEnricher(client, repo);
 
@@ -201,9 +200,9 @@ describe('TmdbEnricher.enrichPerson', () => {
 
 describe('TmdbEnricher.refreshGenres', () => {
   it('throws when the genre fetch fails', async () => {
-    const { repo } = fakeRepo({ upsertGenre: () => Promise.resolve() });
+    const { repo } = fakeRepo({ upsertGenre: async () => {} });
     const client = fakeClient({
-      getMovieGenres: () => Promise.resolve(fail('http 500')),
+      getMovieGenres: async () => fail('http 500'),
     });
     const enricher = new TmdbEnricher(client, repo);
 
@@ -213,19 +212,16 @@ describe('TmdbEnricher.refreshGenres', () => {
   it('upserts every genre and returns the count', async () => {
     const calls: Call[] = [];
     const { repo } = fakeRepo({
-      upsertGenre: (...args: unknown[]) => {
+      upsertGenre: async (...args: unknown[]) => {
         calls.push({ method: 'upsertGenre', args });
-        return Promise.resolve();
       },
     });
     const client = fakeClient({
-      getMovieGenres: () =>
-        Promise.resolve(
-          ok([
-            { id: 28, name: 'Action' },
-            { id: 35, name: 'Comedy' },
-          ]),
-        ),
+      getMovieGenres: async () =>
+        ok([
+          { id: 28, name: 'Action' },
+          { id: 35, name: 'Comedy' },
+        ]),
     });
     const enricher = new TmdbEnricher(client, repo);
 

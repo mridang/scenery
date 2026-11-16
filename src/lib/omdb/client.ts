@@ -36,7 +36,7 @@ export class OmdbClient {
   }
 
   /** Fetch ratings for one IMDb id. */
-  public fetchByImdb(imdbId: string): Promise<Result<OmdbResponse>> {
+  public async fetchByImdb(imdbId: string): Promise<Result<OmdbResponse>> {
     return this.http.request(
       { path: '', query: { i: imdbId, apikey: this.apiKey } },
       OmdbResponseSchema,

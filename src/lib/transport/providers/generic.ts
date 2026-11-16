@@ -21,7 +21,7 @@ export function genericTransport(
   opts: GenericTransportOptions = {},
 ): typeof fetch {
   const timeoutMs = opts.timeoutMs ?? 15_000;
-  return (input, init) =>
+  return async (input, init) =>
     globalThis.fetch(input, {
       ...init,
       signal: init?.signal ?? AbortSignal.timeout(timeoutMs),

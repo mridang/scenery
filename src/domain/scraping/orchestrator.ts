@@ -1,5 +1,5 @@
 import type { Source } from '@/lib/sources/types';
-import { ScrapingRepository } from './repository';
+import type { ScrapingRepository } from './repository';
 import type { PageRunResult } from './types';
 
 /**

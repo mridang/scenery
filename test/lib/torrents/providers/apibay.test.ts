@@ -2,17 +2,13 @@ import { describe, expect, it } from '@jest/globals';
 
 import { ApibayProvider } from '@/lib/torrents/providers/apibay';
 
-const transportOf = (
-  body: unknown,
-  init: { status?: number } = {},
-): typeof fetch =>
-  (() =>
-    Promise.resolve(
-      new Response(typeof body === 'string' ? body : JSON.stringify(body), {
-        status: init.status ?? 200,
-        headers: { 'content-type': 'application/json' },
-      }),
-    )) as typeof fetch;
+const transportOf =
+  (body: unknown, init: { status?: number } = {}): typeof fetch =>
+  async () =>
+    new Response(typeof body === 'string' ? body : JSON.stringify(body), {
+      status: init.status ?? 200,
+      headers: { 'content-type': 'application/json' },
+    });
 
 const EMPTY_HASH = '0000000000000000000000000000000000000000';
 
@@ -157,8 +153,9 @@ describe('ApibayProvider', () => {
   });
 
   it("returns 'error' on a network failure without throwing", async () => {
-    const transport = (() =>
-      Promise.reject(new Error('ECONNRESET'))) as typeof fetch;
+    const transport = (async () => {
+      throw new Error('ECONNRESET');
+    }) as typeof fetch;
     const r = await new ApibayProvider({}, transport).search('tt0000001');
 
     expect(r.status).toBe('error');

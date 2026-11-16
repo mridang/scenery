@@ -10,7 +10,7 @@ const ENDPOINT = 'https://api.scrapingant.com/v2/general';
 type FetchStub = jest.Mock<typeof fetch>;
 
 function stubFetch(): FetchStub {
-  const stub = jest.fn<typeof fetch>(() => Promise.resolve(new Response('ok')));
+  const stub = jest.fn<typeof fetch>(async () => new Response('ok'));
   globalThis.fetch = stub;
   return stub;
 }

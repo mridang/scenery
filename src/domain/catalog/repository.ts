@@ -132,7 +132,7 @@ export class CatalogRepository {
     // Plan view budgets disk space, so only sized rows participate.
     const planWhere = view === 'plan' ? sql`WHERE best_size_bytes > 0` : sql``;
 
-    return await this.db.all<ScoredRow>(sql`
+    return this.db.all<ScoredRow>(sql`
       WITH base AS MATERIALIZED (
         SELECT
         m.imdb_id                                  AS imdb_id,
@@ -242,7 +242,7 @@ export class CatalogRepository {
       .leftJoin(tmdbMovies, eq(tmdbMovies.imdb_id, movies.imdb_id))
       .groupBy(code)
       .orderBy(desc(count()));
-    return rows.map((row) => ({ code: row.code, count: Number(row.count) }));
+    return rows.map((row) => ({ code: row.code, count: row.count }));
   }
 
   public async loadGenres(): Promise<Map<number, string>> {
@@ -255,7 +255,7 @@ export class CatalogRepository {
   public async loadStats(): Promise<CatalogStats> {
     const scalar = async (query: Promise<{ n: number }[]>): Promise<number> => {
       const [row] = await query;
-      return Number(row?.n ?? 0);
+      return row?.n ?? 0;
     };
     const [
       releaseCount,

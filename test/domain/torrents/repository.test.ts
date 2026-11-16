@@ -306,12 +306,12 @@ describe('the newest-release gate against its previous form', () => {
   });
 
   it.each([
-    ['candidates', (repo: TorrentRepository) => repo.candidates(10)],
+    ['candidates', async (repo: TorrentRepository) => repo.candidates(10)],
     [
       'candidates (forced)',
-      (repo: TorrentRepository) => repo.candidates(10, true),
+      async (repo: TorrentRepository) => repo.candidates(10, true),
     ],
-    ['tooFreshCount', (repo: TorrentRepository) => repo.tooFreshCount()],
+    ['tooFreshCount', async (repo: TorrentRepository) => repo.tooFreshCount()],
   ])(
     '%s reads movies through movies_newest_posted_idx with no sort',
     async (_name, run) => {

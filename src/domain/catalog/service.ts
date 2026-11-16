@@ -62,22 +62,22 @@ export class CatalogService {
   }
 
   /** Header counters (movies, releases, TMDB coverage, …). */
-  public stats(): Promise<CatalogStats> {
+  public async stats(): Promise<CatalogStats> {
     return this.reader.loadStats();
   }
 
   /** TMDB genre id → name lookup. */
-  public genres(): Promise<Map<number, string>> {
+  public async genres(): Promise<Map<number, string>> {
     return this.reader.loadGenres();
   }
 
   /** Per-language movie tallies for the language filter. */
-  public languageCounts(): Promise<LangCount[]> {
+  public async languageCounts(): Promise<LangCount[]> {
     return this.reader.loadLanguageCounts();
   }
 
   /** Most-recent scrape / enrich / torrent activity timestamps. */
-  public lastUpdate(): Promise<LastUpdate> {
+  public async lastUpdate(): Promise<LastUpdate> {
     return this.reader.loadLastUpdate();
   }
 

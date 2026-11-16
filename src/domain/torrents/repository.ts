@@ -77,7 +77,7 @@ export class TorrentRepository {
           gt(movies.newest_posted_at, cutoff),
         ),
       );
-    return Number(rows[0]?.n ?? 0);
+    return rows[0]?.n ?? 0;
   }
 
   async persist(imdbId: string, resolved: ResolvedLookup): Promise<void> {
@@ -153,6 +153,6 @@ export class TorrentRepository {
 
   async totalStored(): Promise<number> {
     const rows = await this.db.select({ n: count() }).from(torrents);
-    return Number(rows[0]?.n ?? 0);
+    return rows[0]?.n ?? 0;
   }
 }
