@@ -35,7 +35,8 @@ import { clientSubject } from './client-address';
 import { CSP_REPORT_PATH } from './reporting';
 import { DISCOVERY_PATHS, STATIC_PREFIXES } from './site';
 
-const BEARER_TOKEN = /^Bearer\s+(\S+)$/iu;
+/** An `Authorization: Bearer <token>` header, capturing the token. */
+const BEARER_HEADER = /^Bearer\s+(\S+)$/iu;
 
 /** One Workers Rate Limiting binding: `limit` says whether `key` may go ahead. */
 export interface RateLimitBinding {
@@ -142,7 +143,7 @@ export function genericClass(pathname: string): GenericClass | undefined {
 }
 
 /** The limits of an app that has only the {@link GENERIC_CLASSES}. */
-export function genericLimits(sessionCookie?: string): EdgeLimits {
+export function genericLimits(sessionCookie: string | undefined): EdgeLimits {
   return {
     classes: GENERIC_CLASSES,
     classify: (request) => genericClass(new URL(request.url).pathname),
@@ -192,7 +193,7 @@ export async function counterKey(
       : `a:${clientSubject(headers)}`;
   }
   if (counted === 'token') {
-    const token = BEARER_TOKEN.exec(headers.get('authorization') ?? '')?.[1];
+    const token = BEARER_HEADER.exec(headers.get('authorization') ?? '')?.[1];
     return token
       ? `t:${await digestKey(token)}`
       : `a:${clientSubject(headers)}`;
@@ -291,11 +292,14 @@ export function tooManyRequests(
         },
       );
     }
-    default: {
+    case 'text': {
       return new Response(`${TOO_MANY}\n`, {
         status: 429,
         headers: { ...common, 'Content-Type': 'text/plain; charset=utf-8' },
       });
+    }
+    default: {
+      return style satisfies never;
     }
   }
 }

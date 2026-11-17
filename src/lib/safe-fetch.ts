@@ -1,10 +1,10 @@
 /**
  * @packageDocumentation
  *
- * Fetching things from other people's websites, safely. Recipe import fetches
- * the pages people paste links to, and the cover proxy fetches the photos those
- * recipes point at. The address always comes from outside, so both go through
- * this one module, which makes three promises:
+ * Fetching things from other people's websites, safely. An address that came
+ * from outside — a link someone pasted, an image a page points at, an address a
+ * client registered — always goes through this one module, which makes three
+ * promises:
  *
  *   - it only talks to public web addresses ({@link isPublicWebUrl}), and
  *     checks again at every redirect, so a public site cannot bounce us to a
@@ -20,8 +20,8 @@
 
 import { parseUrl } from '@/utils/url';
 
-const TRAILING_DOT = /\.$/u;
-const NUMERIC_DOTTED_HOST = /^[\d.]+$/u;
+const IS_PUBLIC_WEB_URL_PATTERN = /\.$/u;
+const IS_PUBLIC_WEB_URL_PATTERN_2 = /^[\d.]+$/u;
 
 /**
  * Who we say we are when the caller names nobody. A caller passes its own
@@ -62,11 +62,13 @@ export function isPublicWebUrl(value: string): boolean {
     return false;
   }
   // `localhost.` is the same host as `localhost`.
-  const host = url.hostname.toLowerCase().replace(TRAILING_DOT, '');
+  const host = url.hostname
+    .toLowerCase()
+    .replace(IS_PUBLIC_WEB_URL_PATTERN, '');
   return !(
     !host.includes('.') ||
     host.startsWith('[') ||
-    NUMERIC_DOTTED_HOST.test(host) ||
+    IS_PUBLIC_WEB_URL_PATTERN_2.test(host) ||
     NOT_PUBLIC.test(host)
   );
 }
@@ -121,6 +123,12 @@ export interface CappedFetchOptions {
   readonly userAgent?: string;
   /** The function that fetches; the real `fetch` when left out. */
   readonly fetcher?: SafeFetcher;
+  /** The method to send (`GET` when left out). */
+  readonly method?: string;
+  /** Extra request headers (a webhook's signature, a push's encoding). */
+  readonly headers?: Readonly<Record<string, string>>;
+  /** The request body, for a `POST`. */
+  readonly body?: BodyInit;
 }
 
 /** Why a fetch gave nothing. */
@@ -242,10 +250,13 @@ async function fetchHop(
   }
   const fetcher = options.fetcher ?? realFetch;
   const response = await fetcher(url, {
+    method: options.method ?? 'GET',
     headers: {
+      ...options.headers,
       Accept: options.accept,
       'User-Agent': options.userAgent ?? DEFAULT_USER_AGENT,
     },
+    body: options.body,
     // Redirects are followed here, one at a time, so that every address we
     // end up at has been checked.
     redirect: 'manual',

@@ -19,8 +19,13 @@
  */
 
 import { setErrorContext } from '../observability/context';
-// eslint-disable-next-line unicorn/no-keyword-prefix -- `newNonce` is an export shared with the sibling apps
-import { buildCsp, cspSurfaceFor, forwardedHeaders, newNonce } from './csp';
+import {
+  buildCsp,
+  cspSurfaceFor,
+  forwardedHeaders,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- `newNonce` is the name ./csp exports, and an import must not be renamed
+  newNonce,
+} from './csp';
 import {
   edgeCache,
   edgeCacheKey,
@@ -78,6 +83,12 @@ interface Timing {
   readonly appMs?: number;
 }
 
+/** The answer to a request, and what happened on the way to it. */
+interface Answered {
+  readonly response: Response;
+  readonly timing: Timing;
+}
+
 /** Milliseconds as `Server-Timing` wants them: a number with at most one decimal. */
 function ms(value: number): string {
   return String(Math.round(Math.max(value, 0) * 10) / 10);
@@ -130,7 +141,7 @@ export async function serve(
   );
 }
 
-/** Answer one request, after it has been given its flow id, and say what happened to it. */
+/** Answer one request, after it has been given its flow id. */
 async function answer(
   request: Request,
   env: ServeEnv,
@@ -142,7 +153,7 @@ async function answer(
     pages = EDGE_CACHED_PAGES,
     queryParams = CACHED_QUERY_PARAMS,
   }: ServeDeps,
-): Promise<{ readonly response: Response; readonly timing: Timing }> {
+): Promise<Answered> {
   const refused = await edgeLimitRefusal(request, env, limits);
   if (refused) {
     return {
@@ -160,15 +171,17 @@ async function answer(
     isEdgeCacheable(request, pages, limits.sessionCookie, queryParams)
       ? edgeCacheKey(request, env.CF_VERSION_METADATA?.id ?? 'dev', queryParams)
       : undefined;
-  const hit = cache && key ? await cache.match(key) : undefined;
-  if (hit) {
-    return {
-      response: applyResponseHeaders(
-        request,
-        await withFreshNonce(hit, nonce, csp),
-      ),
-      timing: { edge: 'hit' },
-    };
+  if (cache && key) {
+    const hit = await cache.match(key);
+    if (hit) {
+      return {
+        response: applyResponseHeaders(
+          request,
+          await withFreshNonce(hit, nonce, csp),
+        ),
+        timing: { edge: 'hit' },
+      };
+    }
   }
   const forwarded = new Request(request, {
     headers: forwardedHeaders(request.headers, csp, nonce),

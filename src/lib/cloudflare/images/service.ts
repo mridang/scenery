@@ -17,13 +17,13 @@
 import { problems } from '@/lib/core/api';
 import { isPublicWebUrl } from '@/lib/safe-fetch';
 import { SITE_NAME, SITE_URL } from '@/utils/site';
+import { DEFAULT_WIDTH } from '@/lib/cloudflare/images/site';
 import { isAllowedHost, snapWidth } from './address';
-import { DEFAULT_WIDTH } from './site';
 import { fetchImage } from './proxy';
 import type { SafeFetcher } from '@/lib/safe-fetch';
 import type { ImagesLike } from './proxy';
 
-const WEAK_ETAG_PREFIX = /^W\//u;
+const START_W_SLASH = /^W\//u;
 
 /** The two cache operations the service uses. */
 export type ImageCache = Pick<Cache, 'match' | 'put'>;
@@ -127,9 +127,10 @@ export function imageHeaders(type: string, etag: string): Headers {
 /** The first 16 bytes of the SHA-256 of `bytes` as a quoted entity tag. */
 async function etagOf(bytes: ArrayBuffer): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', bytes);
-  const hex = Array.from(new Uint8Array(digest).subarray(0, 16), (byte) =>
-    byte.toString(16).padStart(2, '0'),
-  ).join('');
+  const hex = [...new Uint8Array(digest)]
+    .slice(0, 16)
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
   return `"${hex}"`;
 }
 
@@ -138,7 +139,7 @@ function isCurrent(ifNoneMatch: string | null, etag: string): boolean {
   return (
     ifNoneMatch
       ?.split(',')
-      .map((tag) => tag.trim().replace(WEAK_ETAG_PREFIX, ''))
+      .map((tag) => tag.trim().replace(START_W_SLASH, ''))
       .some((tag) => tag === '*' || tag === etag) ?? false
   );
 }
@@ -183,7 +184,7 @@ export async function serveImage(
   request: Request,
   deps: ImageServiceDeps,
 ): Promise<Response> {
-  const { access, cache, images, fetcher } = deps;
+  const { access, cache, fetcher, images } = deps;
   const early = await access.authenticate(request);
   if (early) {
     return early;

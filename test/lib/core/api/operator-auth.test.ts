@@ -13,9 +13,7 @@ const request = (authorization?: string) =>
 
 describe('operatorRefusal', () => {
   beforeEach(() => {
-    for (const key of Object.keys(tracing.attributes)) {
-      delete tracing.attributes[key];
-    }
+    tracing.reset();
   });
 
   it('marks the invocation as the operator once authorised', async () => {

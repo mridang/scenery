@@ -4,8 +4,11 @@ import { BRAND_NAME } from '@/app/_brand';
 import { BarePage, MessagePage } from '@/components/site/bare-page';
 import { html } from '../render';
 
-const SKIP_LINK_AT_START =
+/** Matches skip link opening. */
+const SKIP_LINK_OPENING =
   /^<div[^>]*><a href="#main"[^>]*>Skip to content<\/a>/u;
+
+/** Matches not found heading. */
 const NOT_FOUND_HEADING = /<h1[^>]*>We couldn&#x27;t find that page<\/h1>/u;
 
 describe('BarePage', () => {
@@ -18,7 +21,7 @@ describe('BarePage', () => {
   });
 
   it('starts with a skip link to the main landmark', () => {
-    expect(html(<BarePage>x</BarePage>)).toMatch(SKIP_LINK_AT_START);
+    expect(html(<BarePage>x</BarePage>)).toMatch(SKIP_LINK_OPENING);
   });
 });
 

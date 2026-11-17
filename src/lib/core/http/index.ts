@@ -6,8 +6,8 @@
  * security/cache response headers, the client address, and the per-app surface
  * these read.
  */
-export { serverTiming, serve } from './serve';
 export type { ServeEnv, ServeApp, ServeDeps } from './serve';
+export { serverTiming, serve } from './serve';
 export { EDGE_LIMITS } from './extras';
 export {
   isEdgeCacheable,
@@ -16,15 +16,6 @@ export {
   withFreshNonce,
   edgeCache,
 } from './edge-cache';
-export {
-  GENERIC_CLASSES,
-  OVERALL_BINDING,
-  genericClass,
-  genericLimits,
-  counterKey,
-  tooManyRequests,
-  edgeLimitRefusal,
-} from './edge-limits';
 export type {
   RateLimitBinding,
   Counted,
@@ -35,22 +26,31 @@ export type {
   EdgeLimits,
 } from './edge-limits';
 export {
+  GENERIC_CLASSES,
+  OVERALL_BINDING,
+  genericClass,
+  genericLimits,
+  counterKey,
+  tooManyRequests,
+  edgeLimitRefusal,
+} from './edge-limits';
+export {
   CSP_REPORT_PATH,
   CSP_REPORT_GROUP,
   REPORTING_ENDPOINTS,
   CSP_REPORT_DIRECTIVES,
 } from './reporting';
+export type { CspSurface } from './csp';
 export {
-  // eslint-disable-next-line unicorn/no-keyword-prefix -- newNonce is an exported name used across modules and in tests; renaming it would change the module API
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- re-export of the public name from csp.ts
   newNonce,
   buildCsp,
   cspSurfaceFor,
   nonceOf,
   forwardedHeaders,
 } from './csp';
-export type { CspSurface } from './csp';
-export { MAX_REPORTS_PER_REQUEST, summariseReports } from './csp-reports';
 export type { ReportSummary } from './csp-reports';
+export { MAX_REPORTS_PER_REQUEST, summariseReports } from './csp-reports';
 export {
   SECURITY_HEADERS,
   resourcePolicyFor,

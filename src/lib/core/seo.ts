@@ -14,17 +14,12 @@ import {
   SITE_URL,
 } from '@/utils/site';
 
-/** A JSON-LD document. */
-interface JsonLd {
-  readonly [key: string]: unknown;
-}
-
 /**
  * The landing page's structured data: the organisation, the site and the app.
  * What is particular to the app (its schema.org category, what a visitor must
  * have, and its feature list) comes from `@/utils/site`.
  */
-export function landingJsonLd(): JsonLd {
+export function landingJsonLd() {
   return {
     '@context': 'https://schema.org',
     '@graph': [

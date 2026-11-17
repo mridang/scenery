@@ -41,10 +41,10 @@ export function isImagesBinding(value: unknown): value is ImagesLike {
   );
 }
 
-/** The HTTP status a failed fetch is answered with. */
-type FailureStatus = 400 | 404 | 413 | 415 | 502;
-
 /** What fetching a picture gave: its bytes and type, or why not. */
+/** The HTTP status a failed picture fetch is answered with. */
+type ImageFailureStatus = 400 | 404 | 413 | 415 | 502;
+
 export type ImageResult =
   | {
       readonly ok: true;
@@ -54,7 +54,7 @@ export type ImageResult =
     }
   | {
       readonly ok: false;
-      readonly status: FailureStatus;
+      readonly status: ImageFailureStatus;
       readonly reason: string;
     };
 
@@ -139,10 +139,12 @@ function refusalFor(failure: FetchFailure): ImageResult {
         ? refusal(404, 'The image is gone.')
         : refusal(502, 'The image site refused.');
     }
-    default: {
-      // 'redirects', 'timeout' and 'unreachable': the site gave no answer.
+    case 'redirects':
+    case 'timeout':
+    case 'unreachable': {
       return refusal(502, 'The image site did not answer.');
     }
+    // no default
   }
 }
 
