@@ -33,9 +33,9 @@ export function concatBytes(...parts: readonly Uint8Array[]): Uint8Array {
 
 /**
  * A `Uint8Array` as a {@link BufferSource} for Web Crypto. The lib models the
- * underlying buffer's variance (an input may sit on a `SharedArrayBuffer`),
- * which `BufferSource` does not accept, so the bytes are copied onto a plain
- * `ArrayBuffer`. @public.
+ * underlying buffer's variance (it may be a `SharedArrayBuffer`), so a typed
+ * array of unknown buffer is not a BufferSource to the compiler; a copy over a
+ * plain `ArrayBuffer` is. @public.
  */
 export function bs(input: Uint8Array): BufferSource {
   return new Uint8Array(input);

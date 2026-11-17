@@ -22,9 +22,9 @@ import type { ReactElement, ReactNode } from 'react';
  * @param root - The popover's outer element (button and panel together).
  * @param next - The element receiving focus, if there is one.
  */
-export function focusLeft<Target extends object>(
-  root: { contains(other: Target | null): boolean },
-  next: Target | null,
+export function focusLeft<Element>(
+  root: Readonly<{ contains: (node: Element | null) => boolean }>,
+  next: Element | null,
 ): boolean {
   return next !== null && !root.contains(next);
 }

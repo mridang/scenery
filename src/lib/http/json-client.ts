@@ -8,6 +8,7 @@
  * map of (path, query, schema) to typed results.
  */
 
+import { safeJsonParse } from '@/utils/json';
 import type { ZodType } from 'zod';
 
 import type { Result } from './result';
@@ -36,44 +37,41 @@ export class JsonClient {
       ? new URL(`?${new URLSearchParams(req.query).toString()}`, target)
       : target;
     try {
-      const response = await this.fetcher(url, req.init);
-      const { ok, status } = response;
-      try {
-        const raw = await response.text();
-        if (!ok) {
-          return { ok: false, error: `http ${status}`, raw, status };
-        }
-        const parsed = (():
-          { ok: true; value: unknown } | { ok: false; error: string } => {
-          try {
-            return { ok: true, value: JSON.parse(raw) as unknown };
-          } catch (error) {
-            return {
-              ok: false,
-              error: error instanceof Error ? error.message : 'invalid JSON',
-            };
-          }
-        })();
-        if (!parsed.ok) {
-          return { ok: false, error: parsed.error, raw, status };
-        }
-        const decoded = schema.safeParse(parsed.value);
-        return decoded.success
-          ? { ok: true, value: decoded.data, raw, status }
-          : { ok: false, error: decoded.error.message, raw, status };
-      } catch (error) {
-        return {
-          ok: false,
-          error: error instanceof Error ? error.message : String(error),
-          raw: '',
-          status,
-        };
-      }
+      return await this.decode(await this.fetcher(url, req.init), schema);
     } catch (error) {
       return {
         ok: false,
         error: error instanceof Error ? error.message : String(error),
         raw: '',
+      };
+    }
+  }
+
+  /** Read a response once and decode it, keeping its status on every outcome. */
+  private async decode<T>(
+    response: Response,
+    schema: ZodType<T>,
+  ): Promise<Result<T>> {
+    const { status, ok } = response;
+    try {
+      const raw = await response.text();
+      if (!ok) {
+        return { ok: false, error: `http ${status}`, raw, status };
+      }
+      const parsed = safeJsonParse(raw);
+      if (!parsed.ok) {
+        return { ok: false, error: parsed.error, raw, status };
+      }
+      const decoded = schema.safeParse(parsed.value);
+      return decoded.success
+        ? { ok: true, value: decoded.data, raw, status }
+        : { ok: false, error: decoded.error.message, raw, status };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+        raw: '',
+        status,
       };
     }
   }
