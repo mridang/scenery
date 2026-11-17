@@ -51,12 +51,13 @@ export function scrapingAntTransport(
       typeof input === 'string' || input instanceof URL
         ? input.toString()
         : input.url;
-    const url = new URL(endpoint);
-    url.searchParams.set('url', target);
-    url.searchParams.set('browser', String(browser));
-    for (const [key, value] of Object.entries(extraParams)) {
-      url.searchParams.set(key, value);
-    }
+    const url = Object.assign(new URL(endpoint), {
+      search: new URLSearchParams({
+        url: target,
+        browser: String(browser),
+        ...extraParams,
+      }).toString(),
+    });
 
     const headers = new Headers(init?.headers);
     headers.set('x-api-key', apiKey);

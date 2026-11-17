@@ -1,13 +1,13 @@
-import { describe, expect, it } from '@jest/globals';
 import { access, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { describe, expect, it } from '@jest/globals';
 
 import { BACKGROUND_COLOR, THEME_COLOR } from '@/app/_brand';
 import manifest from '@/app/manifest';
 import { pngSize } from '../png';
 
 const CAPITALISED_START = /^\p{Lu}/u;
-const ROOT_RELATIVE_PATH = /^\//;
+const ROOT_RELATIVE_PATH = /^\//u;
 
 /** The names of the chunks a PNG file is made of, in order. */
 async function pngChunks(file: string): Promise<readonly string[]> {

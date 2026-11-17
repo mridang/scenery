@@ -6,20 +6,23 @@
  * guarded by the operator token; the route files just mount their handlers.
  */
 
-import { database, type Database } from '@/domain/db/client';
-import { ApiController, type RouteContext } from '@/lib/core/api';
+import { database } from '@/domain/db/client';
+import {
+  ApiController,
+  created,
+  problems,
+  readJsonObject,
+} from '@/lib/core/api';
 import { operatorRefusal } from '@/lib/core/api/operator-auth';
 import { getEnv } from '@/lib/core/runtime';
-import { created, problems, readJsonObject } from '@/lib/core/api';
 import { errorMessage, logError } from '@/utils/logging';
 import { parseOperationInput } from './operation-input';
-import {
-  isOperationId,
-  operationResource,
-  type OperationResource,
-} from './operation-resource';
+import { isOperationId, operationResource } from './operation-resource';
 import { OperationRepository } from './repository';
 import { runOperation } from './run';
+import type { OperationResource } from './operation-resource';
+import type { RouteContext } from '@/lib/core/api';
+import type { Database } from '@/domain/db/client';
 import type { OperationRequest } from './types';
 
 /** Per-request context for the operator operations API. */

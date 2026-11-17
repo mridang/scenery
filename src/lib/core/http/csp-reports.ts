@@ -1,5 +1,5 @@
 const CSP_KEYWORD_SOURCE =
-  /^(?:inline|eval|self|trusted-types-sink|wasm-eval)$/;
+  /^(?:inline|eval|self|trusted-types-sink|wasm-eval)$/u;
 /**
  * @packageDocumentation
  *
@@ -40,7 +40,7 @@ export const MAX_REPORTS_PER_REQUEST = 20;
 
 /** The schemes extensions use for their own addresses. */
 const EXTENSION_SCHEME =
-  /^(?:chrome|moz|safari|safari-web|ms-browser|edge)-extension:/i;
+  /^(?:chrome|moz|safari|safari-web|ms-browser|edge)-extension:/iu;
 
 /** A JSON object. */
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
@@ -58,7 +58,7 @@ function short(value: unknown, limit: number): string {
     const code = char.codePointAt(0) ?? 0;
     return code < 32 || code === 127 ? ' ' : char;
   }).join('');
-  return printable.replaceAll(/\s+/g, ' ').trim().slice(0, limit);
+  return printable.replaceAll(/\s+/gu, ' ').trim().slice(0, limit);
 }
 
 /** The first of `keys` in `body` that holds text. */
@@ -144,24 +144,21 @@ function summarise(
  * {@link MAX_REPORTS_PER_REQUEST}. Anything that is not a report is ignored.
  */
 export function summariseReports(body: unknown): readonly ReportSummary[] {
-  let entries: readonly (readonly [
-    string,
-    Readonly<Record<string, unknown>>,
-  ])[] = [];
-  if (Array.isArray(body)) {
-    entries = body.flatMap(
-      (entry): [string, Readonly<Record<string, unknown>>][] =>
+  // Neither a batch nor a single report: there is nothing to summarise.
+  const batch = Array.isArray(body)
+    ? body.flatMap((entry): [string, Readonly<Record<string, unknown>>][] =>
         isRecord(entry) && isRecord(entry['body'])
           ? [[short(entry['type'], 40), entry['body']]]
           : [],
-    );
-  } else if (isRecord(body) && isRecord(body['csp-report'])) {
-    entries = [['csp-violation', body['csp-report']]];
-  } else {
-    // Neither a batch nor a single report: there is nothing to summarise.
-  }
-  return entries
+      )
+    : [];
+  const single: [string, Readonly<Record<string, unknown>>][] =
+    !Array.isArray(body) && isRecord(body) && isRecord(body['csp-report'])
+      ? [['csp-violation', body['csp-report']]]
+      : [];
+  return [...batch, ...single]
     .slice(0, MAX_REPORTS_PER_REQUEST)
-    .filter(([, report]) => !fromExtension(report))
-    .map(([type, report]) => summarise(type, report));
+    .flatMap(([type, report]) =>
+      fromExtension(report) ? [] : [summarise(type, report)],
+    );
 }

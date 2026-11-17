@@ -7,7 +7,7 @@ import type {
   TorrentProviderName,
 } from '@/lib/torrents/types';
 
-const AT_LEAST_ONE_ERROR = /at least one/;
+const AT_LEAST_ONE_ERROR = /at least one/u;
 
 function fakeProvider(
   name: TorrentProviderName,

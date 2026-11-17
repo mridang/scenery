@@ -6,10 +6,12 @@ const app = {
   health: { ok: true, details: {} as Record<string, unknown> },
 };
 
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/lib/core/runtime', () => ({
   isDatabaseBound: () => app.bound,
 }));
 
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/lib/core/health', () => ({
   appHealth: async () => app.health,
 }));

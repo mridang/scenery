@@ -1,8 +1,4 @@
-import {
-  WorkflowEntrypoint,
-  type WorkflowEvent,
-  type WorkflowStep,
-} from 'cloudflare:workers';
+import { WorkflowEntrypoint } from 'cloudflare:workers';
 
 import { databaseFrom } from '@/domain/db/client';
 import { setErrorContext } from '@/lib/core/observability/context';
@@ -12,6 +8,7 @@ import { lookupOneTorrent } from '@/domain/torrents';
 import { buildEnricher } from '@/domain/tmdb';
 import { defaultProviders } from '@/lib/torrents';
 import { genericTransport, proxyTransport, withRetry } from '@/lib/transport';
+import type { WorkflowEvent, WorkflowStep } from 'cloudflare:workers';
 
 /**
  * Parameters accepted by {@link MovieWorkflow}.

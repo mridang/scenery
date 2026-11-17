@@ -1,10 +1,10 @@
 import { timeAgo } from '@/app/(site)/_lib/format';
-import type { LastUpdate } from '@/domain/catalog';
-
+import { Popover } from '@/components/ui/popover';
 import { InstallButton } from './install-button';
+
 import { Logo } from './logo';
 import { MaintenanceActions } from './maintenance-actions';
-import { Popover } from '@/components/ui/popover';
+import type { LastUpdate } from '@/domain/catalog';
 
 /** Beyond this gap, the bell's red dot signals "last scrape is stale". */
 const STALE_THRESHOLD_MS = 48 * 60 * 60 * 1000;
@@ -68,6 +68,7 @@ export function SiteHeader({
             <input
               type="search"
               name="q"
+              aria-label="Search the catalog"
               defaultValue={q}
               placeholder="Search"
               className="min-w-0 flex-1 border-none bg-transparent text-[13.5px] text-[#f3f3f6] outline-none"

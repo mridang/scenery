@@ -1,7 +1,7 @@
-import { describe, expect, it, jest } from '@jest/globals';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import vm from 'node:vm';
+import { describe, expect, it, jest } from '@jest/globals';
 
 const COLLATOR = new Intl.Collator();
 
@@ -241,7 +241,10 @@ async function push(
 ) {
   const waited: Promise<unknown>[] = [];
   worker.listeners.get('push')?.({
-    data: data === null ? null : { json: (): unknown => JSON.parse(data) },
+    data:
+      data === null
+        ? null
+        : { json: () => JSON.parse(data) as Record<string, unknown> },
     waitUntil: (p: Promise<unknown>) => waited.push(p),
   } as never);
   await Promise.all(waited);
@@ -279,7 +282,7 @@ describe('public/sw.js: push', () => {
     });
     const waited: Promise<unknown>[] = [];
     worker.listeners.get('push')?.({
-      data: { json: (): unknown => JSON.parse('not json') },
+      data: { json: () => JSON.parse('not json') as Record<string, unknown> },
       waitUntil: (p: Promise<unknown>) => waited.push(p),
     } as never);
     await Promise.all(waited);

@@ -1,7 +1,6 @@
-import type { ReactElement, ReactNode } from 'react';
-
 import { Logo } from '@/components/site/logo';
 import { Container } from '@/components/ui/layout';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * The frame of a legal page: the wordmark linking home, then the page's own

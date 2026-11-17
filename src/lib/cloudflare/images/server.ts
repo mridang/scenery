@@ -12,10 +12,10 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 import { authenticate, mayFetch, signatureFor, signatureValid } from './access';
-import { isImagesBinding, type ImagesLike } from './proxy';
-import { serveImage, type ImageCache, type ImageServiceDeps } from './service';
-
-export type { ImageAccess } from './service';
+import { isImagesBinding } from './proxy';
+import { serveImage } from './service';
+import type { ImagesLike } from './proxy';
+import type { ImageCache, ImageServiceDeps } from './service';
 
 /** The app's access rules, as the request service reads them. */
 export const access = { authenticate, mayFetch, signatureFor, signatureValid };
@@ -23,7 +23,8 @@ export const access = { authenticate, mayFetch, signatureFor, signatureValid };
 /** The Images binding, where the deployment has one. */
 export function imagesBinding(): ImagesLike | undefined {
   try {
-    const binding: unknown = Reflect.get(getCloudflareContext().env, 'IMAGES');
+    const { env } = getCloudflareContext();
+    const binding: unknown = 'IMAGES' in env ? env.IMAGES : undefined;
     return isImagesBinding(binding) ? binding : undefined;
   } catch {
     return undefined;
@@ -32,20 +33,23 @@ export function imagesBinding(): ImagesLike | undefined {
 
 /** Whether a value can be used as the edge cache: it answers `match` and `put`. */
 function isCache(value: unknown): value is ImageCache {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
   return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof Reflect.get(value, 'match') === 'function' &&
-    typeof Reflect.get(value, 'put') === 'function'
+    'match' in value &&
+    typeof value.match === 'function' &&
+    'put' in value &&
+    typeof value.put === 'function'
   );
 }
 
 /** Cloudflare's per-location cache; absent when running under plain Node. */
 export function imageCache(): ImageCache | undefined {
-  const store: unknown = Reflect.get(globalThis, 'caches');
+  const store: unknown = globalThis.caches;
   const cache: unknown =
-    typeof store === 'object' && store !== null
-      ? Reflect.get(store, 'default')
+    typeof store === 'object' && store !== null && 'default' in store
+      ? store.default
       : undefined;
   return isCache(cache) ? cache : undefined;
 }

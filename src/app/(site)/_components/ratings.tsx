@@ -12,6 +12,7 @@
  */
 
 import { formatRating } from '@/lib/intl';
+
 export interface RatingsInput {
   /** Scenery's composite score (0-100ish, may exceed). Null hides the chip. */
   readonly sceneryScore: number | null;
@@ -25,7 +26,7 @@ export interface RatingsInput {
 
 interface SizeProps {
   /** "sm" mirrors the card sizing; "md" mirrors the hero sizing. */
-  size?: 'sm' | 'md';
+  readonly size?: 'sm' | 'md';
 }
 
 export function RatingsRow({

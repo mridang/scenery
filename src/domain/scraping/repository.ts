@@ -1,7 +1,5 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
-import type { ExtractedRelease, SourceSlug } from '@/lib/sources/types';
 import {
   fetchAttempts,
   movies,
@@ -9,6 +7,8 @@ import {
   releases,
   sources,
 } from '../db/schema';
+import type { Database } from '@/domain/db/client';
+import type { ExtractedRelease, SourceSlug } from '@/lib/sources/types';
 
 /**
  * Row shape for a registered source in the `sources` table.

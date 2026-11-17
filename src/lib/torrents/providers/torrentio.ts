@@ -10,16 +10,22 @@
 import { JsonClient } from '@/lib/http';
 
 import { detectHdr, detectQuality, detectRemux } from '../parsing';
+import { TorrentioResponseSchema } from './models';
+import type { TorrentioStream } from './models';
 import type { LookupResult, ParsedTorrent, TorrentProvider } from '../types';
-import { TorrentioResponseSchema, type TorrentioStream } from './models';
 import type { ProviderOptions } from './types';
 
-const SEEDERS_LINE = /👤\s*([\d,]+)/;
-const SIZE_LINE = /💾\s*([\d.]+)\s*(GB|MB|TB|KB)/i;
-const SOURCE_LINE = /⚙️\s*(\S+)/;
+const SEEDERS_LINE = /👤\s*([\d,]+)/u;
+const SIZE_LINE = /💾\s*([\d.]+)\s*(GB|MB|TB|KB)/iu;
+const SOURCE_LINE = /⚙️\s*(\S+)/u;
+
+/** The number of bytes in each size unit. */
+interface UnitBytes {
+  readonly [unit: string]: number;
+}
 
 // Multipliers for the size units Torrentio emits in its 💾 annotation.
-const SIZE_UNIT_BYTES: Record<string, number> = {
+const SIZE_UNIT_BYTES: UnitBytes = {
   TB: 1_000_000_000_000,
   GB: 1_000_000_000,
   MB: 1_000_000,

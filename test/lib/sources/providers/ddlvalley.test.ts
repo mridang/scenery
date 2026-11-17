@@ -56,7 +56,7 @@ describe('DdlvalleySource.extract', () => {
   it('strips tags from the excerpt as before, even from a long run of "<"', () => {
     const html = wellFormedPost().replace(
       '<b>exceeds</b>',
-      'x <> y <i>z</i> w ' + '<'.repeat(50_000),
+      `x <> y <i>z</i> w ${'<'.repeat(50_000)}`,
     );
     const started = Date.now();
     const release = source.extract(html)[0]!;
@@ -178,6 +178,7 @@ describe('findDownloadLink', () => {
       '[^>]*',
       String.raw`title="Download\s+([^"]+)"`,
     ].join(''),
+    'u',
   );
   const before = (chunk: string): string[] | undefined => {
     const m = old.exec(chunk);
@@ -197,7 +198,8 @@ describe('findDownloadLink', () => {
   it('matches the old pattern on seeded random markup', () => {
     let state = 5;
     const random = (): number => {
-      state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+      const next = Math.imul(state, 1_664_525) + 1_013_904_223;
+      state = ((next % 2 ** 32) + 2 ** 32) % 2 ** 32;
       return state / 2 ** 32;
     };
     const pieces = [

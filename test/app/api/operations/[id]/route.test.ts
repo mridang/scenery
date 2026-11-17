@@ -1,5 +1,5 @@
-import { databaseFrom } from '@/domain/db/client';
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+import { databaseFrom } from '@/domain/db/client';
 
 import { GET } from '@/app/api/operations/[id]/route';
 import { OperationRepository } from '@/domain/operations/repository';
@@ -16,6 +16,7 @@ let restore: () => void;
 const install = async (env: Record<string, unknown> = {}) => {
   restore?.();
   const { d1 } = await sqliteD1(...APP_MIGRATIONS);
+  // eslint-disable-next-line require-atomic-updates -- the test's setup runs one step at a time, so nothing else assigns it meanwhile
   restore = installCloudflareContext(d1, env);
   const repository = new OperationRepository(databaseFrom(d1));
   await repository.start({

@@ -2,7 +2,6 @@ import {
   BUDGET_BYTES,
   CatalogService,
   parsePageViewOptions,
-  type ScoredMovie,
 } from '@/domain/catalog';
 import { database } from '@/domain/db/client';
 
@@ -18,6 +17,7 @@ import { MovieGrid } from './_components/movie-grid';
 import { PlanView } from './_components/plan-view';
 import { buildQuery } from './_lib/format';
 import { torrentState } from './_lib/movie-style';
+import type { ScoredMovie } from '@/domain/catalog';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,6 +69,7 @@ export default async function Home({
       <>
         <script
           type="application/ld+json"
+          // eslint-disable-next-line react/no-danger -- JSON-LD from our own data, escaped by jsonLdText
           dangerouslySetInnerHTML={{ __html: jsonLdText(landingJsonLd()) }}
         />
         <SiteHeader
@@ -110,6 +111,7 @@ export default async function Home({
     <>
       <script
         type="application/ld+json"
+        // eslint-disable-next-line react/no-danger -- JSON-LD from our own data, escaped by jsonLdText
         dangerouslySetInnerHTML={{ __html: jsonLdText(landingJsonLd()) }}
       />
       <SiteHeader

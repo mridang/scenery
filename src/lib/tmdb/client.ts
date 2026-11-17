@@ -6,17 +6,20 @@
  * knows nothing about D1 or enrichment policy — that lives in the enricher.
  */
 
-import { JsonClient, type Result } from '@/lib/http';
-
+import { JsonClient } from '@/lib/http';
 import {
   TmdbFindResponseSchema,
   TmdbGenresResponseSchema,
   TmdbMovieResponseSchema,
   TmdbPersonResponseSchema,
-  type TmdbFindResponse,
-  type TmdbGenre,
-  type TmdbMovieResponse,
-  type TmdbPersonResponse,
+} from './models';
+import type { Result } from '@/lib/http';
+
+import type {
+  TmdbFindResponse,
+  TmdbGenre,
+  TmdbMovieResponse,
+  TmdbPersonResponse,
 } from './models';
 
 /** Options for {@link TmdbClient}. @public */
@@ -26,9 +29,6 @@ export interface TmdbClientOptions {
   /** Override the API root. Defaults to `https://api.themoviedb.org/3`. */
   readonly baseUrl?: string;
 }
-
-/** The outcome of a TMDB call (the shared {@link Result}). @public */
-export type TmdbResult<T> = Result<T>;
 
 const ACCEPT_JSON: RequestInit = { headers: { Accept: 'application/json' } };
 
@@ -53,7 +53,7 @@ export class TmdbClient {
   }
 
   /** The query for a request, always carrying the api key. */
-  private query(extra: Record<string, string> = {}): Record<string, string> {
+  private query(extra: Record<string, string> = {}) {
     return { ...extra, api_key: this.apiKey };
   }
 

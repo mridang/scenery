@@ -1,7 +1,7 @@
 import { and, asc, count, eq, gt, lte, ne, notExists, sql } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { movies, torrentLookups, torrents } from '../db/schema';
+import type { Database } from '@/domain/db/client';
 import type {
   LookupResult,
   ResolvedLookup,
@@ -84,6 +84,7 @@ export class TorrentRepository {
     const now = new Date().toISOString();
     const { provider, result } = resolved;
     if (result.status === 'success') {
+      // eslint-disable-next-line functional/no-loop-statements -- torrents are written one at a time, in order
       for (const torrent of result.torrents) {
         await this.db
           .insert(torrents)

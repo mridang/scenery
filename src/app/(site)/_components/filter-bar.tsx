@@ -1,10 +1,9 @@
 import Link from 'next/link';
 
-import type { LangCount, PageViewOptions } from '@/domain/catalog';
-
-import { buildQuery } from '../_lib/format';
 import { Popover } from '@/components/ui/popover';
 import { languageLabel } from '@/domain/catalog/language';
+import { buildQuery } from '../_lib/format';
+import type { LangCount, PageViewOptions } from '@/domain/catalog';
 
 const PILL_GROUP =
   'inline-flex items-center gap-[2px] rounded-[10px] bg-white/5 p-[4px]';
@@ -72,14 +71,10 @@ export function FilterBar({
   withTorrents: number;
   feedHref: string;
 }>) {
-  let sortLabel: string;
-  if (opts.pageSort === 'score') {
-    sortLabel = 'score';
-  } else if (opts.pageSort === 'rating') {
-    sortLabel = 'rating';
-  } else {
-    sortLabel = 'release date';
-  }
+  const sortLabel =
+    opts.pageSort === 'score' || opts.pageSort === 'rating'
+      ? opts.pageSort
+      : 'release date';
   const planHref = patchHref(opts, { view: 'plan' });
 
   const statusPills: Pill[] = [

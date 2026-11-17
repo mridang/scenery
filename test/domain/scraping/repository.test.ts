@@ -1,16 +1,16 @@
-import { databaseFrom, type Database } from '@/domain/db/client';
 import { beforeEach, describe, expect, it } from '@jest/globals';
-
-import type { DatabaseSync } from 'node:sqlite';
+import { databaseFrom } from '@/domain/db/client';
 
 import { ScrapingRepository } from '@/domain/scraping/repository';
-import type { ExtractedRelease } from '@/lib/sources/types';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import {
   queryPlan,
   recordStatements,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
+import type { Database } from '@/domain/db/client';
+import type { ExtractedRelease } from '@/lib/sources/types';
+import type { DatabaseSync, SQLOutputValue } from 'node:sqlite';
 
 /**
  * Runs against a SQLite-backed D1 stand-in with the migrations applied, so it
@@ -119,7 +119,7 @@ describe('ScrapingRepository.upsertRelease and movies.newest_posted_at', () => {
     postHtml: '<p/>',
     postedAt,
   });
-  const newest = (): unknown =>
+  const newest = (): SQLOutputValue | undefined =>
     raw
       .prepare(
         `SELECT newest_posted_at AS n FROM movies WHERE imdb_id = 'tt8000001'`,

@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { BRAND_URL, CRAWLABLE_PATHS, PRIVATE_PATHS } from '@/app/_brand';
 import robots from '@/app/robots';
 
-const TRAILING_DOLLAR = /\$$/;
+const TRAILING_DOLLAR = /\$$/u;
 
 type Group = { userAgent: string; allow: string[]; disallow: string[] };
 
@@ -19,12 +19,12 @@ describe('robots.txt', () => {
   const allowed = (target: string): boolean => {
     const matches = (pattern: string): boolean => {
       const escaped = pattern
-        .replaceAll(/[.+?^{}()|[\]\\]/g, String.raw`\$&`)
+        .replaceAll(/[.+?^{}()|[\]\\]/gu, String.raw`\$&`)
         .replaceAll('*', '.*');
-      return new RegExp(`^${escaped}`).test(target);
+      return new RegExp(`^${escaped}`, 'u').test(target);
     };
     const hit = (patterns: string[]): number =>
-      Math.max(-1, ...patterns.filter((p) => matches(p)).map((p) => p.length));
+      Math.max(-1, ...patterns.flatMap((p) => (matches(p) ? [p.length] : [])));
     return hit(rule.allow) >= hit(rule.disallow);
   };
 

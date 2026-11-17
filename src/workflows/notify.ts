@@ -1,21 +1,16 @@
-import {
-  WorkflowEntrypoint,
-  type WorkflowEvent,
-  type WorkflowStep,
-} from 'cloudflare:workers';
+import { WorkflowEntrypoint } from 'cloudflare:workers';
 
-import { databaseFrom, type Database } from '@/domain/db/client';
+import { databaseFrom } from '@/domain/db/client';
 import { setErrorContext } from '@/lib/core/observability/context';
 
-import { CatalogService, type ScoredMovie } from '@/domain/catalog';
+import { CatalogService } from '@/domain/catalog';
 import { PushSubscriptionRepository } from '@/domain/push';
-import {
-  PushNotifier,
-  WebPushSender,
-  type PushPayload,
-  type VapidConfig,
-} from '@/lib/push';
+import { PushNotifier, WebPushSender } from '@/lib/push';
 import { countOf } from '@/lib/intl';
+import type { PushPayload, VapidConfig } from '@/lib/push';
+import type { ScoredMovie } from '@/domain/catalog';
+import type { Database } from '@/domain/db/client';
+import type { WorkflowEvent, WorkflowStep } from 'cloudflare:workers';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const SITE_URL = 'https://scenery.apps.mrida.ng';

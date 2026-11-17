@@ -3,9 +3,11 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { subscriptionId } from '@/lib/push/subscription-id';
 
 const store = new Set<string>();
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/domain/db/client', () => ({
   database: () => ({}),
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/domain/push/repository', () => ({
   PushSubscriptionRepository: class {
     public async removeById(id: string) {

@@ -4,14 +4,14 @@
  * this module only maps our domain rows into feed items and builds the
  * human-readable `<description>` body.
  */
-import { countOf, formatRating, formatSize } from '@/lib/intl';
 import { Feed } from 'feed';
+import { countOf, formatRating, formatSize } from '@/lib/intl';
 
-import type { ScoredMovie } from '@/domain/catalog';
 import { buildMagnet } from '@/lib/magnet';
+import type { ScoredMovie } from '@/domain/catalog';
 
 function fmtSize(bytes: number | null): string {
-  if (bytes == null || bytes <= 0) {
+  if (bytes === null || bytes <= 0) {
     return '';
   }
   return formatSize(bytes);
@@ -20,18 +20,17 @@ function fmtSize(bytes: number | null): string {
 /** The multi-line `<description>` body for one movie (labelled fields). */
 export function descriptionFor(movie: ScoredMovie): string {
   const { row, studios, genres, cast, score } = movie;
-  const runtime =
-    row.runtime != null && row.runtime
-      ? (() => {
-          const hours = Math.floor(row.runtime / 60);
-          const mins = row.runtime % 60;
-          return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-        })()
-      : null;
+  const runtime = row.runtime
+    ? (() => {
+        const hours = Math.floor(row.runtime / 60);
+        const mins = row.runtime % 60;
+        return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+      })()
+    : null;
   const voteCount =
-    row.vote_count == null ? '' : ` (${countOf(row.vote_count, 'vote')})`;
+    row.vote_count === null ? '' : ` (${countOf(row.vote_count, 'vote')})`;
   const rating =
-    row.vote_average == null
+    row.vote_average === null
       ? null
       : `${formatRating(row.vote_average)}${voteCount}`;
   const torrent = row.best_torrent_title
@@ -40,11 +39,11 @@ export function descriptionFor(movie: ScoredMovie): string {
         fmtSize(row.best_size_bytes),
         row.best_source,
       ]
-        .filter(Boolean)
+        .flatMap((part) => (part ? [part] : []))
         .join(' · ')})`
     : null;
   const seeders =
-    row.best_torrent_title && row.best_seeders != null
+    row.best_torrent_title && row.best_seeders !== null
       ? String(row.best_seeders)
       : null;
 
@@ -61,8 +60,7 @@ export function descriptionFor(movie: ScoredMovie): string {
     ['Seeders', seeders],
   ];
   return parts
-    .filter((p): p is readonly [string, string] => p[1] !== null)
-    .map(([label, value]) => `${label}: ${value}`)
+    .flatMap(([label, value]) => (value === null ? [] : [`${label}: ${value}`]))
     .join('\n');
 }
 
@@ -103,6 +101,7 @@ export function buildFeed(channel: FeedChannel): string {
     feedLinks: { rss: channel.selfHref },
   });
 
+  // eslint-disable-next-line functional/no-loop-statements -- the feed library is filled by calling addItem once per movie
   for (const movie of channel.items) {
     const row = movie.row;
     const title = row.tmdb_title ?? row.latest_release_title ?? row.imdb_id;

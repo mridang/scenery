@@ -3,15 +3,15 @@ import { describe, expect, it } from '@jest/globals';
 import PrivacyPage, { metadata } from '@/app/(site)/privacy/page';
 import { html } from '../../../components/render';
 
-const PRIVACY_POLICY_HEADING = /<h1[^>]*>Privacy Policy<\/h1>/;
-const TERMS_LINK = /<a [^>]*href="\/terms"[^>]*>terms of service<\/a>/;
-const BACK_TO_SCENERY_LINK = /<a [^>]*href="\/"[^>]*>.*Back to Scenery<\/a>/;
+const PRIVACY_POLICY_HEADING = /<h1[^>]*>Privacy Policy<\/h1>/u;
+const TERMS_LINK = /<a [^>]*href="\/terms"[^>]*>terms of service<\/a>/u;
+const BACK_TO_SCENERY_LINK = /<a [^>]*href="\/"[^>]*>.*Back to Scenery<\/a>/u;
 
 describe('PrivacyPage', () => {
   const out = html(<PrivacyPage />);
 
   it('has one heading, the policy’s title', () => {
-    expect(out.match(/<h1/g)).toHaveLength(1);
+    expect(out.match(/<h1/gu)).toHaveLength(1);
     expect(out).toMatch(PRIVACY_POLICY_HEADING);
   });
 
@@ -30,7 +30,7 @@ describe('PrivacyPage', () => {
       'Deleting your data',
       'Contact',
     ]) {
-      expect(out).toMatch(new RegExp(`<h2[^>]*>${heading}</h2>`));
+      expect(out).toMatch(new RegExp(`<h2[^>]*>${heading}</h2>`, 'u'));
     }
   });
 

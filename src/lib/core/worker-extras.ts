@@ -76,4 +76,5 @@ const extraHandlers: Partial<ExportedHandler<CloudflareEnv>> = {
 
 export default extraHandlers;
 
+// eslint-disable-next-line tslop/no-reexports-outside-entrypoints -- the Worker entry (`src/worker.ts`) must export the workflow classes for Cloudflare to find them
 export { ScrapeWorkflow, NotifyWorkflow, MovieWorkflow } from '@/workflows';

@@ -1,5 +1,5 @@
-import type { Database } from '@/domain/db/client';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import type { Database } from '@/domain/db/client';
 
 import type { OperationRequest } from '@/domain/operations/types';
 
@@ -11,6 +11,7 @@ const sweepPending = jest.fn(async (limit: number) => ({
   notFound: 2,
   errored: 3,
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/domain/omdb', () => ({
   OmdbEnricher: class {
     public sweepPending = sweepPending;
@@ -26,15 +27,18 @@ const runPages = jest.fn(
     return [{ page: 1 }];
   },
 );
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/domain/scraping', () => ({
   ScrapeOrchestrator: class {
     public run = runPages;
   },
   ScrapingRepository: class {},
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/lib/sources', () => ({
   buildSources: () => ({ scnsrc: {}, ddlvalley: {} }),
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/domain/tmdb', () => ({
   buildEnricher: () => ({
     ensureGenres: async () => calls.push('enrich'),
@@ -52,14 +56,17 @@ const lookups = jest.fn(
     return { looked_up: opts.providers.length };
   },
 );
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/lib/torrents', () => ({
   ApibayProvider: class {},
   TorrentioProvider: class {},
   defaultProviders: () => [{}, {}, {}],
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/domain/torrents', () => ({
   runTorrentLookups: lookups,
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/lib/transport', () => ({
   browserTransport: () => fetch,
   genericTransport: () => fetch,
@@ -69,7 +76,12 @@ jest.unstable_mockModule('@/lib/transport', () => ({
 
 const { runOperation } = await import('@/domain/operations/run');
 
-const create = jest.fn<(options: unknown) => Promise<unknown>>(async () => ({
+/** The workflow instance the stand-in creates. */
+interface Instance {
+  readonly id: string;
+  readonly status: () => Promise<{ status: string }>;
+}
+const create = jest.fn<(options: unknown) => Promise<Instance>>(async () => ({
   id: 'inst-1',
   status: async () => ({ status: 'queued' }),
 }));
@@ -117,10 +129,7 @@ describe('runOperation', () => {
   });
 
   it('runs every step of a pipeline by default, on page 1 of every source', async () => {
-    const result = (await runOperation(pipeline({}), deps)) as Record<
-      string,
-      unknown
-    >;
+    const result = await runOperation(pipeline({}), deps);
     expect(calls).toEqual([
       'scrape:scnsrc:1',
       'scrape:ddlvalley:1',

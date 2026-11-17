@@ -1,7 +1,6 @@
-import type { ReactElement } from 'react';
-
 import { BRAND_NAME } from '@/app/_brand';
 import { cn } from '@/components/ui/cn';
+import type { ReactElement } from 'react';
 
 /**
  * The app's mark: two stacked parallelograms, the second a little fainter.

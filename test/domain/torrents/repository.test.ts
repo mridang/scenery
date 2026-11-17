@@ -1,4 +1,3 @@
-import { databaseFrom, type Database } from '@/domain/db/client';
 import {
   afterEach,
   beforeEach,
@@ -7,18 +6,19 @@ import {
   it,
   jest,
 } from '@jest/globals';
-
-import type { DatabaseSync } from 'node:sqlite';
+import { databaseFrom } from '@/domain/db/client';
 
 import { ScrapingRepository } from '@/domain/scraping/repository';
 import { TorrentRepository } from '@/domain/torrents/repository';
-import type { ResolvedLookup } from '@/lib/torrents/types';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import {
   queryPlan,
   recordStatements,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
+import type { Database } from '@/domain/db/client';
+import type { ResolvedLookup } from '@/lib/torrents/types';
+import type { DatabaseSync } from 'node:sqlite';
 
 /**
  * Tests for the torrent repository: the candidate gate (maturity +

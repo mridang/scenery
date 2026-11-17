@@ -1,24 +1,22 @@
 import { requestPage } from '../request-page';
 import type { ExtractedRelease, FetchResult, Source } from '../types';
 
-const ORDINAL_SUFFIX = /(\d)(?:st|nd|rd|th)/;
+const ORDINAL_SUFFIX = /(\d)(?:st|nd|rd|th)/u;
 
 const BASE_URL = 'https://www.ddlvalley.me/category/movies/';
 
-const POST_RE = /class="post br5 cl"\s+id="post-(\d+)"/g;
-const IMDB_RE = /imdb\.com\/title\/(tt\d+)/i;
-const DATE_RE = /<span class="date">([^<]+)<\/span>/;
-const AUTHOR_RE = /<span class="author">\s*<a[^>]*>([^<]+)<\/a>/;
-const CATEGORY_RE = /rel="category tag"[^>]*>([^<]+)</g;
-const IMG_RE = /<div class="poster[^"]*">\s*<img[^>]+src="([^"]+)"/;
-const PLOT_RE = /<div class="plot">([\s\S]*?)<\/div>/;
-
-const WHITESPACE = /\s*/y;
+const POST_RE = /class="post br5 cl"\s+id="post-(\d+)"/gu;
+const IMDB_RE = /imdb\.com\/title\/(tt\d+)/iu;
+const DATE_RE = /<span class="date">([^<]+)<\/span>/u;
+const AUTHOR_RE = /<span class="author">\s*<a[^>]*>([^<]+)<\/a>/u;
+const CATEGORY_RE = /rel="category tag"[^>]*>([^<]+)</gu;
+const IMG_RE = /<div class="poster[^"]*">\s*<img[^>]+src="([^"]+)"/u;
+const PLOT_RE = /<div class="plot">([\s\S]*?)<\/div>/u;
 
 /** Where the whitespace run that starts at `from` ends. */
 function skipWhitespace(text: string, from: number): number {
-  WHITESPACE.lastIndex = from;
-  return from + (WHITESPACE.exec(text)?.[0].length ?? 0);
+  const whitespace = Object.assign(/\s*/uy, { lastIndex: from });
+  return from + (whitespace.exec(text)?.[0].length ?? 0);
 }
 
 /** The `href="..."` of an anchor opened at `at`: its value and where it ends. */
@@ -69,17 +67,17 @@ function quotedValue(
  * Every `prefix` inside the tag that starts at `from` (before its first `>`),
  * last one first, as `[^>]*prefix` tries them.
  */
-function* prefixesInTag(
+function prefixesInTag(
   text: string,
   from: number,
   prefix: string,
-): Generator<number> {
+): readonly number[] {
   const gt = text.indexOf('>', from);
-  let at = text.lastIndexOf(prefix, gt === -1 ? Infinity : gt - 1);
-  while (at >= from) {
-    yield at;
-    at = at === 0 ? -1 : text.lastIndexOf(prefix, at - 1);
-  }
+  const last = gt === -1 ? text.length - 1 : gt - 1;
+  return Array.from(
+    { length: Math.max(0, last - from + 1) },
+    (_, offset) => last - offset,
+  ).filter((at) => text.startsWith(prefix, at));
 }
 
 /** The first valid `prefix ...word"` attribute in the tag that starts at `from`. */
@@ -88,13 +86,9 @@ function titleInTag(
   from: number,
   prefix: string,
 ): { value: string; end: number } | undefined {
-  for (const found of prefixesInTag(text, from, prefix)) {
-    const title = quotedValue(text, found, prefix);
-    if (title) {
-      return title;
-    }
-  }
-  return undefined;
+  return prefixesInTag(text, from, prefix)
+    .map((found) => quotedValue(text, found, prefix))
+    .find((title) => title !== undefined);
 }
 
 /**
@@ -102,41 +96,28 @@ function titleInTag(
  * `[url, title]`; reads the same as `/<a\s+href="([^"]+)"[^>]*title="Download\s+([^"]+)"/`.
  */
 export function findDownloadLink(chunk: string): [string, string] | undefined {
-  for (
-    let at = chunk.indexOf('<a');
-    at !== -1;
-    at = chunk.indexOf('<a', at + 1)
-  ) {
-    const link = hrefAfter(chunk, at, '<a');
-    const title = link
-      ? titleInTag(chunk, link.end, 'title="Download')
-      : undefined;
-    if (link && title) {
-      return [link.href, title.value];
-    }
-  }
-  return undefined;
+  return chunk
+    .matchAll(/<a/gu)
+    .map(({ index: at }): [string, string] | undefined => {
+      const link = hrefAfter(chunk, at, '<a');
+      const title = link
+        ? titleInTag(chunk, link.end, 'title="Download')
+        : undefined;
+      return link && title ? [link.href, title.value] : undefined;
+    })
+    .find((found) => found !== undefined);
 }
 
 /** Removes every `<...>` run; same result as `replaceAll(/<[^>]+>/g, '')`, in linear time. */
 function stripTags(html: string): string {
-  let out = '';
-  let from = 0;
-  let open = html.indexOf('<');
-  while (open !== -1) {
-    const close = html.indexOf('>', open + 1);
-    if (close === -1) {
-      break;
-    }
-    if (close === open + 1) {
-      open = html.indexOf('<', open + 1);
-    } else {
-      out += html.slice(from, open);
-      from = close + 1;
-      open = html.indexOf('<', from);
-    }
+  const open = html.indexOf('<');
+  const close = open === -1 ? -1 : html.indexOf('>', open + 1);
+  if (close === -1) {
+    return html;
   }
-  return out + html.slice(from);
+  return close === open + 1
+    ? html.slice(0, open + 1) + stripTags(html.slice(open + 1))
+    : html.slice(0, open) + stripTags(html.slice(close + 1));
 }
 
 function parseDdlvalleyDate(raw: string | undefined): string | undefined {
@@ -206,7 +187,7 @@ export class DdlvalleySource implements Source {
       const imageUrl = IMG_RE.exec(chunk)?.[1];
       const plotRaw = PLOT_RE.exec(chunk)?.[1];
       const excerpt = plotRaw
-        ? stripTags(plotRaw).replaceAll(/\s+/g, ' ').trim()
+        ? stripTags(plotRaw).replaceAll(/\s+/gu, ' ').trim()
         : undefined;
 
       return [

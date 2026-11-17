@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import { entityTag, ifMatchSatisfied, ifNoneMatchHit } from '@/lib/core/api';
 
-const QUOTED_HASH_ETAG = /^"[0-9a-f]{16}"$/;
+const QUOTED_HASH_ETAG = /^"[0-9a-f]{16}"$/u;
 
 describe('entityTag', () => {
   it('is a quoted 16-hex-digit tag that changes with the content', async () => {

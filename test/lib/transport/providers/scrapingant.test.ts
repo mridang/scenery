@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import { scrapingAntTransport } from '@/lib/transport/providers/scrapingant';
 
-const API_KEY_ERROR = /API key/;
+const API_KEY_ERROR = /API key/u;
 
 const realFetch = globalThis.fetch;
 const ENDPOINT = 'https://api.scrapingant.com/v2/general';

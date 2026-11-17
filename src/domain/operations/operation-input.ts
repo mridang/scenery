@@ -6,19 +6,19 @@
  * typo is an error and not a silent default.
  */
 
-import { OPERATION_TYPES, type OperationType } from '@/domain/db/enums';
+import { OPERATION_TYPES } from '@/domain/db/enums';
 import { SOURCE_SLUGS } from '@/lib/sources/types';
 import { TORRENT_PROVIDERS } from '@/lib/torrents/types';
+import { isObject } from '@/lib/core/api';
 import {
   DEFAULT_OMDB_LIMIT,
   MAX_BACKFILL_PAGES,
   MAX_OMDB_LIMIT,
   MIN_OMDB_LIMIT,
   PIPELINE_STEPS,
-  type OperationRequest,
-  type PipelineRunParameters,
 } from './types';
-import { isObject } from '@/lib/core/api';
+import type { OperationRequest, PipelineRunParameters } from './types';
+import type { OperationType } from '@/domain/db/enums';
 
 /** The checked request, or what was wrong with it. */
 export type OperationInput =
@@ -61,28 +61,7 @@ function listOf<T extends string>(
 
 /** Check the parameters of a `pipeline_run`. */
 function pipelineRun(parameters: Parameters): OperationInput {
-  const errors = [
-    ...unknownKeys(parameters, [
-      'source',
-      'backfill_pages',
-      'steps',
-      'torrent_providers',
-    ]),
-  ];
   const { source, backfill_pages: pages } = parameters;
-  if (source !== undefined && !SOURCE_SLUGS.includes(source as never)) {
-    errors.push(`parameters.source: one of ${SOURCE_SLUGS.join(', ')}.`);
-  }
-  if (
-    pages !== undefined &&
-    (!Number.isInteger(pages) ||
-      (pages as number) < 0 ||
-      (pages as number) > MAX_BACKFILL_PAGES)
-  ) {
-    errors.push(
-      `parameters.backfill_pages: a whole number from 0 to ${MAX_BACKFILL_PAGES}.`,
-    );
-  }
   const steps =
     parameters['steps'] === undefined
       ? { values: PIPELINE_STEPS, errors: [] }
@@ -95,7 +74,30 @@ function pipelineRun(parameters: Parameters): OperationInput {
           parameters['torrent_providers'],
           TORRENT_PROVIDERS,
         );
-  errors.push(...steps.errors, ...(providers?.errors ?? []));
+  const unknownSource =
+    source !== undefined && !SOURCE_SLUGS.includes(source as never);
+  const pagesOutOfRange =
+    (pages as number) < 0 || (pages as number) > MAX_BACKFILL_PAGES;
+  const badPages =
+    pages !== undefined && (!Number.isInteger(pages) || pagesOutOfRange);
+  const errors = [
+    ...unknownKeys(parameters, [
+      'source',
+      'backfill_pages',
+      'steps',
+      'torrent_providers',
+    ]),
+    ...(unknownSource
+      ? [`parameters.source: one of ${SOURCE_SLUGS.join(', ')}.`]
+      : []),
+    ...(badPages
+      ? [
+          `parameters.backfill_pages: a whole number from 0 to ${MAX_BACKFILL_PAGES}.`,
+        ]
+      : []),
+    ...steps.errors,
+    ...(providers?.errors ?? []),
+  ];
   if (errors.length > 0) {
     return { ok: false, errors };
   }
@@ -115,18 +117,19 @@ function pipelineRun(parameters: Parameters): OperationInput {
 
 /** Check the parameters of an `omdb_backfill`. */
 function omdbBackfill(parameters: Parameters): OperationInput {
-  const errors = [...unknownKeys(parameters, ['limit'])];
   const { limit } = parameters;
-  if (
-    limit !== undefined &&
-    (!Number.isInteger(limit) ||
-      (limit as number) < MIN_OMDB_LIMIT ||
-      (limit as number) > MAX_OMDB_LIMIT)
-  ) {
-    errors.push(
-      `parameters.limit: a whole number from ${MIN_OMDB_LIMIT} to ${MAX_OMDB_LIMIT}.`,
-    );
-  }
+  const limitOutOfRange =
+    (limit as number) < MIN_OMDB_LIMIT || (limit as number) > MAX_OMDB_LIMIT;
+  const badLimit =
+    limit !== undefined && (!Number.isInteger(limit) || limitOutOfRange);
+  const errors = [
+    ...unknownKeys(parameters, ['limit']),
+    ...(badLimit
+      ? [
+          `parameters.limit: a whole number from ${MIN_OMDB_LIMIT} to ${MAX_OMDB_LIMIT}.`,
+        ]
+      : []),
+  ];
   return errors.length > 0
     ? { ok: false, errors }
     : {
@@ -144,16 +147,16 @@ function omdbBackfill(parameters: Parameters): OperationInput {
 export function parseOperationInput(
   body: Readonly<Record<string, unknown>>,
 ): OperationInput {
-  const errors = Object.keys(body)
-    .filter((key) => key !== 'type' && key !== 'parameters')
-    .map((key) => `${key}: not a member of an operation.`);
   const { type, parameters = {} } = body;
-  if (!OPERATION_TYPES.includes(type as OperationType)) {
-    errors.push(`type: one of ${OPERATION_TYPES.join(', ')}.`);
-  }
-  if (!isObject(parameters)) {
-    errors.push('parameters: must be an object.');
-  }
+  const errors = [
+    ...Object.keys(body)
+      .filter((key) => key !== 'type' && key !== 'parameters')
+      .map((key) => `${key}: not a member of an operation.`),
+    ...(OPERATION_TYPES.includes(type as OperationType)
+      ? []
+      : [`type: one of ${OPERATION_TYPES.join(', ')}.`]),
+    ...(isObject(parameters) ? [] : ['parameters: must be an object.']),
+  ];
   if (errors.length > 0 || !isObject(parameters)) {
     return { ok: false, errors };
   }
@@ -164,7 +167,7 @@ export function parseOperationInput(
     case 'omdb_backfill': {
       return omdbBackfill(parameters);
     }
-    case 'push_trigger': {
+    default: {
       const extra = unknownKeys(parameters, []);
       return extra.length > 0
         ? { ok: false, errors: extra }

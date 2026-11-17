@@ -21,7 +21,7 @@ import {
   truncate,
 } from '@/lib/intl';
 
-const TRUNCATED_FAMILY_EMOJI = /^ab( 👨‍👩‍👧)?…$/;
+const TRUNCATED_FAMILY_EMOJI = /^ab( 👨‍👩‍👧)?…$/u;
 
 describe('compareText', () => {
   it('alphabetises accented letters with their base letter', () => {

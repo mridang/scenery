@@ -18,7 +18,8 @@
 
 import { appOrigin } from '@/lib/core/origin';
 import { problem } from './problem';
-import { encodeCursor, type CursorPosition } from './pagination';
+import { encodeCursor } from './pagination';
+import type { CursorPosition } from './pagination';
 import type { RouteContext } from './route-context';
 
 /** The HTTP methods an endpoint may answer. */
@@ -151,10 +152,7 @@ function toResponse(
   if (body === undefined) {
     return new Response(null, { status, headers });
   }
-  const response = Response.json(body, { status });
-  for (const [name, value] of headers.entries())
-    response.headers.set(name, value);
-  return response;
+  return Response.json(body, { status, headers });
 }
 
 /**
@@ -172,6 +170,7 @@ export class ApiController<Ctx = Request> {
 
   /** Register an endpoint for its method. */
   on<Input, Output>(endpoint: Endpoint<Input, Output, Ctx>): this {
+    // eslint-disable-next-line functional/immutable-data -- endpoints are registered once, while the controller is being set up
     this.#endpoints.set(endpoint.method, endpoint);
     return this;
   }
@@ -211,11 +210,16 @@ export class ApiController<Ctx = Request> {
    * methods actually registered are present.
    */
   handlers(): Record<HttpMethod, RouteHandler> {
-    const handlers: Partial<Record<HttpMethod, RouteHandler>> = {};
-    for (const [method, endpoint] of this.#endpoints) {
-      handlers[method] = async (request, route = {}) =>
-        this.#run(endpoint, request, route);
-    }
+    const handlers: Partial<Record<HttpMethod, RouteHandler>> =
+      Object.fromEntries(
+        Array.from(
+          this.#endpoints,
+          ([method, endpoint]): [HttpMethod, RouteHandler] => [
+            method,
+            async (request, route = {}) => this.#run(endpoint, request, route),
+          ],
+        ),
+      );
     return handlers as Record<HttpMethod, RouteHandler>;
   }
 }

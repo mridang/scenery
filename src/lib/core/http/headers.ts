@@ -16,8 +16,13 @@ import {
   RARELY_CHANGING,
 } from './site';
 
+/** The security headers, by name. */
+interface SecurityHeaders {
+  readonly [name: string]: string;
+}
+
 /** Security headers for every response. */
-export const SECURITY_HEADERS: Readonly<Record<string, string>> = {
+export const SECURITY_HEADERS: SecurityHeaders = {
   // Never let a browser guess a different content type for a response.
   'X-Content-Type-Options': 'nosniff',
   // Send other sites only our origin, and nothing at all on a downgrade.

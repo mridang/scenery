@@ -1,4 +1,4 @@
-const BASE64_PADDING = /={1,2}$/;
+const BASE64_PADDING = /(?:={1,2})$/u;
 /**
  * @packageDocumentation
  *

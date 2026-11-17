@@ -8,18 +8,12 @@
  * (snake_case, as the API shows it).
  */
 
-import type { Database } from '@/domain/db/client';
-import { OmdbEnricher } from '../omdb';
-import { ScrapeOrchestrator, ScrapingRepository } from '../scraping';
 import { buildSources } from '@/lib/sources';
-import { buildEnricher } from '../tmdb';
-import { runTorrentLookups } from '../torrents';
 import {
   ApibayProvider,
   TorrentioProvider,
   defaultProviders,
 } from '@/lib/torrents';
-import type { TorrentProvider } from '@/lib/torrents';
 import {
   browserTransport,
   genericTransport,
@@ -27,6 +21,12 @@ import {
   withRetry,
 } from '@/lib/transport';
 import { errorMessage, logInfo } from '@/utils/logging';
+import { OmdbEnricher } from '../omdb';
+import { ScrapeOrchestrator, ScrapingRepository } from '../scraping';
+import { buildEnricher } from '../tmdb';
+import { runTorrentLookups } from '../torrents';
+import type { TorrentProvider } from '@/lib/torrents';
+import type { Database } from '@/domain/db/client';
 import type { TorrentProviderName } from '@/lib/torrents/types';
 import type { OperationRequest, PipelineRunParameters } from './types';
 
@@ -60,11 +60,13 @@ async function enrichBatch(
   const enricher = buildEnricher(db, env, withRetry(genericTransport()));
   await enricher.ensureGenres();
   const movieIds = await enricher.listPendingMovieIds(12);
+  // eslint-disable-next-line functional/no-loop-statements -- enriched one at a time, in order, to stay within the API's concurrency budget
   for (const imdbId of movieIds) {
     await enricher.enrichMovie(imdbId);
   }
   await enricher.backfillFromRawCredits();
   const peopleIds = await enricher.listPendingPeopleIds(12);
+  // eslint-disable-next-line functional/no-loop-statements -- enriched one at a time, in order, to stay within the API's concurrency budget
   for (const personId of peopleIds) {
     await enricher.enrichPerson(personId);
   }
@@ -134,25 +136,24 @@ async function pipelineRun(
   const enrich = parameters.steps.includes('enrich')
     ? await enrichBatch(db, env)
     : undefined;
-  let torrents: unknown;
-  if (parameters.steps.includes('torrents')) {
-    // apibay needs the ScrapingAnt proxy (it blocks Worker egress IPs).
-    // Torrentio is happy with a direct fetch from the Worker, which keeps the
-    // common-case torrent lookup off the ScrapingAnt 1-concurrent free-tier
-    // budget entirely. The retry wrap absorbs a transient 409 ("Free user
-    // concurrency limit reached").
-    const proxied = withRetry(proxyTransport(env.SCRAPINGANT_API_KEY), {
-      attempts: 6,
-      baseDelayMs: 2000,
-      jitterMs: 3000,
-    });
-    const direct = withRetry(genericTransport());
-    torrents = await runTorrentLookups(db, {
-      providers: parameters.torrent_providers
-        ? providersFor(parameters.torrent_providers, proxied)
-        : defaultProviders(proxied, direct),
-    });
-  }
+  // apibay needs the ScrapingAnt proxy (it blocks Worker egress IPs).
+  // Torrentio is happy with a direct fetch from the Worker, which keeps the
+  // common-case torrent lookup off the ScrapingAnt 1-concurrent free-tier
+  // budget entirely. The retry wrap absorbs a transient 409 ("Free user
+  // concurrency limit reached").
+  const proxied = withRetry(proxyTransport(env.SCRAPINGANT_API_KEY), {
+    attempts: 6,
+    baseDelayMs: 2000,
+    jitterMs: 3000,
+  });
+  const direct = withRetry(genericTransport());
+  const torrents = parameters.steps.includes('torrents')
+    ? await runTorrentLookups(db, {
+        providers: parameters.torrent_providers
+          ? providersFor(parameters.torrent_providers, proxied)
+          : defaultProviders(proxied, direct),
+      })
+    : undefined;
   const finishedAt = new Date().toISOString();
   logInfo({
     event: 'operations.pipeline_run.completed',
@@ -174,7 +175,7 @@ async function pipelineRun(
 export async function runOperation(
   request: OperationRequest,
   deps: OperationDeps,
-): Promise<unknown> {
+): Promise<Record<string, unknown>> {
   switch (request.type) {
     case 'pipeline_run': {
       return pipelineRun(deps, request.parameters);
@@ -193,7 +194,7 @@ export async function runOperation(
         errored: swept.errored,
       };
     }
-    case 'push_trigger': {
+    default: {
       const instance = await deps.env.NOTIFY_WORKFLOW.create({ params: {} });
       return { instance_id: instance.id, status: await instance.status() };
     }

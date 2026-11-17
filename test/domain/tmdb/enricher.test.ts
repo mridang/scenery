@@ -1,7 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { TmdbEnricher } from '@/domain/tmdb/enricher';
-import type { TmdbClient, TmdbResult } from '@/lib/tmdb/client';
+import type { Result } from '@/lib/http';
+import type { TmdbClient } from '@/lib/tmdb/client';
 import type { TmdbRepository } from '@/domain/tmdb/repository';
 import type {
   TmdbFindResponse,
@@ -9,7 +10,7 @@ import type {
   TmdbPersonResponse,
 } from '@/lib/tmdb';
 
-const TMDB_GENRES_ERROR = /tmdb genres/;
+const TMDB_GENRES_ERROR = /tmdb genres/u;
 
 /** Returns the item at `index`, failing the test loudly when it is absent. */
 function nth<T>(items: readonly T[], index: number): T {
@@ -23,22 +24,25 @@ function nth<T>(items: readonly T[], index: number): T {
 /** A recorded call: the repo method name plus its arguments. */
 type Call = { method: string; args: readonly unknown[] };
 
+/** A fake repository and the calls made on it. */
+interface FakeRepo {
+  readonly repo: TmdbRepository;
+  readonly calls: Call[];
+}
+
 /**
  * A fake repository that records every call. Only the methods the enricher
  * touches are implemented; everything is cast to the real interface so the
  * enricher is exercised exactly as in production.
  */
-function fakeRepo(overrides: Partial<Record<string, unknown>> = {}): {
-  repo: TmdbRepository;
-  calls: Call[];
-} {
+function fakeRepo(overrides: Partial<Record<string, unknown>> = {}): FakeRepo {
   const calls: Call[] = [];
   const record =
     (method: string) =>
     async (...args: unknown[]): Promise<void> => {
       calls.push({ method, args });
     };
-  const base: Record<string, unknown> = {
+  const base = {
     recordMovieError: record('recordMovieError'),
     recordMovieNotFound: record('recordMovieNotFound'),
     upsertFoundMovie: record('upsertFoundMovie'),
@@ -50,13 +54,13 @@ function fakeRepo(overrides: Partial<Record<string, unknown>> = {}): {
   return { repo: base as unknown as TmdbRepository, calls };
 }
 
-const ok = <T>(value: T, raw = '{}'): TmdbResult<T> => ({
+const ok = <T>(value: T, raw = '{}'): Result<T> => ({
   ok: true,
   value,
   raw,
   status: 200,
 });
-const fail = (error: string, raw = ''): TmdbResult<never> => ({
+const fail = (error: string, raw = ''): Result<never> => ({
   ok: false,
   error,
   raw,

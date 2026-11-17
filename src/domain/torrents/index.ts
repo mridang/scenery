@@ -6,14 +6,14 @@
  * (`@/lib/torrents`) and persist the results.
  */
 
-import type { Database } from '@/domain/db/client';
 import { TorrentLookupManager } from '@/lib/torrents';
+import { TorrentRepository } from './repository';
+import type { Database } from '@/domain/db/client';
 import type {
   LookupStatus,
   ResolvedLookup,
   TorrentProvider,
 } from '@/lib/torrents';
-import { TorrentRepository } from './repository';
 import type { TorrentRunSummary } from './repository';
 
 export { TorrentRepository } from './repository';

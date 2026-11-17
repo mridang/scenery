@@ -6,24 +6,22 @@ import { describe, expect, it } from '@jest/globals';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 import { cssClassesOf, html } from '../render';
 
-const TEXT_TONE_CLASS = /\btext-(ink|accent|subtle|muted|on-ink)\b/;
-const FOCUSABLE_H1 = /<h1 tabindex="-1" class=/;
+const TEXT_TONE_CLASS = /\btext-(ink|accent|subtle|muted|on-ink)\b/u;
+const FOCUSABLE_H1 = /<h1 tabindex="-1" class=/u;
 
 describe('Eyebrow', () => {
   it('is a tracked-caps paragraph in the accent colour by default', () => {
     const out = html(<Eyebrow>Your collection</Eyebrow>);
     expect(out.startsWith('<p')).toBe(true);
-    expect(cssClassesOf(out, 'p')).toContain('uppercase');
-    expect(cssClassesOf(out, 'p')).toContain('text-accent');
+    const classes = cssClassesOf(out, 'p');
+    expect(classes).toContain('uppercase');
+    expect(classes).toContain('text-accent');
   });
 
   it('takes its colour from the tone, one at a time', () => {
-    expect(cssClassesOf(html(<Eyebrow tone="ink">x</Eyebrow>), 'p')).toContain(
-      'text-ink',
-    );
-    expect(
-      cssClassesOf(html(<Eyebrow tone="ink">x</Eyebrow>), 'p'),
-    ).not.toContain('text-accent');
+    const ink = cssClassesOf(html(<Eyebrow tone="ink">x</Eyebrow>), 'p');
+    expect(ink).toContain('text-ink');
+    expect(ink).not.toContain('text-accent');
     expect(
       cssClassesOf(html(<Eyebrow tone="subtle">x</Eyebrow>), 'p'),
     ).toContain('text-subtle');
@@ -55,9 +53,11 @@ describe('Eyebrow', () => {
         ) {
           const source = await readFile(file, 'utf8');
           offenders.push(
-            ...[...source.matchAll(/<Eyebrow\b[^>]*className="([^"]*)"/g)]
-              .filter((match) => TEXT_TONE_CLASS.test(match[1]!))
-              .map((match) => `${file}: ${match[1]}`),
+            ...[
+              ...source.matchAll(/<Eyebrow\b[^>]*className="([^"]*)"/gu),
+            ].flatMap((match) =>
+              TEXT_TONE_CLASS.test(match[1]!) ? [`${file}: ${match[1]}`] : [],
+            ),
           );
         } else {
           // Stylesheets, tests and other files are not checked.

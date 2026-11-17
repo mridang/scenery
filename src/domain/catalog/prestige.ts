@@ -1,3 +1,8 @@
+/** The display name of each prestige studio, by TMDB production-company id. */
+interface PrestigeLabels {
+  readonly [studioId: number]: string;
+}
+
 /**
  * Prestige-studio recognition. The catalog query awards a scoring bonus
  * and an 'A' tier to movies from these studios, and the UI shows their
@@ -9,7 +14,7 @@
  * matched back into display names.
  * @public
  */
-export const PRESTIGE_LABELS: Readonly<Record<number, string>> = {
+export const PRESTIGE_LABELS: PrestigeLabels = {
   178: 'Netflix',
   152_952: 'Apple TV+',
   192_828: 'Apple TV+',

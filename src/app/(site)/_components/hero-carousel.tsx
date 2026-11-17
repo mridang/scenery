@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import type { ScoredMovie } from '@/domain/catalog';
-
 import { Hero } from './hero';
+import type { ScoredMovie } from '@/domain/catalog';
 
 /**
  * Client wrapper around {@link Hero} that paginates a small slate of

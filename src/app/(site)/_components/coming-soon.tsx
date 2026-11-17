@@ -1,6 +1,5 @@
-import type { ScoredMovie } from '@/domain/catalog';
-
 import { posterUrl } from '../_lib/tmdb-image';
+import type { ScoredMovie } from '@/domain/catalog';
 
 /**
  * Right-rail "what's next" list. These are the highest-scored movies the

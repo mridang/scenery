@@ -26,8 +26,8 @@ const TRACKERS_URL = 'https://cf.trackerslist.com/best.txt';
 const TRACKERS_TTL_MS = 6 * 60 * 60 * 1000;
 
 /** V1 info hash: 40 hex chars. V2/base32: 32 chars of RFC 4648 base32. */
-const HEX_40 = /^[a-fA-F0-9]{40}$/;
-const BASE32_32 = /^[A-Z2-7]{32}$/i;
+const HEX_40 = /^[a-fA-F0-9]{40}$/u;
+const BASE32_32 = /^[A-Z2-7]{32}$/iu;
 
 /** True when `hash` is a syntactically valid BitTorrent info hash. */
 export function isValidInfoHash(hash: string): boolean {
@@ -55,8 +55,8 @@ export function magnetPath(infoHash: string, name: string | null): string {
   return `/magnet/${infoHash}${query}`;
 }
 
-// Per-isolate memo so a burst of clicks doesn't refetch the list. Cold
-// isolates fetch once; everything else reuses it for the TTL.
+// Per-isolate memo so a burst of clicks doesn't refetch the list; cold isolates fetch once and everything else reuses it for the TTL.
+// eslint-disable-next-line functional/no-let -- the memo lives for the life of the isolate
 let cache: { at: number; trackers: readonly string[] } | null = null;
 
 /** Clear the memoised tracker list. Test-only seam. */
@@ -91,6 +91,7 @@ export async function bestTrackers(
     if (trackers.length === 0) {
       throw new Error('tracker list empty');
     }
+    // eslint-disable-next-line require-atomic-updates -- a memo: the last write wins and any list is as good
     cache = { at: now, trackers };
     return trackers;
   } catch {

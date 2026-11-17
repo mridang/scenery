@@ -6,7 +6,7 @@
  */
 
 export { TmdbClient } from './client';
-export type { TmdbClientOptions, TmdbResult } from './client';
+export type { TmdbClientOptions } from './client';
 export {
   TmdbGenreSchema,
   TmdbGenresResponseSchema,

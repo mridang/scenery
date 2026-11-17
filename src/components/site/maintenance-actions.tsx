@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, type ReactElement } from 'react';
+import { useState } from 'react';
+import type { ReactElement } from 'react';
 
 /** What a button asks the pipeline to do: the `parameters` of a `pipeline_run` operation. */
 interface PipelineRunRequest {
@@ -73,7 +74,9 @@ export function MaintenanceActions({
       <button
         type="button"
         disabled={busy}
-        onClick={() => void run({ backfill_pages: 10 })}
+        onClick={() => {
+          void run({ backfill_pages: 10 });
+        }}
         className={ITEM_CLASS}
       >
         Backfill 10 pages
@@ -81,7 +84,9 @@ export function MaintenanceActions({
       <button
         type="button"
         disabled={busy}
-        onClick={() => void run({ steps: ['enrich'] })}
+        onClick={() => {
+          void run({ steps: ['enrich'] });
+        }}
         className={ITEM_CLASS}
       >
         TMDB enrich
@@ -89,7 +94,9 @@ export function MaintenanceActions({
       <button
         type="button"
         disabled={busy}
-        onClick={() => void run({})}
+        onClick={() => {
+          void run({});
+        }}
         className={ITEM_CLASS}
       >
         Scrape page 1

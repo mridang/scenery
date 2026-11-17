@@ -5,8 +5,8 @@ import { BarePage, MessagePage } from '@/components/site/bare-page';
 import { html } from '../render';
 
 const SKIP_LINK_AT_START =
-  /^<div[^>]*><a href="#main"[^>]*>Skip to content<\/a>/;
-const NOT_FOUND_HEADING = /<h1[^>]*>We couldn&#x27;t find that page<\/h1>/;
+  /^<div[^>]*><a href="#main"[^>]*>Skip to content<\/a>/u;
+const NOT_FOUND_HEADING = /<h1[^>]*>We couldn&#x27;t find that page<\/h1>/u;
 
 describe('BarePage', () => {
   it('brings its own main landmark and a wordmark that links home', () => {

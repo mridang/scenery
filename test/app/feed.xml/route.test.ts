@@ -1,13 +1,12 @@
-import { databaseFrom } from '@/domain/db/client';
 import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals';
-
-import type { NextRequest } from 'next/server';
+import { databaseFrom } from '@/domain/db/client';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
+import type { NextRequest } from 'next/server';
 
 let d1: D1Database;
 let restore: (() => void) | undefined;
@@ -24,8 +23,8 @@ afterAll(() => {
   restore?.();
 });
 
-// Keep the feed hermetic: bestTrackers is handed a stub transport that
-// never touches the network, so it falls back to the static tracker list.
+// Keep the feed hermetic: bestTrackers is handed a stub transport that never touches the network, so it falls back to the static tracker list.
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/lib/transport', () => {
   const stubFetch = (async () =>
     new Response('', { status: 500 })) as unknown as typeof fetch;

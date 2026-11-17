@@ -3,17 +3,18 @@ import { describe, expect, it } from '@jest/globals';
 import TermsPage, { metadata } from '@/app/(site)/terms/page';
 import { html } from '../../../components/render';
 
-const TERMS_OF_SERVICE_HEADING = /<h1[^>]*>Terms of Service<\/h1>/;
+const TERMS_OF_SERVICE_HEADING = /<h1[^>]*>Terms of Service<\/h1>/u;
 const GITHUB_LINK =
-  /<a [^>]*href="https:\/\/github\.com\/mridang\/scenery"[^>]*target="_blank"[^>]*>GitHub<\/a>/;
-const PRIVACY_POLICY_LINK = /<a [^>]*href="\/privacy"[^>]*>privacy policy<\/a>/;
-const BACK_TO_SCENERY_LINK = /<a [^>]*href="\/"[^>]*>.*Back to Scenery<\/a>/;
+  /<a [^>]*href="https:\/\/github\.com\/mridang\/scenery"[^>]*target="_blank"[^>]*>GitHub<\/a>/u;
+const PRIVACY_POLICY_LINK =
+  /<a [^>]*href="\/privacy"[^>]*>privacy policy<\/a>/u;
+const BACK_TO_SCENERY_LINK = /<a [^>]*href="\/"[^>]*>.*Back to Scenery<\/a>/u;
 
 describe('TermsPage', () => {
   const out = html(<TermsPage />);
 
   it('has one heading, the terms’ title', () => {
-    expect(out.match(/<h1/g)).toHaveLength(1);
+    expect(out.match(/<h1/gu)).toHaveLength(1);
     expect(out).toMatch(TERMS_OF_SERVICE_HEADING);
   });
 
@@ -30,7 +31,7 @@ describe('TermsPage', () => {
       'Your data',
       'Contact',
     ]) {
-      expect(out).toMatch(new RegExp(`<h2[^>]*>${heading}</h2>`));
+      expect(out).toMatch(new RegExp(`<h2[^>]*>${heading}</h2>`, 'u'));
     }
   });
 

@@ -9,18 +9,21 @@ import type {
   SourceSlug,
 } from '@/lib/sources/types';
 
+/** The stand-in repository and what the orchestrator did to it. */
+interface FakeRepo {
+  readonly repo: ScrapingRepository;
+  readonly upserts: { sourceId: number; release: ExtractedRelease }[];
+  readonly failed: unknown[];
+  readonly snapshots: unknown[];
+  readonly successful: unknown[];
+}
+
 /**
  * A minimal in-memory stand-in for {@link ScrapingRepository}. The
  * orchestrator only calls the methods overridden below; everything else
  * stays unimplemented because it is never reached on these paths.
  */
-function fakeRepo(overrides: Partial<ScrapingRepository> = {}): {
-  repo: ScrapingRepository;
-  upserts: { sourceId: number; release: ExtractedRelease }[];
-  failed: unknown[];
-  snapshots: unknown[];
-  successful: unknown[];
-} {
+function fakeRepo(overrides: Partial<ScrapingRepository> = {}): FakeRepo {
   const upserts: { sourceId: number; release: ExtractedRelease }[] = [];
   const failed: unknown[] = [];
   const snapshots: unknown[] = [];

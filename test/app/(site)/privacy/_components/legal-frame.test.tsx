@@ -3,8 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import { LegalFrame } from '@/app/(site)/privacy/_components/legal-frame';
 import { html } from '../../../../components/render';
 
-const HEADER_HOME_LINK = /^<header[^>]*>.*<a href="\/"/;
-const MAIN_WITH_POLICY = /<main id="main">.*The policy\..*<\/main>/;
+const HEADER_HOME_LINK = /^<header[^>]*>.*<a href="\/"/u;
+const MAIN_WITH_POLICY = /<main id="main">.*The policy\..*<\/main>/u;
 
 describe('LegalFrame', () => {
   const out = html(

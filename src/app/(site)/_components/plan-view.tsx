@@ -4,10 +4,10 @@ import {
   formatPercent,
   formatSize,
 } from '@/lib/intl';
-import type { ScoredMovie } from '@/domain/catalog';
 
 import { posterUrl } from '../_lib/tmdb-image';
 import { scoreColor } from '../_lib/movie-style';
+import type { ScoredMovie } from '@/domain/catalog';
 
 /** Compact size formatter used by the plan rows. */
 function fmtSize(bytes: number | null): string {

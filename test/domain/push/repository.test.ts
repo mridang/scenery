@@ -1,7 +1,5 @@
-import { databaseFrom, type Database } from '@/domain/db/client';
 import { beforeEach, describe, expect, it } from '@jest/globals';
-
-import type { DatabaseSync } from 'node:sqlite';
+import { databaseFrom } from '@/domain/db/client';
 
 import { PushSubscriptionRepository } from '@/domain/push/repository';
 import { subscriptionId } from '@/lib/push/subscription-id';
@@ -11,6 +9,8 @@ import {
   recordStatements,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
+import type { Database } from '@/domain/db/client';
+import type { DatabaseSync } from 'node:sqlite';
 
 let d1: D1Database;
 let raw: DatabaseSync;

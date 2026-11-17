@@ -8,7 +8,7 @@ import type { OperationStatus, OperationType } from '@/domain/db/enums';
 import type { OperationRow } from './repository';
 
 const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 
 /** An operation as the API shows it. Absent members are unknown, never null. */
 export interface OperationResource {
@@ -47,11 +47,16 @@ export function operationResource(
   };
 }
 
+/** What a stored operation carries as its result, when it has one. */
+interface StoredResult {
+  readonly result?: unknown;
+}
+
 /** The result of a stored operation: an error if the run was cut short, none if it never ended. */
 function storedResult(
   row: Readonly<OperationRow>,
   abandoned: boolean,
-): { readonly result?: unknown } {
+): StoredResult {
   if (abandoned) {
     return { result: { error: 'The run did not finish.' } };
   }

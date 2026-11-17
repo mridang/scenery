@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import { BRAND_NAME } from '@/app/_brand';
 import { BrandMark, Logo } from '@/components/site/logo';
-import { cssClassesOf, html } from '../../components/render';
+import { cssClassesOf, html } from '../render';
 
 describe('Logo', () => {
   it('is the mark and the name, linking home', () => {
@@ -23,7 +23,8 @@ describe('BrandMark', () => {
   it('is a decorative drawing in the brand colour, sized by its class', () => {
     const out = html(<BrandMark className="size-14" />);
     expect(out).toContain('aria-hidden="true"');
-    expect(cssClassesOf(out, 'svg')).toContain('text-brand');
-    expect(cssClassesOf(out, 'svg')).toContain('size-14');
+    const classes = cssClassesOf(out, 'svg');
+    expect(classes).toContain('text-brand');
+    expect(classes).toContain('size-14');
   });
 });

@@ -10,8 +10,9 @@
 import { JsonClient } from '@/lib/http';
 
 import { detectHdr, detectQuality, detectRemux } from '../parsing';
+import { ApibayResponseSchema } from './models';
+import type { ApibayStream } from './models';
 import type { LookupResult, ParsedTorrent, TorrentProvider } from '../types';
-import { ApibayResponseSchema, type ApibayStream } from './models';
 import type { ApibayOptions } from './types';
 
 const EMPTY_HASH = '0000000000000000000000000000000000000000';

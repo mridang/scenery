@@ -6,11 +6,18 @@
  * (the item). The route files just mount their handlers.
  */
 
-import { database, type Database } from '@/domain/db/client';
-import { ApiController, type RouteContext } from '@/lib/core/api';
-import { created, ok, problems, readJsonObject } from '@/lib/core/api';
+import { database } from '@/domain/db/client';
+import {
+  ApiController,
+  created,
+  ok,
+  problems,
+  readJsonObject,
+} from '@/lib/core/api';
 import { isSubscriptionId, subscriptionId } from '@/lib/push/subscription-id';
 import { PushSubscriptionRepository } from './repository';
+import type { RouteContext } from '@/lib/core/api';
+import type { Database } from '@/domain/db/client';
 
 /** Per-request context for the push subscriptions API. */
 interface PushCtx {
@@ -41,16 +48,15 @@ function checkSubscription(
 ): CheckedSubscription | readonly string[] {
   const { endpoint, keys } = body;
   const { p256dh, auth } = (keys ?? {}) as Readonly<Record<string, unknown>>;
-  const errors: string[] = [];
-  if (typeof endpoint !== 'string' || !endpoint.startsWith('https://')) {
-    errors.push('endpoint: must be an https URL.');
-  }
-  if (typeof p256dh !== 'string' || !p256dh) {
-    errors.push('keys.p256dh: required.');
-  }
-  if (typeof auth !== 'string' || !auth) {
-    errors.push('keys.auth: required.');
-  }
+  const errors = [
+    ...(typeof endpoint !== 'string' || !endpoint.startsWith('https://')
+      ? ['endpoint: must be an https URL.']
+      : []),
+    ...(typeof p256dh !== 'string' || !p256dh
+      ? ['keys.p256dh: required.']
+      : []),
+    ...(typeof auth !== 'string' || !auth ? ['keys.auth: required.'] : []),
+  ];
   return errors.length > 0
     ? errors
     : {

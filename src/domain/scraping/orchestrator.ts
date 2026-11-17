@@ -107,6 +107,7 @@ export class ScrapeOrchestrator {
 
     const releases = source.extract(html);
     const now = new Date().toISOString();
+    // eslint-disable-next-line functional/no-loop-statements -- releases are upserted one at a time, in order
     for (const release of releases) {
       await this.repo.upsertRelease(sourceId, release, now);
     }

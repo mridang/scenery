@@ -24,7 +24,7 @@ function intOrNull(input: string | undefined): number | null {
   if (input === undefined || input === 'N/A') {
     return null;
   }
-  const value = Number.parseInt(input.replaceAll(/[^0-9-]/g, ''), 10);
+  const value = Number.parseInt(input.replaceAll(/[^0-9-]/gu, ''), 10);
   return Number.isFinite(value) ? value : null;
 }
 
