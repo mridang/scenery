@@ -115,7 +115,6 @@ export const NOT_FOUND_LINK: Readonly<{ href: string; label: string }> | null =
 /** The reassurance on the error pages, after "Something went wrong". */
 export const ERROR_REASSURANCE = 'Try again in a moment.';
 
-// eslint-disable-next-line tslop/no-reexports-outside-entrypoints -- the app shell reads these brand names from here, in every app
 export {
   SITE_TITLE as BRAND_TITLE,
   SITE_NAME as BRAND_SHORT_NAME,
