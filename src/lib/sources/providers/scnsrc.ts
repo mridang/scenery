@@ -1,24 +1,22 @@
 import { requestPage } from '../request-page';
 import type { ExtractedRelease, FetchResult, Source } from '../types';
 
-const ORDINAL_SUFFIX = /(\d)(?:st|nd|rd|th)/;
+const ORDINAL_SUFFIX = /(\d)(?:st|nd|rd|th)/u;
 
 const BASE_URL = 'https://www.scnsrc.me/category/films/hd/';
 
-const POST_RE = /class="post"\s+id="post-(\d+)"/g;
-const IMDB_RE = /imdb\.com\/title\/(tt\d+)/i;
-const AUTHOR_RE = /<a\s+href="[^"]*\/author\/[^"]*"[^>]*>([^<]+)<\/a>/;
-const DATE_RE = /<span class="date">([^<]+)<\/span>/;
-const CATEGORY_RE = /rel="category tag"[^>]*>([^<]+)</g;
-const IMG_RE = /<img[^>]+src="([^"]+)"/;
-const EXCERPT_RE = /<p[^>]*>([\s\S]*?)<\/p>/;
-
-const WHITESPACE = /\s*/y;
+const POST_RE = /class="post"\s+id="post-(\d+)"/gu;
+const IMDB_RE = /imdb\.com\/title\/(tt\d+)/iu;
+const AUTHOR_RE = /<a\s+href="[^"]*\/author\/[^"]*"[^>]*>([^<]+)<\/a>/u;
+const DATE_RE = /<span class="date">([^<]+)<\/span>/u;
+const CATEGORY_RE = /rel="category tag"[^>]*>([^<]+)</gu;
+const IMG_RE = /<img[^>]+src="([^"]+)"/u;
+const EXCERPT_RE = /<p[^>]*>([\s\S]*?)<\/p>/u;
 
 /** Where the whitespace run that starts at `from` ends. */
 function skipWhitespace(text: string, from: number): number {
-  WHITESPACE.lastIndex = from;
-  return from + (WHITESPACE.exec(text)?.[0].length ?? 0);
+  const whitespace = Object.assign(/\s*/uy, { lastIndex: from });
+  return from + (whitespace.exec(text)?.[0].length ?? 0);
 }
 
 /** The `href="..."` of an anchor opened at `at`: its value and where it ends. */
@@ -69,17 +67,17 @@ function quotedValue(
  * Every `prefix` inside the tag that starts at `from` (before its first `>`),
  * last one first, as `[^>]*prefix` tries them.
  */
-function* prefixesInTag(
+function prefixesInTag(
   text: string,
   from: number,
   prefix: string,
-): Generator<number> {
+): readonly number[] {
   const gt = text.indexOf('>', from);
-  let at = text.lastIndexOf(prefix, gt === -1 ? Infinity : gt - 1);
-  while (at >= from) {
-    yield at;
-    at = at === 0 ? -1 : text.lastIndexOf(prefix, at - 1);
-  }
+  const last = gt === -1 ? text.length - 1 : gt - 1;
+  return Array.from(
+    { length: Math.max(0, last - from + 1) },
+    (_, offset) => last - offset,
+  ).filter((at) => text.startsWith(prefix, at));
 }
 
 /** Where `<h2>` and the whitespace after it end, when an anchor opens there. */
@@ -93,53 +91,41 @@ function afterHeading(chunk: string, at: number): number {
  * `/<h2>\s*<a\s+href="([^"]+)"[^>]*title="Goto\s+([^"]+)"[^>]*>([^<]+)<\/a>/`.
  */
 export function findTitleLink(chunk: string): [string, string] | undefined {
-  for (
-    let at = chunk.indexOf('<h2>');
-    at !== -1;
-    at = chunk.indexOf('<h2>', at + 1)
-  ) {
-    const link = hrefAfter(chunk, afterHeading(chunk, at), '<a');
-    const text = link ? linkText(chunk, link.end) : undefined;
-    if (link && text !== undefined) {
-      return [link.href, text];
-    }
-  }
-  return undefined;
+  return chunk
+    .matchAll(/<h2>/gu)
+    .map(({ index: at }): [string, string] | undefined => {
+      const link = hrefAfter(chunk, afterHeading(chunk, at), '<a');
+      const text = link ? linkText(chunk, link.end) : undefined;
+      return link && text !== undefined ? [link.href, text] : undefined;
+    })
+    .find((found) => found !== undefined);
 }
 
 /** The text of the anchor whose `title="Goto ..."` sits in the tag from `from`. */
 function linkText(chunk: string, from: number): string | undefined {
   const prefix = 'title="Goto';
-  for (const found of prefixesInTag(chunk, from, prefix)) {
-    const title = quotedValue(chunk, found, prefix);
-    const close = title ? chunk.indexOf('>', title.end) : -1;
-    const end = close === -1 ? -1 : chunk.indexOf('<', close + 1);
-    if (end > close + 1 && chunk.startsWith('</a>', end)) {
-      return chunk.slice(close + 1, end);
-    }
-  }
-  return undefined;
+  return prefixesInTag(chunk, from, prefix)
+    .map((found) => {
+      const title = quotedValue(chunk, found, prefix);
+      const close = title ? chunk.indexOf('>', title.end) : -1;
+      const end = close === -1 ? -1 : chunk.indexOf('<', close + 1);
+      return end > close + 1 && chunk.startsWith('</a>', end)
+        ? chunk.slice(close + 1, end)
+        : undefined;
+    })
+    .find((text) => text !== undefined);
 }
 
 /** Removes every `<...>` run; same result as `replaceAll(/<[^>]+>/g, '')`, in linear time. */
 function stripTags(html: string): string {
-  let out = '';
-  let from = 0;
-  let open = html.indexOf('<');
-  while (open !== -1) {
-    const close = html.indexOf('>', open + 1);
-    if (close === -1) {
-      break;
-    }
-    if (close === open + 1) {
-      open = html.indexOf('<', open + 1);
-    } else {
-      out += html.slice(from, open);
-      from = close + 1;
-      open = html.indexOf('<', from);
-    }
+  const open = html.indexOf('<');
+  const close = open === -1 ? -1 : html.indexOf('>', open + 1);
+  if (close === -1) {
+    return html;
   }
-  return out + html.slice(from);
+  return close === open + 1
+    ? html.slice(0, open + 1) + stripTags(html.slice(open + 1))
+    : html.slice(0, open) + stripTags(html.slice(close + 1));
 }
 
 function parseScnsrcDate(raw: string | undefined): string | undefined {
@@ -209,7 +195,7 @@ export class ScnsrcSource implements Source {
       const imageUrl = IMG_RE.exec(chunk)?.[1];
       const excerptRaw = EXCERPT_RE.exec(chunk)?.[1];
       const excerpt = excerptRaw
-        ? stripTags(excerptRaw).replaceAll(/\s+/g, ' ').trim()
+        ? stripTags(excerptRaw).replaceAll(/\s+/gu, ' ').trim()
         : undefined;
 
       return [

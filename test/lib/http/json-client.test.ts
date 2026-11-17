@@ -5,11 +5,14 @@ import { JsonClient } from '@/lib/http';
 
 const Thing = z.object({ id: z.number(), name: z.string() });
 
+/** A fetcher and the URLs it was asked for. */
+interface FetcherOf {
+  readonly fetcher: typeof fetch;
+  readonly seen: string[];
+}
+
 /** A fetcher that answers one canned response and records the URL it saw. */
-function fetcherOf(
-  body: string,
-  status = 200,
-): { fetcher: typeof fetch; seen: string[] } {
+function fetcherOf(body: string, status = 200): FetcherOf {
   const seen: string[] = [];
   const fetcher = async (url: URL | RequestInfo) => {
     seen.push(url instanceof Request ? url.url : String(url));

@@ -1,6 +1,6 @@
-import type { TorrentProvider } from '../types';
 import { ApibayProvider } from './apibay';
 import { TorrentioProvider } from './torrentio';
+import type { TorrentProvider } from '../types';
 
 export { ApibayProvider } from './apibay';
 export { TorrentioProvider } from './torrentio';

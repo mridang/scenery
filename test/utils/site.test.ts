@@ -11,8 +11,8 @@ import {
   TERMS_LAST_UPDATED,
 } from '@/utils/site';
 
-const HTTPS_ORIGIN = /^https:\/\/[^/]+$/;
-const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+const HTTPS_ORIGIN = /^https:\/\/[^/]+$/u;
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/u;
 
 describe('site identity', () => {
   it('gives the site an https address with no trailing slash', () => {

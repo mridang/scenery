@@ -7,18 +7,19 @@ import {
   jest,
 } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
-import type { OperationRequest } from '@/domain/operations/types';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../../lib/core/db/sqlite-d1';
+import type { DatabaseSync } from 'node:sqlite';
 
-const runOperation = jest.fn<(request: OperationRequest) => Promise<unknown>>(
-  async () => ({ done: true }),
-);
+import type { OperationRequest } from '@/domain/operations/types';
+
+const runOperation = jest.fn<
+  (request: OperationRequest) => Promise<Record<string, unknown>>
+>(async () => ({ done: true }));
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/domain/operations/run', () => ({
   runOperation,
 }));
@@ -32,6 +33,7 @@ const install = async (env: Record<string, unknown> = {}) => {
   restore?.();
   const made = await sqliteD1(...APP_MIGRATIONS);
   raw = made.raw;
+  // eslint-disable-next-line require-atomic-updates -- the test's setup runs one step at a time, so nothing else assigns it meanwhile
   restore = installCloudflareContext(made.d1, env);
 };
 

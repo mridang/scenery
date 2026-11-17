@@ -38,6 +38,7 @@ export function installFakeTracing(): FakeTracing {
       fake.exceptions.push(exception);
     },
   };
+  // eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
   jest.unstable_mockModule(
     'cloudflare:workers',
     () => ({

@@ -6,9 +6,11 @@
  * found/not-found/error policy lives in the domain enricher.
  */
 
-import { JsonClient, type Result } from '@/lib/http';
+import { JsonClient } from '@/lib/http';
+import { OmdbResponseSchema } from './models';
+import type { Result } from '@/lib/http';
 
-import { OmdbResponseSchema, type OmdbResponse } from './models';
+import type { OmdbResponse } from './models';
 
 /** Construction options for {@link OmdbClient}. @public */
 export interface OmdbClientOptions {

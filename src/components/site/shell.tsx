@@ -1,6 +1,5 @@
-import type { ReactElement, ReactNode } from 'react';
-
 import { SkipLink } from './skip-link';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * The frame shared by every page: the skip link, then the page. The header and

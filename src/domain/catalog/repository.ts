@@ -1,6 +1,5 @@
-import { count, desc, eq, isNull, max, sql, type SQL } from 'drizzle-orm';
+import { count, desc, eq, isNull, max, sql } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import {
   fetchAttempts,
   movies,
@@ -13,8 +12,10 @@ import {
 } from '../db/schema';
 
 import { PRESTIGE_IDS } from './prestige';
-import type { CatalogStats, LangCount, LastUpdate, ScoredRow } from './types';
 import { BUDGET_BYTES } from './types';
+import type { CatalogStats, LangCount, LastUpdate, ScoredRow } from './types';
+import type { SQL } from 'drizzle-orm';
+import type { Database } from '@/domain/db/client';
 
 /** Bayesian minimum-vote threshold (M) used to weight ratings. */
 const VOTE_PRIOR = 50;

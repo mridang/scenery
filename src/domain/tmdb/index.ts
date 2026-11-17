@@ -5,10 +5,10 @@
  * helper that wires them to the TMDB client (`@/lib/tmdb`) and a transport.
  */
 
-import type { Database } from '@/domain/db/client';
 import { TmdbClient } from '@/lib/tmdb';
 import { TmdbEnricher } from './enricher';
 import { TmdbRepository } from './repository';
+import type { Database } from '@/domain/db/client';
 
 export { TmdbEnricher } from './enricher';
 export { TmdbRepository } from './repository';

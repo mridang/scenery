@@ -1,13 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  fetchCapped,
-  isPublicWebUrl,
-  type CappedFetchOptions,
-  type SafeFetcher,
-  type SafeRequestInit,
-} from '@/lib/safe-fetch';
+import { fetchCapped, isPublicWebUrl } from '@/lib/safe-fetch';
 import insecure from '../fixtures/insecure-urls.json';
+import type {
+  CappedFetchOptions,
+  SafeFetcher,
+  SafeRequestInit,
+} from '@/lib/safe-fetch';
 
 describe('isPublicWebUrl', () => {
   it.each([
@@ -23,6 +22,7 @@ describe('isPublicWebUrl', () => {
   it.each([
     'file:///etc/passwd',
     insecure.ftp,
+    // eslint-disable-next-line no-script-url -- the test checks that a script address is refused
     'javascript:alert(1)',
     'data:text/html,<p>x</p>',
     'https://localhost/x.jpg',
@@ -68,19 +68,26 @@ const OPTIONS: CappedFetchOptions = {
   acceptsType: () => true,
 };
 
+/** A streaming response and whether the reader gave up on it. */
+interface StreamingResponse {
+  readonly response: Response;
+  readonly state: { cancelled: boolean };
+}
+
 /** A response that serves `pieces` and records whether the reader gave up on it. */
 function streaming(
   pieces: readonly (string | Uint8Array)[],
   headers: Record<string, string> = {},
-): { readonly response: Response; readonly state: { cancelled: boolean } } {
+): StreamingResponse {
   const encoder = new TextEncoder();
   const state = { cancelled: false };
   const body = new ReadableStream<Uint8Array>({
     start(controller) {
-      for (const piece of pieces)
+      for (const piece of pieces) {
         controller.enqueue(
           typeof piece === 'string' ? encoder.encode(piece) : piece,
         );
+      }
       controller.close();
     },
     cancel() {
@@ -90,11 +97,14 @@ function streaming(
   return { response: new Response(body, { headers }), state };
 }
 
-/** A fetcher that serves the given responses in turn and remembers each call. */
-function serving(...responses: readonly Response[]): {
+/** A fetcher and the calls made on it. */
+interface ServingFetcher {
   readonly fetcher: SafeFetcher;
   readonly calls: { readonly url: string; readonly init: SafeRequestInit }[];
-} {
+}
+
+/** A fetcher that serves the given responses in turn and remembers each call. */
+function serving(...responses: readonly Response[]): ServingFetcher {
   const calls: { url: string; init: SafeRequestInit }[] = [];
   const fetcher: SafeFetcher = async (url, init) => {
     calls.push({ url, init });
@@ -286,6 +296,7 @@ describe('fetchCapped', () => {
       expect(result.ok && new TextDecoder().decode(result.bytes)).toBe('real');
       expect(calls).toEqual(['https://a.com/real']);
     } finally {
+      // eslint-disable-next-line require-atomic-updates -- the test puts back the fetch it replaced, and nothing else assigns it meanwhile
       globalThis.fetch = real;
     }
   });
@@ -421,11 +432,11 @@ describe('fetchCapped failure', () => {
 
   it('says timeout when the site is too slow to answer', async () => {
     const fetcher: SafeFetcher = async (_url, init) =>
-      new Promise((_resolve, reject) =>
-        init.signal?.addEventListener('abort', () =>
-          reject(init.signal?.reason),
-        ),
-      );
+      new Promise((_resolve, reject) => {
+        init.signal?.addEventListener('abort', () => {
+          reject(init.signal?.reason);
+        });
+      });
     expect(
       await fetchCapped('https://a.com/x', {
         ...OPTIONS,

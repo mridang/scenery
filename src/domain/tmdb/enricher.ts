@@ -1,6 +1,12 @@
 import type { TmdbClient, TmdbPersonResponse } from '@/lib/tmdb';
 import type { TmdbRepository } from './repository';
 
+/** How much a person's credits weigh, and how many there are. */
+interface PrestigeScore {
+  readonly prestige: number;
+  readonly totalCredits: number;
+}
+
 /**
  * TMDB enrichment, exposed as granular units of work — one unit per
  * public method — so a caller (a Workflow step, a queue consumer, or a
@@ -29,6 +35,7 @@ export class TmdbEnricher {
     if (!result.ok) {
       throw new Error(`tmdb genres: ${result.error}`);
     }
+    // eslint-disable-next-line functional/no-loop-statements -- genres are upserted one at a time, in order
     for (const genre of result.value) {
       await this.repo.upsertGenre(genre);
     }
@@ -108,10 +115,7 @@ export class TmdbEnricher {
     const have = await this.repo.knownPeopleIds();
     const stale = await this.repo.stalePeopleIds();
     const todo = new Set<number>([...wanted].filter((id) => !have.has(id)));
-    for (const id of stale) {
-      todo.add(id);
-    }
-    return [...todo].slice(0, limit);
+    return [...todo.union(new Set(stale))].slice(0, limit);
   }
 
   /**
@@ -165,10 +169,7 @@ export class TmdbEnricher {
     return this.recomputeTalentScores();
   }
 
-  private computePrestige(person: TmdbPersonResponse): {
-    prestige: number;
-    totalCredits: number;
-  } {
+  private computePrestige(person: TmdbPersonResponse): PrestigeScore {
     const cast = person.movie_credits?.cast ?? [];
     const crew = (person.movie_credits?.crew ?? []).filter(
       (credit) => credit.job === 'Director',
@@ -187,6 +188,7 @@ export class TmdbEnricher {
     const inputs = await this.repo.movieTalentInputs();
     const prestige = await this.repo.peoplePrestigeMap();
 
+    // eslint-disable-next-line functional/no-loop-statements -- scores are written one at a time, in order
     for (const row of inputs) {
       const ids = [row.cast_ids, row.director_ids]
         .filter((raw): raw is string => raw !== null)

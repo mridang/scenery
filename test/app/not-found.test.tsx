@@ -4,8 +4,8 @@ import { NOT_FOUND_LINK, NOT_FOUND_NOTE } from '@/app/_brand';
 import NotFound, { metadata } from '@/app/not-found';
 import { html } from '../components/render';
 
-const NOT_FOUND_HEADING = /<h1[^>]*>We couldn&#x27;t find that page<\/h1>/;
-const BACK_TO_HOME_LINK = /<a [^>]*href="\/"[^>]*>Back to the home page<\/a>/;
+const NOT_FOUND_HEADING = /<h1[^>]*>We couldn&#x27;t find that page<\/h1>/u;
+const BACK_TO_HOME_LINK = /<a [^>]*href="\/"[^>]*>Back to the home page<\/a>/u;
 
 describe('NotFound', () => {
   const out = html(<NotFound />);

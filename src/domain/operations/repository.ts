@@ -7,9 +7,9 @@
 
 import { eq } from 'drizzle-orm';
 
+import { operations } from '../db/schema';
 import type { Database } from '@/domain/db/client';
 import type { OperationStatus, OperationType } from '@/domain/db/enums';
-import { operations } from '../db/schema';
 
 /** A stored operation. */
 export type OperationRow = typeof operations.$inferSelect;

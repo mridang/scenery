@@ -1,7 +1,7 @@
 import { and, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { movies, tmdbGenres, tmdbMovies, tmdbPeople } from '../db/schema';
+import type { Database } from '@/domain/db/client';
 import type {
   TmdbCastEntry,
   TmdbCrewEntry,
@@ -11,7 +11,7 @@ import type {
   TmdbPersonResponse,
 } from '@/lib/tmdb';
 
-const FOUR_DIGIT_YEAR_PREFIX = /^\d{4}/;
+const FOUR_DIGIT_YEAR_PREFIX = /^\d{4}/u;
 
 /**
  * Database access for TMDB enrichment. The enricher orchestrates calls
@@ -178,13 +178,15 @@ export class TmdbRepository {
     const directorRows: readonly TmdbCrewEntry[] = crew.filter(
       (member) => member.job === 'Director',
     );
-    const directors = directorRows.map((member) => member.name).filter(Boolean);
-    const directorIds = directorRows
-      .map((member) => member.id)
-      .filter((id): id is number => typeof id === 'number');
-    const castIds = cast
-      .map((member: TmdbCastEntry) => member.id)
-      .filter((id): id is number => typeof id === 'number');
+    const directors = directorRows.flatMap((member) =>
+      member.name ? [member.name] : [],
+    );
+    const directorIds = directorRows.flatMap((member) =>
+      typeof member.id === 'number' ? [member.id] : [],
+    );
+    const castIds = cast.flatMap((member: TmdbCastEntry) =>
+      typeof member.id === 'number' ? [member.id] : [],
+    );
     const companies = (movie.production_companies ?? [])
       .filter((company) => company.id !== undefined)
       .map((company) => ({ id: company.id, name: company.name }));

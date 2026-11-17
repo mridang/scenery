@@ -4,6 +4,11 @@ import type { Source } from './types';
 export { DdlvalleySource, ScnsrcSource } from './providers';
 export type { ExtractedRelease, FetchResult, Source } from './types';
 
+/** The sources, by slug. */
+interface SourceMap {
+  readonly [slug: string]: Source;
+}
+
 /**
  * Build the registered set of sources over a given transport. The caller
  * (a composition root) decides how bytes are fetched and passes a label
@@ -16,7 +21,7 @@ export type { ExtractedRelease, FetchResult, Source } from './types';
 export function buildSources(
   transport: typeof fetch,
   fetcherLabel: string,
-): Record<string, Source> {
+): SourceMap {
   return {
     scnsrc: new ScnsrcSource(transport, fetcherLabel),
     ddlvalley: new DdlvalleySource(transport, fetcherLabel),

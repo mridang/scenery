@@ -1,12 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  PushNotifier,
-  type DeliveryResult,
-  type PushPayload,
-  type PushSubscriptionRecord,
-  type PushSubscriptionStore,
-  type WebPushSender,
+import { PushNotifier } from '@/lib/push';
+import type {
+  DeliveryResult,
+  PushPayload,
+  PushSubscriptionRecord,
+  PushSubscriptionStore,
+  WebPushSender,
 } from '@/lib/push';
 
 const PAYLOAD: PushPayload = { title: 't', body: 'b' };
@@ -23,9 +23,7 @@ class FakeStore implements PushSubscriptionStore {
   public async listAll(): Promise<readonly PushSubscriptionRecord[]> {
     return this.records;
   }
-  public async upsert(): Promise<void> {
-    return;
-  }
+  public async upsert(): Promise<void> {}
   public async remove(endpoint: string): Promise<void> {
     this.removed.push(endpoint);
   }

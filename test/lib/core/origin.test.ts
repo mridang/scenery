@@ -79,6 +79,7 @@ describe('originOfSetting', () => {
     undefined,
     '',
     'not a url',
+    // eslint-disable-next-line no-script-url -- the test checks that a script address is refused
     'javascript:alert(1)',
     'ftp://example.com',
   ])('ignores %p', (value) => {

@@ -1,6 +1,5 @@
-import type { ScoredMovie } from '@/domain/catalog';
-
 import { MovieCardMosaic, MovieCardUniform } from './movie-card';
+import type { ScoredMovie } from '@/domain/catalog';
 
 /**
  * Either grid the catalog renders into. Mosaic interleaves a small set
@@ -51,29 +50,22 @@ function mosaicOrder(
     .slice(0, BIG_COUNT);
   const bigIds = new Set(popularity.map((movie) => movie.row.imdb_id));
 
-  const bigs: ScoredMovie[] = [];
-  const smalls: ScoredMovie[] = [];
-  for (const movie of movies) {
-    if (bigIds.has(movie.row.imdb_id)) {
-      bigs.push(movie);
-    } else {
-      smalls.push(movie);
-    }
-  }
+  const bigs = movies.filter((movie) => bigIds.has(movie.row.imdb_id));
+  const smalls = movies.filter((movie) => !bigIds.has(movie.row.imdb_id));
 
   const gapN = Math.max(2, Math.round(smalls.length / (bigs.length + 1)));
-  const out: Array<{ movie: ScoredMovie; big: boolean }> = [];
-  let bi = 0;
-  for (const [index, small] of smalls.entries()) {
-    out.push({ movie: small, big: false });
-    if ((index + 1) % gapN === 0 && bi < bigs.length) {
-      out.push({ movie: bigs[bi]!, big: true });
-      bi += 1;
-    }
-  }
-  while (bi < bigs.length) {
-    out.push({ movie: bigs[bi]!, big: true });
-    bi += 1;
-  }
-  return out;
+  const woven = smalls.flatMap((small, index) => {
+    const big =
+      (index + 1) % gapN === 0 ? bigs[(index + 1) / gapN - 1] : undefined;
+    return big
+      ? [
+          { movie: small, big: false },
+          { movie: big, big: true },
+        ]
+      : [{ movie: small, big: false }];
+  });
+  const rest = bigs
+    .slice(Math.floor(smalls.length / gapN))
+    .map((movie) => ({ movie, big: true }));
+  return [...woven, ...rest];
 }

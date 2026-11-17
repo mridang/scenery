@@ -1,4 +1,4 @@
-const SUBSCRIPTION_ID = /^[0-9a-f]{64}$/;
+const SUBSCRIPTION_ID = /^[0-9a-f]{64}$/u;
 /**
  * @packageDocumentation
  *
@@ -33,6 +33,7 @@ export async function endpointForId(
   endpoints: readonly string[],
   id: string,
 ): Promise<string | undefined> {
+  // eslint-disable-next-line functional/no-loop-statements -- the hashes are computed in order, stopping at the first match
   for (const endpoint of endpoints) {
     if ((await subscriptionId(endpoint)) === id) {
       return endpoint;

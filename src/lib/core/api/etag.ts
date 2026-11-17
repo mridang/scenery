@@ -1,4 +1,4 @@
-const WEAK_ETAG_PREFIX = /^W\//;
+const WEAK_ETAG_PREFIX = /^W\//u;
 /**
  * @packageDocumentation
  *

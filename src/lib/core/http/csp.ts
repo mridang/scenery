@@ -17,7 +17,7 @@ import { replacingHeaders } from './headers';
 import { CSP_REPORT_DIRECTIVES } from './reporting';
 import { EXTRA_DIRECTIVES, EXTRA_IMG_SOURCES } from './site';
 
-const CSP_NONCE = /'nonce-([^']+)'/;
+const CSP_NONCE = /'nonce-([^']+)'/u;
 
 /** A fresh, unguessable nonce: 16 random bytes, base64. */
 // eslint-disable-next-line unicorn/no-keyword-prefix -- newNonce is an exported name used across modules and in tests; renaming it would change the module API

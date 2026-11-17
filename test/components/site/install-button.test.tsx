@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { InstallButton } from '@/components/site/install-button';
-import { html } from '../../components/render';
+import { html } from '../render';
 
 describe('InstallButton', () => {
   // Rendered on the server there is no browser to ask: nothing is offered until

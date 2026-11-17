@@ -4,6 +4,7 @@ import { installFakeTracing } from './observability/fake-tracing';
 
 const tracing = installFakeTracing();
 
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/workflows', () => ({
   ScrapeWorkflow: class ScrapeWorkflow {},
   MovieWorkflow: class MovieWorkflow {},
@@ -100,7 +101,7 @@ describe('scheduled', () => {
   it('does nothing when the workflow is not bound', async () => {
     const log = jest.spyOn(console, 'log').mockImplementation(() => undefined);
     await fire('0 6 * * *', {});
-    expect(log).not.toHaveBeenCalled();
+    expect(log.mock.calls).toEqual([]);
   });
 
   it('logs a cron it does not know and starts nothing', async () => {

@@ -10,8 +10,6 @@
  * names in every app, and holds values only: no components, no side effects.
  */
 
-import type { MetadataRoute } from 'next';
-
 import {
   PRIVACY_LAST_UPDATED,
   SITE_DESCRIPTION,
@@ -19,11 +17,10 @@ import {
   SITE_URL,
   TERMS_LAST_UPDATED,
 } from '@/utils/site';
+import type { MetadataRoute } from 'next';
 
 /** The name of the app, as the wordmark, the tab title suffix and the home-screen label. */
 export const BRAND_NAME = SITE_NAME;
-
-/** The name where space is short: under the home-screen icon, and as the installed app's short name. */
 
 /** The small descriptor under the wordmark and on the social card. */
 export const BRAND_TAGLINE = 'Movie release tracker';

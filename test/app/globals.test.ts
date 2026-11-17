@@ -4,8 +4,8 @@ import path from 'node:path';
 import { describe, expect, it } from '@jest/globals';
 
 const POINTER_CURSOR_RULE =
-  /(button:not\(:disabled\),[^{]*)\{\s*cursor: pointer;/;
-const BARE_BUTTON_SELECTOR = /(^|,)\s*button,/;
+  /(button:not\(:disabled\),[^{]*)\{\s*cursor: pointer;/u;
+const BARE_BUTTON_SELECTOR = /(^|,)\s*button,/u;
 
 const css = await readFile(
   path.join(process.cwd(), 'src', 'app', 'globals.css'),
@@ -21,8 +21,9 @@ describe('globals.css', () => {
         'button:not(:disabled)',
         'summary',
         'select:not(:disabled)',
-      ])
+      ]) {
         expect(rule).toContain(selector);
+      }
       expect(rule).toContain("[role='button']");
     });
 

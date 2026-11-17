@@ -1,3 +1,5 @@
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
 import {
   afterEach,
   beforeEach,
@@ -6,8 +8,6 @@ import {
   it,
   jest,
 } from '@jest/globals';
-import { readdir, readFile } from 'node:fs/promises';
-import path from 'node:path';
 
 import { APP_MIGRATIONS } from './lib/core/db/migrations';
 import { installCloudflareContext, sqliteD1 } from './lib/core/db/sqlite-d1';
@@ -15,11 +15,11 @@ import insecure from './fixtures/insecure-urls.json';
 
 const COLLATOR = new Intl.Collator();
 
-const ROUTE_FILE_SUFFIX = /\/?route\.ts$/;
-const TRAILING_SLASH = /\/$/;
-const OPENAPI_31_VERSION = /^3\.1\./;
-const API_PATH_PREFIX = /^\/api\//;
-const SNAKE_CASE_NAME = /^[a-z][a-z0-9_]*$/;
+const ROUTE_FILE_SUFFIX = /\/?route\.ts$/u;
+const TRAILING_SLASH = /\/$/u;
+const OPENAPI_31_VERSION = /^3\.1\./u;
+const API_PATH_PREFIX = /^\/api\//u;
+const SNAKE_CASE_NAME = /^[a-z][a-z0-9_]*$/u;
 
 /**
  * Ties `openapi.json` to the route files and the controllers behind them: the
@@ -79,13 +79,10 @@ const routeFiles = async (dir: string): Promise<string[]> => {
 
 /** The documented path of a route file, with `[x]` as `{x}`. */
 const pathOf = (file: string): string =>
-  (
-    '/api/' +
-    path
-      .relative(API, file)
-      .replace(ROUTE_FILE_SUFFIX, '')
-      .replaceAll(/\[([a-z_]+)\]/g, '{$1}')
-  ).replace(TRAILING_SLASH, '');
+  `/api/${path
+    .relative(API, file)
+    .replace(ROUTE_FILE_SUFFIX, '')
+    .replaceAll(/\[([a-z_]+)\]/gu, '{$1}')}`.replace(TRAILING_SLASH, '');
 
 /** Every `METHOD /path` a route file under src/app/api exports, with `[x]` as `{x}`. */
 const registered = async (): Promise<string[]> => {
@@ -94,13 +91,14 @@ const registered = async (): Promise<string[]> => {
     files.map(async (file) => {
       const route = pathOf(file);
       const text = await readFile(file, 'utf8');
-      return ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
-        .filter((method) =>
-          new RegExp(
-            String.raw`export (const \{[^}]*\b${method}\b|async function ${method}\b|function ${method}\b|const ${method}\b)`,
-          ).test(text),
-        )
-        .map((method) => `${method} ${route}`);
+      return ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].flatMap((method) =>
+        new RegExp(
+          String.raw`export (const \{[^}]*\b${method}\b|async function ${method}\b|function ${method}\b|const ${method}\b)`,
+          'u',
+        ).test(text)
+          ? [`${method} ${route}`]
+          : [],
+      );
     }),
   );
   return found.flat();
@@ -158,7 +156,7 @@ function check(value: unknown, schema: Json, at = '$'): string[] {
   if (typeof value === 'string') {
     if (
       typeof schema['pattern'] === 'string' &&
-      !new RegExp(schema['pattern']).test(value)
+      !new RegExp(schema['pattern'], 'u').test(value)
     ) {
       errors.push(`${at}: does not match pattern`);
     }
@@ -185,8 +183,9 @@ function check(value: unknown, schema: Json, at = '$'): string[] {
       errors.push(`${at}: repeated items`);
     }
     if (schema['items']) {
-      for (const [index, item] of value.entries())
+      for (const [index, item] of value.entries()) {
         errors.push(...check(item, schema['items'] as Json, `${at}[${index}]`));
+      }
     }
   }
   if (actual === 'object') {
@@ -216,9 +215,10 @@ function check(value: unknown, schema: Json, at = '$'): string[] {
   return errors;
 }
 
-const runOperation = jest.fn<(request: unknown) => Promise<unknown>>(
-  async () => ({ done: true }),
-);
+const runOperation = jest.fn<
+  (request: unknown) => Promise<Record<string, unknown>>
+>(async () => ({ done: true }));
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/domain/operations/run', () => ({ runOperation }));
 
 /** The mounted handlers, by `METHOD /path`. */
@@ -226,8 +226,12 @@ type Handler = (
   request: Request,
   route?: { params: Promise<Record<string, string>> },
 ) => Promise<Response>;
+/** The route modules, by documented path. */
+interface RouteModules {
+  readonly [path: string]: Readonly<Record<string, unknown>>;
+}
 /** Every route module, by documented path; a test keeps this list and the route files in step. */
-const MODULES: Record<string, Record<string, unknown>> = {
+const MODULES: RouteModules = {
   '/api/operations': await import('@/app/api/operations/route'),
   '/api/operations/{id}': await import('@/app/api/operations/[id]/route'),
   '/api/push/configuration': await import('@/app/api/push/configuration/route'),
@@ -584,7 +588,9 @@ describe('openapi.json', () => {
       }
       return value;
     });
-    for (const ref of references) expect(resolve(ref)).toBeDefined();
+    for (const ref of references) {
+      expect(resolve(ref)).toBeDefined();
+    }
   });
 
   it('describes exactly the routes under src/app/api, one operation each', async () => {
@@ -610,31 +616,37 @@ describe('openapi.json', () => {
       ).toBe(true);
       expect(responseFor(operation, 429)).toBeDefined();
       const schemes = Object.keys(document.components['securitySchemes'] ?? {});
-      for (const requirement of operation.security ?? [])
-        for (const scheme of Object.keys(requirement))
+      for (const requirement of operation.security ?? []) {
+        for (const scheme of Object.keys(requirement)) {
           expect({ key, scheme, known: schemes.includes(scheme) }).toEqual({
             key,
             scheme,
             known: true,
           });
+        }
+      }
     }
   });
 
   it('keeps everything outside /api out of the contract', () => {
-    for (const path of Object.keys(document.paths))
+    for (const path of Object.keys(document.paths)) {
       expect(path).toMatch(API_PATH_PREFIX);
+    }
   });
 
   it('names its properties in snake_case, except the Push API members', () => {
     const names = new Set<string>();
     JSON.stringify(document.components['schemas'], (key, value: unknown) => {
       if (key === 'properties' && value && typeof value === 'object') {
-        for (const name of Object.keys(value)) names.add(name);
+        for (const name of Object.keys(value)) {
+          names.add(name);
+        }
       }
       return value;
     });
-    for (const name of [...names].filter((name) => name !== 'expirationTime'))
+    for (const name of [...names].filter((name) => name !== 'expirationTime')) {
       expect(name).toMatch(SNAKE_CASE_NAME);
+    }
   });
 });
 
@@ -739,6 +751,7 @@ describe.each(subjects)('$key', ({ key, valid, invalid }) => {
     it('is open where no secret is set, as the spec says', async () => {
       restore();
       const made = await sqliteD1(...APP_MIGRATIONS);
+      // eslint-disable-next-line require-atomic-updates -- the test's setup runs one step at a time, so nothing else assigns it meanwhile
       restore = installCloudflareContext(made.d1, {});
       const call = await valid();
       const res = await send({
@@ -786,12 +799,13 @@ describe('documented statuses', () => {
       const promised = Object.keys(operation.responses)
         .map(Number)
         .filter((status) => status !== 429 && status !== 200 && status !== 201);
-      for (const status of promised)
+      for (const status of promised) {
         expect({ key, status, made: produced.has(status) }).toEqual({
           key,
           status,
           made: true,
         });
+      }
       expect([...produced].every((s) => responseFor(operation, s))).toBe(true);
     }
   });

@@ -8,21 +8,18 @@
  * lives with the components, not in the server `lib/core/api` package.
  */
 
+/** The members of a parsed JSON value, or none when it is not an object. */
+type Members = readonly (readonly [string, unknown])[];
+
 /** The string at `key` in a parsed JSON object, if there is one. */
-function stringMember(body: unknown, key: string): string | undefined {
-  const value: unknown =
-    typeof body === 'object' && body !== null
-      ? Reflect.get(body, key)
-      : undefined;
+function stringMember(members: Members, key: string): string | undefined {
+  const value = members.find(([name]) => name === key)?.[1];
   return typeof value === 'string' ? value : undefined;
 }
 
 /** The strings in the array at `key` in a parsed JSON object (none if it isn't an array). */
-function stringListMember(body: unknown, key: string): readonly string[] {
-  const value: unknown =
-    typeof body === 'object' && body !== null
-      ? Reflect.get(body, key)
-      : undefined;
+function stringListMember(members: Members, key: string): readonly string[] {
+  const value = members.find(([name]) => name === key)?.[1];
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string')
     : [];
@@ -32,11 +29,13 @@ function stringListMember(body: unknown, key: string): readonly string[] {
 export async function problemMessage(res: Response): Promise<string> {
   try {
     const body: unknown = await res.json();
+    const members: Members =
+      typeof body === 'object' && body !== null ? Object.entries(body) : [];
     const main =
-      stringMember(body, 'detail') ??
-      stringMember(body, 'title') ??
+      stringMember(members, 'detail') ??
+      stringMember(members, 'title') ??
       `Request failed (${res.status}).`;
-    const errors = stringListMember(body, 'errors');
+    const errors = stringListMember(members, 'errors');
     return errors.length > 0 ? `${main} ${errors.join(' ')}` : main;
   } catch {
     return `Request failed (${res.status}).`;

@@ -1,10 +1,10 @@
 import { formatSize } from '@/lib/intl';
-import type { ScoredMovie } from '@/domain/catalog';
 
 import { formatRuntime } from '../_lib/format';
 import { backdropUrl } from '../_lib/tmdb-image';
 
 import { RatingsRow } from './ratings';
+import type { ScoredMovie } from '@/domain/catalog';
 
 /**
  * Big editorial card sitting above the catalog grid. The "what to watch
@@ -46,14 +46,11 @@ export function Hero({ movie }: Readonly<{ movie: ScoredMovie | null }>) {
     .filter(Boolean)
     .join('  ·  ');
 
-  let status: string;
-  if (row.torrent_status === 'success' && (row.torrent_count ?? 0) > 0) {
-    status = row.best_quality ?? 'Available';
-  } else if (row.torrent_status === 'empty') {
-    status = 'No torrent yet';
-  } else {
-    status = 'Pending';
-  }
+  const hasTorrent =
+    row.torrent_status === 'success' && (row.torrent_count ?? 0) > 0;
+  const unavailable =
+    row.torrent_status === 'empty' ? 'No torrent yet' : 'Pending';
+  const status = hasTorrent ? (row.best_quality ?? 'Available') : unavailable;
   const sizeText =
     row.best_size_bytes && row.best_size_bytes > 0
       ? formatSize(row.best_size_bytes)

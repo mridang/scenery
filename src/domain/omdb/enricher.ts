@@ -7,11 +7,12 @@
  * `Response: "False"` convention implies, and persists it.
  */
 
+import { OmdbClient } from '@/lib/omdb';
+import { OmdbRepository } from './repository';
+import type { OmdbResponse } from '@/lib/omdb';
 import type { Result } from '@/lib/http';
-import { OmdbClient, type OmdbResponse } from '@/lib/omdb';
 
 import type { Database } from '@/domain/db/client';
-import { OmdbRepository } from './repository';
 import type { OmdbEnrichResult } from './types';
 
 /** How to reach OMDb: the key, an optional base URL and transport. @public */
@@ -90,19 +91,18 @@ export class OmdbEnricher {
    */
   public async sweepPending(limit: number): Promise<OmdbSweepResult> {
     const pending = await this.repo.pending(limit);
-    let found = 0;
-    let notFound = 0;
-    let errored = 0;
-    for (const imdbId of pending) {
-      const status = await this.enrichOne(imdbId);
-      if (status === 'found') {
-        found += 1;
-      } else if (status === 'not_found') {
-        notFound += 1;
-      } else {
-        errored += 1;
-      }
-    }
+    // One at a time and in order, so the sweep never hits the API in parallel.
+    const statuses = await pending.reduce<
+      Promise<readonly ('found' | 'not_found' | 'error')[]>
+    >(
+      async (done, imdbId) => [...(await done), await this.enrichOne(imdbId)],
+      Promise.resolve([]),
+    );
+    const count = (wanted: string): number =>
+      statuses.filter((status) => status === wanted).length;
+    const found = count('found');
+    const notFound = count('not_found');
+    const errored = statuses.length - found - notFound;
     return { scanned: pending.length, found, notFound, errored };
   }
 }

@@ -2,9 +2,8 @@ import Link from 'next/link';
 
 import { timeAgo } from '@/app/(site)/_lib/format';
 import { BRAND_NAME } from '@/app/_brand';
-import type { LastUpdate } from '@/domain/catalog';
-
 import { BrandMark } from './logo';
+import type { LastUpdate } from '@/domain/catalog';
 
 /**
  * The list of upstream data sources surfaced as favicon chips in the

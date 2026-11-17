@@ -1,11 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import {
-  DatabaseSync,
-  type SQLInputValue,
-  type StatementSync,
-} from 'node:sqlite';
+import { DatabaseSync } from 'node:sqlite';
+import type { SQLInputValue, SQLOutputValue, StatementSync } from 'node:sqlite';
 
 /** What a prepared statement answers, shaped like D1's `D1Result`. */
 interface Result {
@@ -60,7 +57,7 @@ class Statement {
     return this.prepared(true).all(...this.params);
   }
 
-  async first(): Promise<unknown> {
+  async first(): Promise<Record<string, SQLOutputValue> | null> {
     return this.prepared(false).get(...this.params) ?? null;
   }
 }
@@ -140,15 +137,18 @@ export function installCloudflareContext(
   };
 }
 
+/** A D1 binding and the SQL of every statement prepared through it. */
+export interface RecordedStatements {
+  readonly d1: D1Database;
+  readonly statements: string[];
+}
+
 /**
  * Wrap a D1 binding so that every statement prepared through it is recorded,
  * in order. Lets a test check the plan of the queries one call issues (see
  * {@link queryPlan}) without the call being changed to expose them.
  */
-export function recordStatements(d1: D1Database): {
-  readonly d1: D1Database;
-  readonly statements: string[];
-} {
+export function recordStatements(d1: D1Database): RecordedStatements {
   const statements: string[] = [];
   const recorded = {
     prepare: (sql: string) => {

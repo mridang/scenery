@@ -3,9 +3,9 @@ import { describe, expect, it } from '@jest/globals';
 import { LEGAL_LINKS, SiteFooter } from '@/components/site/site-footer';
 import { html } from '../render';
 
-const PRIVACY_LINK = /<a [^>]*href="\/privacy"[^>]*>Privacy<\/a>/;
-const TERMS_LINK = /<a [^>]*href="\/terms"[^>]*>Terms<\/a>/;
-const SHOWN_COUNT = />3<\/span> of\s*5\s*shown/;
+const PRIVACY_LINK = /<a [^>]*href="\/privacy"[^>]*>Privacy<\/a>/u;
+const TERMS_LINK = /<a [^>]*href="\/terms"[^>]*>Terms<\/a>/u;
+const SHOWN_COUNT = />3<\/span> of\s*5\s*shown/u;
 
 describe('SiteFooter', () => {
   const out = html(

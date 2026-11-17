@@ -4,8 +4,6 @@ import { is } from 'drizzle-orm';
 import { SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core';
 import { beforeAll, describe, expect, it } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
 import {
   fetchAttempts,
   movies,
@@ -22,6 +20,7 @@ import {
 } from '@/domain/db/schema';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteD1 } from '../../lib/core/db/sqlite-d1';
+import type { DatabaseSync } from 'node:sqlite';
 
 const COLLATOR = new Intl.Collator();
 
@@ -90,8 +89,9 @@ describe('the schema file and the migrations', () => {
       // Every index the schema names exists (the database may carry more, such
       // as the legacy unique constraint on recipes.drive_file_id).
       const present = indexesOf(raw, name);
-      for (const index of config.indexes)
+      for (const index of config.indexes) {
         expect(present).toContain(index.config.name);
+      }
     },
   );
 });
@@ -99,7 +99,7 @@ describe('the schema file and the migrations', () => {
 describe('migration 0016_movie_newest_posted', () => {
   it('backfills the newest release time of every existing movie', async () => {
     const before = APP_MIGRATIONS.filter(
-      (file) => file.localeCompare('0016') < 0,
+      (file) => COLLATOR.compare(file, '0016') < 0,
     );
     const { raw: old } = await sqliteD1(...before);
     old.exec(`

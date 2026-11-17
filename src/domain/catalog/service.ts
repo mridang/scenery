@@ -1,6 +1,6 @@
-import type { Database } from '@/domain/db/client';
 import { CatalogRepository } from './repository';
 import { labelsForPrestigeIds } from './prestige';
+import type { Database } from '@/domain/db/client';
 import type {
   CatalogReader,
   CatalogStats,

@@ -20,8 +20,8 @@ import {
   EDGE_TTL_SECONDS,
 } from './site';
 
-const PORT_SUFFIX = /:\d+$/;
-const IPV4_MAPPED_LOOPBACK = /^(::ffff:)?127\./;
+const PORT_SUFFIX = /:\d+$/u;
+const IPV4_MAPPED_LOOPBACK = /^(::ffff:)?127\./u;
 
 /** The most query parameters a kept page may carry. */
 const MAX_PARAMS = 8;
@@ -72,16 +72,14 @@ function allowedQuery(
   if (entries.length > MAX_PARAMS) {
     return null;
   }
-  const names = new Set<string>();
-  for (const [name, value] of entries) {
-    if (
-      !allowed.has(name) ||
-      names.has(name) ||
-      value.length > MAX_VALUE_LENGTH
-    ) {
-      return null;
-    }
-    names.add(name);
+  const names = new Set(entries.map(([name]) => name));
+  if (
+    names.size !== entries.length ||
+    entries.some(
+      ([name, value]) => !allowed.has(name) || value.length > MAX_VALUE_LENGTH,
+    )
+  ) {
+    return null;
   }
   return new URLSearchParams(
     entries.toSorted(([a], [b]) => {
@@ -194,20 +192,23 @@ export async function withFreshNonce(
 
 /** Whether a value can be used as the edge cache: it answers `match` and `put`. */
 function isCache(value: unknown): value is Cache {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
   return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof Reflect.get(value, 'match') === 'function' &&
-    typeof Reflect.get(value, 'put') === 'function'
+    'match' in value &&
+    typeof value.match === 'function' &&
+    'put' in value &&
+    typeof value.put === 'function'
   );
 }
 
 /** Cloudflare's per-colo cache; absent when running under plain Node. */
 export function edgeCache(): Cache | undefined {
-  const store: unknown = Reflect.get(globalThis, 'caches');
+  const store: unknown = globalThis.caches;
   const cache: unknown =
-    typeof store === 'object' && store !== null
-      ? Reflect.get(store, 'default')
+    typeof store === 'object' && store !== null && 'default' in store
+      ? store.default
       : undefined;
   return isCache(cache) ? cache : undefined;
 }

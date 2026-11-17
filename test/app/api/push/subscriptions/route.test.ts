@@ -4,9 +4,11 @@ import { subscriptionId } from '@/lib/push/subscription-id';
 import insecure from '../../../../fixtures/insecure-urls.json';
 
 const store = new Map<string, { p256dh: string; auth: string }>();
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/domain/db/client', () => ({
   database: () => ({}),
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/domain/push/repository', () => ({
   PushSubscriptionRepository: class {
     public async listAll() {

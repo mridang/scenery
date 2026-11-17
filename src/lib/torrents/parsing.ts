@@ -3,12 +3,12 @@
 
 import type { Quality } from './types';
 
-const RESOLUTION_2160P = /(?:^|\W)(?:2160p|4K|UHD)(?:\W|$)/i;
-const RESOLUTION_1080P = /(?:^|\W)1080p(?:\W|$)/i;
-const RESOLUTION_720P = /(?:^|\W)720p(?:\W|$)/i;
-const RESOLUTION_480P = /(?:^|\W)480p(?:\W|$)/i;
-const HDR_MARKER = /\bHDR\b|\bDV\b|Dolby\s*Vision/i;
-const REMUX_MARKER = /\bREMUX\b/i;
+const RESOLUTION_2160P = /(?:^|\W)(?:2160p|4K|UHD)(?:\W|$)/iu;
+const RESOLUTION_1080P = /(?:^|\W)1080p(?:\W|$)/iu;
+const RESOLUTION_720P = /(?:^|\W)720p(?:\W|$)/iu;
+const RESOLUTION_480P = /(?:^|\W)480p(?:\W|$)/iu;
+const HDR_MARKER = /\bHDR\b|\bDV\b|Dolby\s*Vision/iu;
+const REMUX_MARKER = /\bREMUX\b/iu;
 
 export function detectQuality(haystack: string): Quality | null {
   if (RESOLUTION_2160P.test(haystack)) {

@@ -8,13 +8,13 @@
 
 import { eq, isNull } from 'drizzle-orm';
 
+import { endpointForId, subscriptionId } from '@/lib/push/subscription-id';
+import { pushSubscriptions } from '../db/schema';
 import type { Database } from '@/domain/db/client';
 import type {
   PushSubscriptionRecord,
   PushSubscriptionStore,
 } from '@/lib/push/types';
-import { endpointForId, subscriptionId } from '@/lib/push/subscription-id';
-import { pushSubscriptions } from '../db/schema';
 
 /** D1-backed {@link PushSubscriptionStore}: operations over `push_subscriptions`. @public */
 export class PushSubscriptionRepository implements PushSubscriptionStore {
@@ -92,6 +92,7 @@ export class PushSubscriptionRepository implements PushSubscriptionStore {
       .select({ endpoint: pushSubscriptions.endpoint })
       .from(pushSubscriptions)
       .where(isNull(pushSubscriptions.id));
+    // eslint-disable-next-line functional/no-loop-statements -- each legacy row is backfilled in order, one write at a time
     for (const { endpoint } of legacy) {
       await this.db
         .update(pushSubscriptions)

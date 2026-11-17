@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { TmdbClient } from '@/lib/tmdb/client';
 import type { TmdbFindResponse } from '@/lib/tmdb';
 
-const API_KEY_OPTION = /apiKey/;
+const API_KEY_OPTION = /apiKey/u;
 
 /** Returns the item at `index`, failing the test loudly when it is absent. */
 function nth<T>(items: readonly T[], index: number): T {
@@ -14,6 +14,12 @@ function nth<T>(items: readonly T[], index: number): T {
   return item;
 }
 
+/** A fetch stub and the URLs it was called with. */
+interface StubTransport {
+  readonly transport: typeof fetch;
+  readonly calls: string[];
+}
+
 /**
  * Build a `typeof fetch` stub that records the URL it was called with and
  * returns a canned response. The TmdbClient only ever passes a `URL` (or a
@@ -21,7 +27,7 @@ function nth<T>(items: readonly T[], index: number): T {
  */
 function stubTransport(
   handler: (url: string) => { status: number; body: string },
-): { transport: typeof fetch; calls: string[] } {
+): StubTransport {
   const calls: string[] = [];
   const transport = async (input: URL | RequestInfo): Promise<Response> => {
     const url = input instanceof Request ? input.url : String(input);

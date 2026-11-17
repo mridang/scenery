@@ -1,11 +1,11 @@
-import type { NextRequest } from 'next/server';
 import { database } from '@/domain/db/client';
 import { CatalogService, parseViewOptions } from '@/domain/catalog';
-import type { ScoredMovie } from '@/domain/catalog';
 import { bestTrackers } from '@/lib/magnet';
 import { genericTransport, withRetry } from '@/lib/transport';
 
 import { buildFeed } from './_lib/rss';
+import type { ScoredMovie } from '@/domain/catalog';
+import type { NextRequest } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 

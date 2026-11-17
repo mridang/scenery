@@ -1,5 +1,4 @@
 import { formatSize } from '@/lib/intl';
-import type { ScoredMovie } from '@/domain/catalog';
 import { magnetPath } from '@/lib/magnet';
 
 import { formatRuntime } from '../_lib/format';
@@ -12,6 +11,7 @@ import {
 import { posterUrl } from '../_lib/tmdb-image';
 
 import { RatingsRow } from './ratings';
+import type { ScoredMovie } from '@/domain/catalog';
 
 /** Compact "1.2 GB" / "640 MB"; null when the torrent has no measured size. */
 function fmtSizeShort(bytes: number | null): string | null {
@@ -21,8 +21,11 @@ function fmtSizeShort(bytes: number | null): string | null {
   return formatSize(bytes);
 }
 
-interface CardProps {
+interface UniformCardProps {
   readonly movie: ScoredMovie;
+}
+
+interface MosaicCardProps extends UniformCardProps {
   /** When true, render the larger 2×2 mosaic variant (top-by-votes). */
   readonly big?: boolean;
 }
@@ -35,7 +38,7 @@ interface CardProps {
  * Mirrors the mockup pixel-for-pixel; status colours and score tiers
  * come from {@link movieStyle}.
  */
-export function MovieCardUniform({ movie }: CardProps) {
+export function MovieCardUniform({ movie }: UniformCardProps) {
   const { row, genres, cast, score, tier, studios } = movie;
   const title = row.tmdb_title ?? row.latest_release_title ?? row.imdb_id;
   const state = torrentState(movie);
@@ -190,7 +193,7 @@ export function MovieCardUniform({ movie }: CardProps) {
  * for the top-by-votes titles {@link MovieGrid} distributes through
  * the layout.
  */
-export function MovieCardMosaic({ movie, big = false }: CardProps) {
+export function MovieCardMosaic({ movie, big = false }: MosaicCardProps) {
   const { row, genres, cast, score, tier, studios } = movie;
   const title = row.tmdb_title ?? row.latest_release_title ?? row.imdb_id;
   const state = torrentState(movie);

@@ -1,8 +1,4 @@
-import {
-  WorkflowEntrypoint,
-  type WorkflowEvent,
-  type WorkflowStep,
-} from 'cloudflare:workers';
+import { WorkflowEntrypoint } from 'cloudflare:workers';
 
 import { databaseFrom } from '@/domain/db/client';
 import { setErrorContext } from '@/lib/core/observability/context';
@@ -11,6 +7,7 @@ import { ScrapeOrchestrator, ScrapingRepository } from '@/domain/scraping';
 import { buildSources } from '@/lib/sources';
 import { buildEnricher } from '@/domain/tmdb';
 import { browserTransport, genericTransport, withRetry } from '@/lib/transport';
+import type { WorkflowEvent, WorkflowStep } from 'cloudflare:workers';
 
 /**
  * Parameters accepted by {@link ScrapeWorkflow}.

@@ -31,10 +31,11 @@ export class JsonClient {
     req: JsonRequest,
     schema: ZodType<T>,
   ): Promise<Result<T>> {
-    const url = new URL(this.baseUrl + req.path);
-    if (req.query) {
-      url.search = new URLSearchParams(req.query).toString();
-    }
+    const url = Object.assign(
+      new URL(this.baseUrl + req.path),
+      req.query ? { search: new URLSearchParams(req.query).toString() } : {},
+    );
+    // eslint-disable-next-line functional/no-let -- the status read from the response must still be reported when reading the body then fails
     let status: number | undefined;
     try {
       const response = await this.fetcher(url, req.init);
@@ -43,9 +44,11 @@ export class JsonClient {
       if (!response.ok) {
         return { ok: false, error: `http ${response.status}`, raw, status };
       }
-      let parsed: unknown;
       try {
-        parsed = JSON.parse(raw) as unknown;
+        const decoded = schema.safeParse(JSON.parse(raw) as unknown);
+        return decoded.success
+          ? { ok: true, value: decoded.data, raw, status }
+          : { ok: false, error: decoded.error.message, raw, status };
       } catch (error) {
         return {
           ok: false,
@@ -54,10 +57,6 @@ export class JsonClient {
           status,
         };
       }
-      const decoded = schema.safeParse(parsed);
-      return decoded.success
-        ? { ok: true, value: decoded.data, raw, status }
-        : { ok: false, error: decoded.error.message, raw, status };
     } catch (error) {
       return {
         ok: false,

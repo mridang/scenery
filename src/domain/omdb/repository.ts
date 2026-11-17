@@ -7,8 +7,8 @@
 
 import { and, eq, isNull, or, sql } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { tmdbMovies } from '../db/schema';
+import type { Database } from '@/domain/db/client';
 import type { OmdbEnrichResult } from './types';
 
 /** Read + write OMDB columns on tmdb_movies. @public */

@@ -19,7 +19,10 @@ export const WORKER_URL = `/sw.js?${new URLSearchParams({
 export interface WorkerEnvironment {
   readonly production: boolean;
   readonly serviceWorker?: Readonly<{
-    register: (script: string, options: { scope: string }) => Promise<unknown>;
+    register: (
+      script: string,
+      options: { scope: string },
+    ) => Promise<ServiceWorkerRegistration | undefined>;
   }>;
   readonly readyState: DocumentReadyState;
   readonly onLoad: (listener: () => void) => () => void;

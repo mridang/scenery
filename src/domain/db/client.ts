@@ -6,10 +6,7 @@
  * schema and the D1 binding meet, so `lib/core` stays schema-agnostic.
  */
 
-import {
-  createDatabase,
-  type Database as GenericDatabase,
-} from '@/lib/core/db/client';
+import { createDatabase } from '@/lib/core/db/client';
 import { getDB } from '@/lib/core/runtime';
 import {
   fetchAttempts,
@@ -25,6 +22,7 @@ import {
   torrentLookups,
   torrents,
 } from './schema';
+import type { Database as GenericDatabase } from '@/lib/core/db/client';
 
 const schema = {
   fetchAttempts,
