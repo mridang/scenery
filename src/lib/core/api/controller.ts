@@ -162,7 +162,7 @@ function toResponse(
  */
 export class ApiController<Ctx = Request> {
   readonly #options: ApiControllerOptions<Ctx>;
-  readonly #endpoints = new Map<HttpMethod, Endpoint<unknown, unknown, Ctx>>();
+  #endpoints = new Map<HttpMethod, Endpoint<unknown, unknown, Ctx>>();
 
   constructor(options: ApiControllerOptions<Ctx> = {}) {
     this.#options = options;
@@ -170,8 +170,10 @@ export class ApiController<Ctx = Request> {
 
   /** Register an endpoint for its method. */
   on<Input, Output>(endpoint: Endpoint<Input, Output, Ctx>): this {
-    // eslint-disable-next-line functional/immutable-data -- endpoints are registered once, while the controller is being set up
-    this.#endpoints.set(endpoint.method, endpoint);
+    this.#endpoints = new Map([
+      ...this.#endpoints,
+      [endpoint.method, endpoint],
+    ]);
     return this;
   }
 
@@ -210,16 +212,14 @@ export class ApiController<Ctx = Request> {
    * methods actually registered are present.
    */
   handlers(): Record<HttpMethod, RouteHandler> {
-    const handlers: Partial<Record<HttpMethod, RouteHandler>> =
-      Object.fromEntries(
-        Array.from(
-          this.#endpoints,
-          ([method, endpoint]): [HttpMethod, RouteHandler] => [
-            method,
-            async (request, route = {}) => this.#run(endpoint, request, route),
-          ],
-        ),
-      );
-    return handlers as Record<HttpMethod, RouteHandler>;
+    return Object.fromEntries(
+      Array.from(
+        this.#endpoints,
+        ([method, endpoint]): [HttpMethod, RouteHandler] => [
+          method,
+          async (request, route = {}) => this.#run(endpoint, request, route),
+        ],
+      ),
+    ) as Record<HttpMethod, RouteHandler>;
   }
 }

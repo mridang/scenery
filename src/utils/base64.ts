@@ -1,4 +1,3 @@
-const BASE64_PADDING = /(?:={1,2})$/u;
 /**
  * @packageDocumentation
  *
@@ -8,6 +7,9 @@ const BASE64_PADDING = /(?:={1,2})$/u;
  * these, and they run unchanged on Cloudflare Workers and under Jest because
  * `btoa`/`atob` are globals in both.
  */
+
+/** One or two `=` padding characters at the end of base64 text. */
+const BASE64_PADDING = /={1,2}$/u;
 
 /** Encode raw bytes as standard (padded) base64. */
 export function bytesToBase64(bytes: Uint8Array): string {

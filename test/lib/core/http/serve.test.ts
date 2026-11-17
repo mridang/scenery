@@ -7,11 +7,18 @@ const { nonceOf, genericLimits, serve, serverTiming } =
   await import('@/lib/core/http');
 import type { ServeApp } from '@/lib/core/http';
 
-const SHORT_UUID = /^[0-9a-f-]{36}$/u;
-const SERVER_TIMING_SKIP =
+/** Matches uuid format. */
+const UUID_FORMAT = /^[0-9a-f-]{36}$/u;
+
+/** Matches full server timing. */
+const FULL_SERVER_TIMING =
   /^total;dur=\d+(\.\d)?, edge;desc="skip", app;dur=\d+(\.\d)?$/u;
-const SERVER_TIMING_TOTAL = /^total;dur=/u;
-const SERVER_TIMING_WITH_DB = /^db;dur=3, total;/u;
+
+/** Matches total timing prefix. */
+const TOTAL_TIMING_PREFIX = /^total;dur=/u;
+
+/** Matches db and total timing. */
+const DB_AND_TOTAL_TIMING = /^db;dur=3, total;/u;
 
 /** What is rate limited in these tests: the classes every app has, with sessions in `app_session`. */
 const limits = genericLimits('app_session');
@@ -19,13 +26,8 @@ const limits = genericLimits('app_session');
 const pages: ReadonlySet<string> = new Set(['/']);
 /** The query names these tests let a kept page carry. */
 const queryParams: ReadonlySet<string> = new Set(['alpha', 'beta']);
-/** A rate limit binding, and how often it was asked. */
-interface RefusingBinding {
-  limit: () => Promise<{ success: boolean }>;
-  asked: number;
-}
 /** A rate limit binding that refuses everyone, and counts how often it was asked. */
-function refusing(): RefusingBinding {
+function refusing() {
   const binding = {
     asked: 0,
     limit: async () => {
@@ -214,7 +216,7 @@ describe('serve — flow id', () => {
         { app, limits },
       );
       const id = response.headers.get('x-flow-id') ?? '';
-      expect(id).toMatch(SHORT_UUID);
+      expect(id).toMatch(UUID_FORMAT);
       expect(app.seen[0]?.headers.get('x-flow-id')).toBe(id);
     }
   });
@@ -467,7 +469,7 @@ describe('serve — Server-Timing', () => {
       app: appAnswering(() => Response.json({})),
       limits,
     });
-    expect(response.headers.get('server-timing')).toMatch(SERVER_TIMING_SKIP);
+    expect(response.headers.get('server-timing')).toMatch(FULL_SERVER_TIMING);
   });
 
   it('reports a miss, then a hit without the app, for a kept page', async () => {
@@ -499,7 +501,7 @@ describe('serve — Server-Timing', () => {
       { app: appAnswering(html), limits },
     );
     const timing = response.headers.get('server-timing');
-    expect(timing).toMatch(SERVER_TIMING_TOTAL);
+    expect(timing).toMatch(TOTAL_TIMING_PREFIX);
     expect(timing).not.toContain('app;dur=');
   });
 
@@ -510,9 +512,7 @@ describe('serve — Server-Timing', () => {
       ),
       limits,
     });
-    expect(response.headers.get('server-timing')).toMatch(
-      SERVER_TIMING_WITH_DB,
-    );
+    expect(response.headers.get('server-timing')).toMatch(DB_AND_TOTAL_TIMING);
   });
 });
 

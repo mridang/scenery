@@ -20,8 +20,10 @@ import {
   EDGE_TTL_SECONDS,
 } from './site';
 
-const PORT_SUFFIX = /:\d+$/u;
-const IPV4_MAPPED_LOOPBACK = /^(::ffff:)?127\./u;
+/** A port at the end of a `Host` header value, such as `:8787`. */
+const HOST_PORT_SUFFIX = /:\d+$/u;
+/** A caller address in `127.0.0.0/8`, bare or IPv4-mapped. */
+const LOOPBACK_IPV4_CALLER = /^(::ffff:)?127\./u;
 
 /** The most query parameters a kept page may carry. */
 const MAX_PARAMS = 8;
@@ -44,13 +46,13 @@ const LOCAL_HOSTS: ReadonlySet<string> = new Set([
 function isLocal(request: Request, url: URL): boolean {
   const host = (request.headers.get('host') ?? '')
     .toLowerCase()
-    .replace(PORT_SUFFIX, '');
+    .replace(HOST_PORT_SUFFIX, '');
   const caller = request.headers.get('cf-connecting-ip') ?? '';
   return (
     LOCAL_HOSTS.has(url.hostname) ||
     LOCAL_HOSTS.has(host) ||
     caller === '::1' ||
-    IPV4_MAPPED_LOOPBACK.test(caller)
+    LOOPBACK_IPV4_CALLER.test(caller)
   );
 }
 
@@ -72,9 +74,9 @@ function allowedQuery(
   if (entries.length > MAX_PARAMS) {
     return null;
   }
-  const names = new Set(entries.map(([name]) => name));
+  const names = entries.map(([name]) => name);
   if (
-    names.size !== entries.length ||
+    new Set(names).size !== names.length ||
     entries.some(
       ([name, value]) => !allowed.has(name) || value.length > MAX_VALUE_LENGTH,
     )
@@ -82,12 +84,7 @@ function allowedQuery(
     return null;
   }
   return new URLSearchParams(
-    entries.toSorted(([a], [b]) => {
-      if (a === b) {
-        return 0;
-      }
-      return a < b ? -1 : 1;
-    }),
+    entries.toSorted(([a], [b]) => Number(a > b) - Number(a < b)),
   );
 }
 
@@ -205,7 +202,7 @@ function isCache(value: unknown): value is Cache {
 
 /** Cloudflare's per-colo cache; absent when running under plain Node. */
 export function edgeCache(): Cache | undefined {
-  const store: unknown = globalThis.caches;
+  const store: unknown = 'caches' in globalThis ? globalThis.caches : undefined;
   const cache: unknown =
     typeof store === 'object' && store !== null && 'default' in store
       ? store.default

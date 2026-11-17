@@ -31,29 +31,41 @@ export class JsonClient {
     req: JsonRequest,
     schema: ZodType<T>,
   ): Promise<Result<T>> {
-    const url = Object.assign(
-      new URL(this.baseUrl + req.path),
-      req.query ? { search: new URLSearchParams(req.query).toString() } : {},
-    );
-    // eslint-disable-next-line functional/no-let -- the status read from the response must still be reported when reading the body then fails
-    let status: number | undefined;
+    const target = new URL(this.baseUrl + req.path);
+    const url = req.query
+      ? new URL(`?${new URLSearchParams(req.query).toString()}`, target)
+      : target;
     try {
       const response = await this.fetcher(url, req.init);
-      status = response.status;
-      const raw = await response.text();
-      if (!response.ok) {
-        return { ok: false, error: `http ${response.status}`, raw, status };
-      }
+      const { ok, status } = response;
       try {
-        const decoded = schema.safeParse(JSON.parse(raw) as unknown);
+        const raw = await response.text();
+        if (!ok) {
+          return { ok: false, error: `http ${status}`, raw, status };
+        }
+        const parsed = (():
+          { ok: true; value: unknown } | { ok: false; error: string } => {
+          try {
+            return { ok: true, value: JSON.parse(raw) as unknown };
+          } catch (error) {
+            return {
+              ok: false,
+              error: error instanceof Error ? error.message : 'invalid JSON',
+            };
+          }
+        })();
+        if (!parsed.ok) {
+          return { ok: false, error: parsed.error, raw, status };
+        }
+        const decoded = schema.safeParse(parsed.value);
         return decoded.success
           ? { ok: true, value: decoded.data, raw, status }
           : { ok: false, error: decoded.error.message, raw, status };
       } catch (error) {
         return {
           ok: false,
-          error: error instanceof Error ? error.message : 'invalid JSON',
-          raw,
+          error: error instanceof Error ? error.message : String(error),
+          raw: '',
           status,
         };
       }
@@ -62,7 +74,6 @@ export class JsonClient {
         ok: false,
         error: error instanceof Error ? error.message : String(error),
         raw: '',
-        status,
       };
     }
   }

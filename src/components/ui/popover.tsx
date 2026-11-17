@@ -75,7 +75,7 @@ type Placement = Readonly<{ top: number; right: number }>;
  * hides itself, and the `popover` attribute does nothing.
  * @param panel - Any element; the API is looked for on it.
  */
-export function supportsPopover(panel: Element): boolean {
+export function supportsPopover(panel: Partial<HTMLElement>): boolean {
   return 'popover' in panel;
 }
 
@@ -334,22 +334,15 @@ export function PopoverStatus({
   children,
 }: Readonly<{ children: ReactNode }>): ReactElement {
   return (
-    // eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- a paragraph with the status role keeps the markup the panel and its tests rely on
-    <p
-      role="status"
-      className="flex h-10 items-center gap-3 px-3 text-sm font-medium text-muted"
-    >
+    <output className="flex h-10 items-center gap-3 px-3 text-sm font-medium text-muted">
       {children}
-    </p>
+    </output>
   );
 }
 
 /** A thin rule between groups of items in a popover panel. */
 export function PopoverSeparator(): ReactElement {
-  return (
-    // eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- a div keeps the plain 1px rule; an hr brings its own border and margins
-    <div className="my-1.5 h-px bg-ink/10" role="separator" />
-  );
+  return <hr className="my-1.5 h-px border-0 bg-ink/10" />;
 }
 
 /** A small, non-interactive caption in a popover panel (who is signed in, say). */

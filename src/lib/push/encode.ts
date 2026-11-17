@@ -1,4 +1,3 @@
-const BASE64_PADDING = /(?:={1,2})$/u;
 /**
  * @packageDocumentation
  *
@@ -19,10 +18,12 @@ export function b64uDecode(input: string): Uint8Array {
 
 /** Encode a byte buffer as base64url (no `=` padding). @public */
 export function b64uEncode(bytes: Uint8Array): string {
-  return btoa(Array.from(bytes, (byte) => String.fromCodePoint(byte)).join(''))
+  const s = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join('');
+  const [unpadded = ''] = btoa(s)
     .replaceAll('+', '-')
     .replaceAll('/', '_')
-    .replace(BASE64_PADDING, '');
+    .split('=');
+  return unpadded;
 }
 
 /** Concatenate any number of byte arrays in order. @public */
