@@ -93,7 +93,7 @@ export async function runTorrentLookups(
   const byProvider = Object.fromEntries(
     Object.entries(
       Object.groupBy(resolvedList, (resolved) => resolved.provider),
-    ).map(([provider, group]) => [provider, group?.length ?? 0]),
+    ).map(([provider, group]) => [provider, group.length]),
   );
 
   return {

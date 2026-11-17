@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 /** The display name of each prestige studio, by TMDB production-company id. */
 interface PrestigeLabels {
   readonly [studioId: number]: string;
@@ -54,8 +56,8 @@ export function labelsForPrestigeIds(json: string | null): string[] {
   }
   const ids = ((): readonly number[] => {
     try {
-      const parsed: unknown = JSON.parse(json);
-      return Array.isArray(parsed) ? (parsed as number[]) : [];
+      const parsed = z.array(z.number()).safeParse(JSON.parse(json));
+      return parsed.success ? parsed.data : [];
     } catch {
       return [];
     }

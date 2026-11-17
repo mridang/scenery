@@ -27,10 +27,10 @@ jest.unstable_mockModule('@/domain/operations/run', () => ({
 const { POST } = await import('@/app/api/operations/route');
 
 let raw: DatabaseSync;
-let restore: () => void;
+let restore: () => void = () => undefined;
 
 const install = async (env: Record<string, unknown> = {}) => {
-  restore?.();
+  restore();
   const made = await sqliteD1(...APP_MIGRATIONS);
   raw = made.raw;
   // eslint-disable-next-line require-atomic-updates -- the test's setup runs one step at a time, so nothing else assigns it meanwhile

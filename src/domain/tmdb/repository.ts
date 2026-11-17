@@ -1,5 +1,7 @@
 import { and, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
+import { z } from 'zod';
 
+import { TmdbMovieResponseSchema } from '@/lib/tmdb';
 import { movies, tmdbGenres, tmdbMovies, tmdbPeople } from '../db/schema';
 import type { Database } from '@/domain/db/client';
 import type {
@@ -12,6 +14,9 @@ import type {
 } from '@/lib/tmdb';
 
 const FOUR_DIGIT_YEAR_PREFIX = /^\d{4}/u;
+
+/** The JSON array of TMDB ids stored in `cast_ids` / `director_ids`. */
+const ID_LIST = z.array(z.number());
 
 /**
  * Database access for TMDB enrichment. The enricher orchestrates calls
@@ -61,7 +66,7 @@ export class TmdbRepository {
   public async pendingCreditIds(
     limit: number,
   ): Promise<{ imdb_id: string; tmdb_id: number }[]> {
-    return this.db
+    const rows = await this.db
       .select({ imdb_id: tmdbMovies.imdb_id, tmdb_id: tmdbMovies.tmdb_id })
       .from(tmdbMovies)
       .where(
@@ -71,7 +76,12 @@ export class TmdbRepository {
           isNull(tmdbMovies.credits_fetched_at),
         ),
       )
-      .limit(limit) as Promise<{ imdb_id: string; tmdb_id: number }[]>;
+      .limit(limit);
+    return rows.flatMap((row) =>
+      row.tmdb_id === null
+        ? []
+        : [{ imdb_id: row.imdb_id, tmdb_id: row.tmdb_id }],
+    );
   }
 
   /** Persist an HTTP error against a movie's tmdb_movies row. */
@@ -238,7 +248,7 @@ export class TmdbRepository {
    * director_ids, production_companies, original_language). No network.
    */
   public async backfillFromRawCredits(): Promise<number> {
-    const rows = (await this.db
+    const stored = await this.db
       .select({
         imdb_id: tmdbMovies.imdb_id,
         raw_credits: tmdbMovies.raw_credits,
@@ -255,12 +265,17 @@ export class TmdbRepository {
             isNull(tmdbMovies.original_language),
           ),
         ),
-      )) as { imdb_id: string; raw_credits: string }[];
+      );
+    const rows = stored.flatMap((row) =>
+      row.raw_credits === null
+        ? []
+        : [{ imdb_id: row.imdb_id, raw_credits: row.raw_credits }],
+    );
 
     return rows.reduce<Promise<number>>(async (accP, row) => {
       const updated = await accP;
       try {
-        const json = JSON.parse(row.raw_credits) as TmdbMovieResponse;
+        const json = TmdbMovieResponseSchema.parse(JSON.parse(row.raw_credits));
         const crew = json.credits?.crew ?? [];
         const cast = (json.credits?.cast ?? []).slice(0, 5);
         const directorIds = crew
@@ -314,7 +329,7 @@ export class TmdbRepository {
         .filter((raw): raw is string => raw !== null)
         .flatMap((raw) => {
           try {
-            return JSON.parse(raw) as number[];
+            return ID_LIST.parse(JSON.parse(raw));
           } catch {
             return [];
           }
@@ -340,7 +355,7 @@ export class TmdbRepository {
       .filter((raw): raw is string => raw !== null)
       .flatMap((raw) => {
         try {
-          return JSON.parse(raw) as number[];
+          return ID_LIST.parse(JSON.parse(raw));
         } catch {
           return [];
         }

@@ -8,10 +8,12 @@ import {
   it,
   jest,
 } from '@jest/globals';
+import { z } from 'zod';
 
 import { APP_MIGRATIONS } from './lib/core/db/migrations';
 import { installCloudflareContext, sqliteD1 } from './lib/core/db/sqlite-d1';
 import insecure from './fixtures/insecure-urls.json';
+import type { HttpMethod, RouteContext } from '@/lib/core/api';
 
 const COLLATOR = new Intl.Collator();
 
@@ -26,36 +28,45 @@ const SNAKE_CASE_NAME = /^[a-z][a-z0-9_]*$/u;
  * spec and the code are the same contract, so drift in either fails here.
  */
 
-type Json = Record<string, unknown>;
-interface Operation {
-  readonly operationId?: string;
-  readonly tags?: readonly string[];
-  readonly summary?: string;
-  readonly security?: readonly Record<string, readonly string[]>[];
-  readonly requestBody?: {
-    readonly content: Record<string, { readonly schema: Json }>;
-  };
-  readonly responses: Record<string, Json>;
-}
+const JsonObject = z.record(z.string(), z.unknown());
+type Json = z.infer<typeof JsonObject>;
+const StringList = z.array(z.string());
+const OperationSchema = z.looseObject({
+  operationId: z.string().optional(),
+  tags: StringList.optional(),
+  summary: z.string().optional(),
+  security: z.array(z.record(z.string(), StringList)).optional(),
+  requestBody: z
+    .object({
+      content: z.record(z.string(), z.object({ schema: JsonObject })),
+    })
+    .optional(),
+  responses: z.record(z.string(), JsonObject),
+});
+type Operation = z.infer<typeof OperationSchema>;
 
-const document = JSON.parse(
-  await readFile(new URL('../openapi.json', import.meta.url), 'utf8'),
-) as {
-  readonly openapi: string;
-  readonly paths: Record<string, Record<string, Operation>>;
-  readonly components: Record<string, Record<string, Json>>;
-};
+const document = z
+  .object({
+    openapi: z.string(),
+    paths: z.record(z.string(), z.record(z.string(), OperationSchema)),
+    components: z.record(z.string(), z.record(z.string(), JsonObject)),
+  })
+  .parse(
+    JSON.parse(
+      await readFile(new URL('../openapi.json', import.meta.url), 'utf8'),
+    ),
+  );
 
 const METHODS = ['get', 'post', 'put', 'patch', 'delete'];
 
 /** Every `METHOD /path` in the spec. */
 const documented = (): Map<string, Operation> => {
   const found = new Map<string, Operation>();
-  for (const [path, item] of Object.entries(document.paths)) {
+  for (const [route, item] of Object.entries(document.paths)) {
     for (const method of METHODS) {
       const operation = item[method];
       if (operation) {
-        found.set(`${method.toUpperCase()} ${path}`, operation);
+        found.set(`${method.toUpperCase()} ${route}`, operation);
       }
     }
   }
@@ -106,10 +117,12 @@ const registered = async (): Promise<string[]> => {
 
 /** Resolve a `#/components/...` reference. */
 const resolve = (ref: string): Json =>
-  ref
-    .slice(2)
-    .split('/')
-    .reduce<unknown>((node, key) => (node as Json)[key], document) as Json;
+  JsonObject.parse(
+    ref
+      .slice(2)
+      .split('/')
+      .reduce<unknown>((node, key) => JsonObject.parse(node)[key], document),
+  );
 
 const actualType = (value: unknown): string => {
   if (value === null) {
@@ -131,14 +144,14 @@ function check(value: unknown, schema: Json, at = '$'): string[] {
     return check(value, resolve(schema['$ref']), at);
   }
   if (schema['oneOf']) {
-    const options = schema['oneOf'] as Json[];
+    const options = z.array(JsonObject).parse(schema['oneOf']);
     const fits = options.filter(
       (option) => check(value, option, at).length === 0,
     );
     return fits.length === 1 ? [] : [`${at}: matches ${fits.length} of oneOf`];
   }
   const errors: string[] = [];
-  const types = [(schema['type'] as string[]) ?? []].flat();
+  const types = StringList.parse([schema['type'] ?? []].flat());
   const actual = actualType(value);
   if (
     types.length > 0 &&
@@ -150,7 +163,8 @@ function check(value: unknown, schema: Json, at = '$'): string[] {
   if ('const' in schema && value !== schema['const']) {
     errors.push(`${at}: not ${String(schema['const'])}`);
   }
-  if (schema['enum'] && !(schema['enum'] as unknown[]).includes(value)) {
+  const allowedValues = z.array(z.unknown()).optional().parse(schema['enum']);
+  if (allowedValues && !allowedValues.includes(value)) {
     errors.push(`${at}: not in enum`);
   }
   if (typeof value === 'string') {
@@ -184,14 +198,18 @@ function check(value: unknown, schema: Json, at = '$'): string[] {
     }
     if (schema['items']) {
       for (const [index, item] of value.entries()) {
-        errors.push(...check(item, schema['items'] as Json, `${at}[${index}]`));
+        errors.push(
+          ...check(item, JsonObject.parse(schema['items']), `${at}[${index}]`),
+        );
       }
     }
   }
   if (actual === 'object') {
-    const object = value as Json;
-    const properties = (schema['properties'] ?? {}) as Record<string, Json>;
-    for (const key of (schema['required'] ?? []) as string[]) {
+    const object = JsonObject.parse(value);
+    const properties = z
+      .record(z.string(), JsonObject)
+      .parse(schema['properties'] ?? {});
+    for (const key of StringList.parse(schema['required'] ?? [])) {
       if (!(key in object)) {
         errors.push(`${at}.${key}: required`);
       }
@@ -222,13 +240,14 @@ const runOperation = jest.fn<
 jest.unstable_mockModule('@/domain/operations/run', () => ({ runOperation }));
 
 /** The mounted handlers, by `METHOD /path`. */
+/** A route handler: the request and its optional route context; some answer synchronously. */
 type Handler = (
   request: Request,
-  route?: { params: Promise<Record<string, string>> },
-) => Promise<Response>;
+  route?: RouteContext,
+) => Promise<Response> | Response;
 /** The route modules, by documented path. */
 interface RouteModules {
-  readonly [path: string]: Readonly<Record<string, unknown>>;
+  readonly [path: string]: Readonly<Partial<Record<HttpMethod, Handler>>>;
 }
 /** Every route module, by documented path; a test keeps this list and the route files in step. */
 const MODULES: RouteModules = {
@@ -240,11 +259,19 @@ const MODULES: RouteModules = {
     await import('@/app/api/push/subscriptions/[id]/route'),
 };
 
+const HTTP_METHODS: readonly HttpMethod[] = [
+  'GET',
+  'POST',
+  'PUT',
+  'PATCH',
+  'DELETE',
+];
 const handlers = new Map<string, Handler>();
-for (const [path, module] of Object.entries(MODULES)) {
-  for (const method of ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']) {
-    if (typeof module[method] === 'function') {
-      handlers.set(`${method} ${path}`, module[method] as Handler);
+for (const [route, routeModule] of Object.entries(MODULES)) {
+  for (const method of HTTP_METHODS) {
+    const handler = routeModule[method];
+    if (handler) {
+      handlers.set(`${method} ${route}`, handler);
     }
   }
 }
@@ -280,10 +307,18 @@ const SUBSCRIPTION = {
   keys: { p256dh: 'p', auth: 'a' },
 };
 
-const send = async ({ key, path, init, id }: Call): Promise<Response> => {
+const send = async ({
+  key,
+  path: target,
+  init,
+  id,
+}: Call): Promise<Response> => {
   const handler = handlers.get(key)!;
   return handler(
-    new Request(`${ORIGIN}${path}`, { method: key.split(' ', 1)[0], ...init }),
+    new Request(`${ORIGIN}${target}`, {
+      method: key.split(' ', 1)[0],
+      ...init,
+    }),
     id === undefined ? undefined : { params: Promise.resolve({ id }) },
   );
 };
@@ -543,17 +578,18 @@ async function conforms(key: string, res: Response): Promise<string[]> {
     return [`${key}: undocumented status ${res.status}`];
   }
   const errors: string[] = [];
-  const headers = (response['headers'] ?? {}) as Record<string, Json>;
+  const headers = z
+    .record(z.string(), JsonObject)
+    .parse(response['headers'] ?? {});
   for (const name of Object.keys(headers)) {
     const required = headers[name]?.['required'];
     if ((required || name === 'Retry-After') && !res.headers.get(name)) {
       errors.push(`${key} ${res.status}: missing header ${name}`);
     }
   }
-  const content = (response['content'] ?? {}) as Record<
-    string,
-    { schema: Json }
-  >;
+  const content = z
+    .record(z.string(), z.object({ schema: JsonObject }))
+    .parse(response['content'] ?? {});
   const media = Object.keys(content)[0];
   if (media === undefined) {
     const text = await res.clone().text();
@@ -629,8 +665,8 @@ describe('openapi.json', () => {
   });
 
   it('keeps everything outside /api out of the contract', () => {
-    for (const path of Object.keys(document.paths)) {
-      expect(path).toMatch(API_PATH_PREFIX);
+    for (const documentedPath of Object.keys(document.paths)) {
+      expect(documentedPath).toMatch(API_PATH_PREFIX);
     }
   });
 
@@ -644,7 +680,7 @@ describe('openapi.json', () => {
       }
       return value;
     });
-    for (const name of [...names].filter((name) => name !== 'expirationTime')) {
+    for (const name of [...names].filter((each) => each !== 'expirationTime')) {
       expect(name).toMatch(SNAKE_CASE_NAME);
     }
   });

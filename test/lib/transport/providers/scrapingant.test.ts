@@ -17,8 +17,10 @@ function stubFetch(): FetchStub {
 
 function capturedUrl(stub: FetchStub): URL {
   const input = stub.mock.calls[0]?.[0];
-  expect(input).toBeInstanceOf(URL);
-  return input as URL;
+  if (!(input instanceof URL)) {
+    throw new TypeError('expected the transport to be called with a URL');
+  }
+  return input;
 }
 
 function capturedInit(stub: FetchStub): RequestInit {
@@ -74,7 +76,7 @@ describe('scrapingAntTransport', () => {
 
     const init = capturedInit(stub);
     expect(init.method).toBe('GET');
-    const headers = init.headers as Headers;
+    const headers = new Headers(init.headers);
     expect(headers.get('x-api-key')).toBe('SECRET');
   });
 

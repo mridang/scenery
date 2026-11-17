@@ -1,5 +1,6 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
 
+import { SOURCE_SLUGS } from '@/lib/sources/types';
 import {
   fetchAttempts,
   movies,
@@ -8,7 +9,7 @@ import {
   sources,
 } from '../db/schema';
 import type { Database } from '@/domain/db/client';
-import type { ExtractedRelease, SourceSlug } from '@/lib/sources/types';
+import type { ExtractedRelease } from '@/lib/sources/types';
 
 /**
  * Row shape for a registered source in the `sources` table.
@@ -35,13 +36,16 @@ export class ScrapingRepository {
    * @returns The row, or null if the slug is unknown.
    */
   public async findSource(slug: string): Promise<SourceRow | null> {
-    // `slug` is arbitrary input (e.g. a ?source= query param); the cast
-    // only satisfies the enum-typed column — an unknown slug simply
-    // matches no rows and returns null.
+    // `slug` is arbitrary input (e.g. a ?source= query param); an unknown
+    // slug matches no source, so it is answered without a query.
+    const known = SOURCE_SLUGS.find((candidate) => candidate === slug);
+    if (known === undefined) {
+      return null;
+    }
     const row = await this.db
       .select({ id: sources.id, slug: sources.slug })
       .from(sources)
-      .where(eq(sources.slug, slug as SourceSlug))
+      .where(eq(sources.slug, known))
       .get();
     return row ?? null;
   }

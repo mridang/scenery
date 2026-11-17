@@ -10,6 +10,7 @@ import { database } from '@/domain/db/client';
 import {
   ApiController,
   created,
+  isObject,
   ok,
   problems,
   readJsonObject,
@@ -47,23 +48,19 @@ function checkSubscription(
   body: Readonly<Record<string, unknown>>,
 ): CheckedSubscription | readonly string[] {
   const { endpoint, keys } = body;
-  const { p256dh, auth } = (keys ?? {}) as Readonly<Record<string, unknown>>;
-  const errors = [
-    ...(typeof endpoint !== 'string' || !endpoint.startsWith('https://')
-      ? ['endpoint: must be an https URL.']
-      : []),
-    ...(typeof p256dh !== 'string' || !p256dh
-      ? ['keys.p256dh: required.']
-      : []),
-    ...(typeof auth !== 'string' || !auth ? ['keys.auth: required.'] : []),
+  const { p256dh, auth } = isObject(keys) ? keys : {};
+  const httpsEndpoint =
+    typeof endpoint === 'string' && endpoint.startsWith('https://');
+  const hasP256dh = typeof p256dh === 'string' && p256dh !== '';
+  const hasAuth = typeof auth === 'string' && auth !== '';
+  if (httpsEndpoint && hasP256dh && hasAuth) {
+    return { endpoint, p256dh, auth };
+  }
+  return [
+    ...(httpsEndpoint ? [] : ['endpoint: must be an https URL.']),
+    ...(hasP256dh ? [] : ['keys.p256dh: required.']),
+    ...(hasAuth ? [] : ['keys.auth: required.']),
   ];
-  return errors.length > 0
-    ? errors
-    : {
-        endpoint: endpoint as string,
-        p256dh: p256dh as string,
-        auth: auth as string,
-      };
 }
 
 /** What creating a subscription came to: the id and whether it already existed. */
@@ -90,10 +87,10 @@ export const subscriptionsCollection = new ApiController<PushCtx>({
       throw body.response;
     }
     const checked = checkSubscription(body.value);
-    if (Array.isArray(checked)) {
+    if (!('endpoint' in checked)) {
       throw problems.badRequest('The subscription is not valid.', checked);
     }
-    return checked as CheckedSubscription;
+    return checked;
   },
   handle: async (subscription, ctx) => {
     const repo = new PushSubscriptionRepository(ctx.db);

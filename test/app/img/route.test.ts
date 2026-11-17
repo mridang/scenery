@@ -60,10 +60,10 @@ let fetched: string[];
 
 /** Make every fetch answer with a fresh response from `respond`. */
 function serving(respond: () => Response): void {
-  globalThis.fetch = (async (url: string) => {
-    fetched.push(url);
+  globalThis.fetch = async (url: RequestInfo | URL) => {
+    fetched.push(url instanceof Request ? url.url : String(url));
     return respond();
-  }) as unknown as typeof fetch;
+  };
 }
 
 /** A small JPEG response. */

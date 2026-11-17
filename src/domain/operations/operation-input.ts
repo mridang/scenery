@@ -6,6 +6,8 @@
  * typo is an error and not a silent default.
  */
 
+import { z } from 'zod';
+
 import { OPERATION_TYPES } from '@/domain/db/enums';
 import { SOURCE_SLUGS } from '@/lib/sources/types';
 import { TORRENT_PROVIDERS } from '@/lib/torrents/types';
@@ -18,7 +20,6 @@ import {
   PIPELINE_STEPS,
 } from './types';
 import type { OperationRequest, PipelineRunParameters } from './types';
-import type { OperationType } from '@/domain/db/enums';
 
 /** The checked request, or what was wrong with it. */
 export type OperationInput =
@@ -37,6 +38,15 @@ function unknownKeys(
     .map((key) => `parameters.${key}: not a parameter of this operation.`);
 }
 
+/** A whole number from `min` to `max`, or `undefined` for anything else. */
+function wholeNumberIn(
+  value: unknown,
+  min: number,
+  max: number,
+): number | undefined {
+  return z.number().int().min(min).max(max).safeParse(value).data;
+}
+
 /** The values of a list parameter that must each be one of `allowed`, or errors. */
 function listOf<T extends string>(
   name: string,
@@ -44,10 +54,15 @@ function listOf<T extends string>(
   allowed: readonly T[],
 ): { readonly values: readonly T[]; readonly errors: readonly string[] } {
   const items: readonly unknown[] = Array.isArray(value) ? value : [];
+  const member = z.enum(allowed);
+  const values = items.flatMap((item) => {
+    const parsed = member.safeParse(item);
+    return parsed.success ? [parsed.data] : [];
+  });
   const bad =
     !Array.isArray(value) ||
     value.length === 0 ||
-    items.some((item) => !allowed.includes(item as T)) ||
+    values.length !== items.length ||
     new Set(items).size !== items.length;
   return bad
     ? {
@@ -56,7 +71,7 @@ function listOf<T extends string>(
           `parameters.${name}: a non-repeating list of ${allowed.join(', ')}.`,
         ],
       }
-    : { values: items as readonly T[], errors: [] };
+    : { values, errors: [] };
 }
 
 /** Check the parameters of a `pipeline_run`. */
@@ -74,12 +89,10 @@ function pipelineRun(parameters: Parameters): OperationInput {
           parameters['torrent_providers'],
           TORRENT_PROVIDERS,
         );
-  const unknownSource =
-    source !== undefined && !SOURCE_SLUGS.includes(source as never);
-  const pagesOutOfRange =
-    (pages as number) < 0 || (pages as number) > MAX_BACKFILL_PAGES;
-  const badPages =
-    pages !== undefined && (!Number.isInteger(pages) || pagesOutOfRange);
+  const knownSource = z.enum(SOURCE_SLUGS).safeParse(source).data;
+  const unknownSource = source !== undefined && knownSource === undefined;
+  const checkedPages = wholeNumberIn(pages, 0, MAX_BACKFILL_PAGES);
+  const badPages = pages !== undefined && checkedPages === undefined;
   const errors = [
     ...unknownKeys(parameters, [
       'source',
@@ -102,10 +115,8 @@ function pipelineRun(parameters: Parameters): OperationInput {
     return { ok: false, errors };
   }
   const checked: PipelineRunParameters = {
-    ...(source === undefined
-      ? {}
-      : { source: source as PipelineRunParameters['source'] }),
-    backfill_pages: pages === undefined ? 0 : (pages as number),
+    ...(knownSource === undefined ? {} : { source: knownSource }),
+    backfill_pages: checkedPages ?? 0,
     steps: steps.values,
     ...(providers === undefined ? {} : { torrent_providers: providers.values }),
   };
@@ -118,10 +129,8 @@ function pipelineRun(parameters: Parameters): OperationInput {
 /** Check the parameters of an `omdb_backfill`. */
 function omdbBackfill(parameters: Parameters): OperationInput {
   const { limit } = parameters;
-  const limitOutOfRange =
-    (limit as number) < MIN_OMDB_LIMIT || (limit as number) > MAX_OMDB_LIMIT;
-  const badLimit =
-    limit !== undefined && (!Number.isInteger(limit) || limitOutOfRange);
+  const checkedLimit = wholeNumberIn(limit, MIN_OMDB_LIMIT, MAX_OMDB_LIMIT);
+  const badLimit = limit !== undefined && checkedLimit === undefined;
   const errors = [
     ...unknownKeys(parameters, ['limit']),
     ...(badLimit
@@ -137,7 +146,7 @@ function omdbBackfill(parameters: Parameters): OperationInput {
         request: {
           type: 'omdb_backfill',
           parameters: {
-            limit: limit === undefined ? DEFAULT_OMDB_LIMIT : (limit as number),
+            limit: checkedLimit ?? DEFAULT_OMDB_LIMIT,
           },
         },
       };
@@ -148,19 +157,20 @@ export function parseOperationInput(
   body: Readonly<Record<string, unknown>>,
 ): OperationInput {
   const { type, parameters = {} } = body;
+  const operationType = z.enum(OPERATION_TYPES).safeParse(type);
   const errors = [
     ...Object.keys(body)
       .filter((key) => key !== 'type' && key !== 'parameters')
       .map((key) => `${key}: not a member of an operation.`),
-    ...(OPERATION_TYPES.includes(type as OperationType)
+    ...(operationType.success
       ? []
       : [`type: one of ${OPERATION_TYPES.join(', ')}.`]),
     ...(isObject(parameters) ? [] : ['parameters: must be an object.']),
   ];
-  if (errors.length > 0 || !isObject(parameters)) {
+  if (errors.length > 0 || !isObject(parameters) || !operationType.success) {
     return { ok: false, errors };
   }
-  switch (type as OperationType) {
+  switch (operationType.data) {
     case 'pipeline_run': {
       return pipelineRun(parameters);
     }

@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals';
+import { NextRequest } from 'next/server';
 import { databaseFrom } from '@/domain/db/client';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
@@ -6,7 +7,6 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
-import type { NextRequest } from 'next/server';
 
 let d1: D1Database;
 let restore: (() => void) | undefined;
@@ -26,8 +26,7 @@ afterAll(() => {
 // Keep the feed hermetic: bestTrackers is handed a stub transport that never touches the network, so it falls back to the static tracker list.
 // eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/lib/transport', () => {
-  const stubFetch = (async () =>
-    new Response('', { status: 500 })) as unknown as typeof fetch;
+  const stubFetch: typeof fetch = async () => new Response('', { status: 500 });
   return {
     genericTransport: () => stubFetch,
     scrapingAntTransport: () => stubFetch,
@@ -42,7 +41,7 @@ const { ScrapingRepository } = await import('@/domain/scraping/repository');
 const { GET } = await import('@/app/feed.xml/route');
 
 function req(url: string): NextRequest {
-  return { nextUrl: new URL(url) } as unknown as NextRequest;
+  return new NextRequest(url);
 }
 
 describe('GET /feed.xml', () => {

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { z } from 'zod';
 import type { Database } from '@/domain/db/client';
 
 import type { OperationRequest } from '@/domain/operations/types';
@@ -86,7 +87,9 @@ const create = jest.fn<(options: unknown) => Promise<Instance>>(async () => ({
   status: async () => ({ status: 'queued' }),
 }));
 const deps = {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the mocked operation modules never use the database, so an empty object stands in for the Drizzle client
   db: {} as unknown as Database,
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the operations under test read only the NOTIFY_WORKFLOW and OMDB_API_KEY bindings, so a partial env stands in for the whole Worker env
   env: {
     NOTIFY_WORKFLOW: { create },
     OMDB_API_KEY: 'k',
@@ -146,10 +149,12 @@ describe('runOperation', () => {
   });
 
   it('keeps going when one source fails, and says what went wrong with it', async () => {
-    const result = (await runOperation(
-      pipeline({ steps: ['scrape'] }),
-      deps,
-    )) as { pages: Record<string, unknown>; enrich?: unknown };
+    const result = z
+      .object({
+        pages: z.record(z.string(), z.unknown()),
+        enrich: z.unknown().optional(),
+      })
+      .parse(await runOperation(pipeline({ steps: ['scrape'] }), deps));
     expect(result.pages).toEqual({
       scnsrc: [{ page: 1 }],
       ddlvalley: { error: 'blocked' },

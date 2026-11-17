@@ -153,9 +153,9 @@ describe('TmdbClient', () => {
   });
 
   it('returns a failure (without httpStatus) when the transport throws', async () => {
-    const transport = (async () => {
+    const transport: typeof fetch = async () => {
       throw new Error('network down');
-    }) as unknown as typeof fetch;
+    };
     const client = new TmdbClient({ apiKey: 'k' }, transport);
 
     const res = await client.findByImdb('tt1');

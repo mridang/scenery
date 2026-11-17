@@ -32,6 +32,7 @@ describe('setErrorContext', () => {
     await setErrorContext({
       gone: unset,
       nan: Number.NaN,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the test passes a nested object on purpose to check that setErrorContext drops values that are not plain, which the attribute type forbids
       object: { a: 1 } as never,
       kept: 'yes',
     });

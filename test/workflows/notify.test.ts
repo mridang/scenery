@@ -27,6 +27,7 @@ const { NotifyWorkflow } = await import('@/workflows/notify');
 
 describe('NotifyWorkflow error context', () => {
   it('names the job and the instance before any work', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the NotifyWorkflow constructor takes the Worker's ExecutionContext and env, which this test never reads, so empty objects stand in
     const workflow = new NotifyWorkflow({} as never, {} as never);
     const failing = {
       do: async () => {
@@ -35,7 +36,13 @@ describe('NotifyWorkflow error context', () => {
     };
     await Promise.resolve(
       workflow.run(
-        { payload: { imdbId: 'tt1' }, instanceId: 'run-7' } as never,
+        {
+          payload: { imdbId: 'tt1' },
+          timestamp: new Date(),
+          instanceId: 'run-7',
+          workflowName: 'notify',
+        },
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the step is a stand-in with a single `do` that always throws; the workflow is only run until its first step
         failing as never,
       ),
     ).catch(() => undefined);

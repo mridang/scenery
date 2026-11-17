@@ -20,8 +20,8 @@ class Statement {
   ) {}
 
   /** The same statement with values bound to its placeholders. */
-  bind(...params: readonly unknown[]): Statement {
-    return new Statement(this.conn, this.sql, params as SQLInputValue[]);
+  bind(...params: readonly SQLInputValue[]): Statement {
+    return new Statement(this.conn, this.sql, params);
   }
 
   private prepared(arrays: boolean): StatementSync {
@@ -97,6 +97,7 @@ export async function sqliteD1(...migrations: readonly string[]): Promise<{
       }
     },
   };
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the shim implements only the D1Database members the app calls (prepare, batch, exec), not the whole binding
   return { d1: d1 as unknown as D1Database, raw };
 }
 
@@ -121,19 +122,26 @@ export function installCloudflareContext(
   env: Readonly<Record<string, unknown>> = {},
 ): () => void {
   const key = Symbol.for('__cloudflare-context__');
-  const holder = globalThis as unknown as Record<symbol, unknown>;
-  const previous = holder[key];
-  holder[key] = {
-    env: { ...env, DB: d1 },
-    ctx: {
-      waitUntil: (work: Promise<unknown>) => {
-        background.push(work);
+  const previous = Object.getOwnPropertyDescriptor(globalThis, key);
+  Object.defineProperty(globalThis, key, {
+    configurable: true,
+    writable: true,
+    value: {
+      env: { ...env, DB: d1 },
+      ctx: {
+        waitUntil: (work: Promise<unknown>) => {
+          background.push(work);
+        },
       },
+      cf: {},
     },
-    cf: {},
-  };
+  });
   return () => {
-    holder[key] = previous;
+    if (previous) {
+      Object.defineProperty(globalThis, key, previous);
+    } else {
+      Reflect.deleteProperty(globalThis, key);
+    }
   };
 }
 
@@ -157,6 +165,7 @@ export function recordStatements(d1: D1Database): RecordedStatements {
     },
     batch: d1.batch.bind(d1),
   };
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the wrapper forwards only prepare and batch, the two D1Database members the recorded code uses
   return { d1: recorded as unknown as D1Database, statements };
 }
 

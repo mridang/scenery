@@ -1,5 +1,10 @@
+import { z } from 'zod';
+
 import type { TmdbClient, TmdbPersonResponse } from '@/lib/tmdb';
 import type { TmdbRepository } from './repository';
+
+/** The JSON array of TMDB ids stored in `cast_ids` / `director_ids`. */
+const ID_LIST = z.array(z.number());
 
 /** How much a person's credits weigh, and how many there are. */
 interface PrestigeScore {
@@ -194,7 +199,7 @@ export class TmdbEnricher {
         .filter((raw): raw is string => raw !== null)
         .flatMap((raw) => {
           try {
-            return JSON.parse(raw) as number[];
+            return ID_LIST.parse(JSON.parse(raw));
           } catch {
             return [];
           }
