@@ -51,6 +51,7 @@ function fakeRepo(overrides: Partial<Record<string, unknown>> = {}): FakeRepo {
     upsertPerson: record('upsertPerson'),
     ...overrides,
   };
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the repository is a class with a private database handle, so a recording stand-in with only the methods the enricher calls cannot be proven to be one
   return { repo: base as unknown as TmdbRepository, calls };
 }
 
@@ -69,6 +70,7 @@ const fail = (error: string, raw = ''): Result<never> => ({
 
 /** A fake client returning whatever the test stubs each method to. */
 function fakeClient(stubs: Partial<TmdbClient>): TmdbClient {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the client is a class with private state, so stubs of the few methods each test calls cannot be proven to be one
   return stubs as unknown as TmdbClient;
 }
 
@@ -187,6 +189,7 @@ describe('TmdbEnricher.enrichPerson', () => {
 
     expect(okFlag).toBe(true);
     expect(calls.map((c) => c.method)).toEqual(['upsertPerson']);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- calls are recorded with unknown arguments, and this test knows the signature of the one upsertPerson call it reads
     const [value, fallbackId, prestige, totalCredits] = nth(calls, 0).args as [
       TmdbPersonResponse,
       number,

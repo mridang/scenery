@@ -1,15 +1,13 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
+import { NextRequest } from 'next/server';
 import { resetTrackerCache } from '@/lib/magnet/magnet';
-import type { NextRequest } from 'next/server';
 
 // The endpoint reaches the network via the transport layer; stub the
 // whole transport module so bestTrackers() reads a controlled body
 // instead of hitting cf.trackerslist.com.
-const fakeFetch = (async () =>
-  new Response(
-    'udp://test-tracker:1337/announce\n',
-  )) as unknown as typeof fetch;
+const fakeFetch: typeof fetch = async () =>
+  new Response('udp://test-tracker:1337/announce\n');
 
 // eslint-disable-next-line tslop/no-module-mocking -- the code under test imports this module directly, so only mocking the module can stand in for it
 jest.unstable_mockModule('@/lib/transport', () => ({
@@ -26,7 +24,7 @@ const { GET } = await import('@/app/magnet/[hash]/route');
 const VALID = 'a'.repeat(40);
 
 function req(url: string): NextRequest {
-  return { nextUrl: new URL(url) } as unknown as NextRequest;
+  return new NextRequest(url);
 }
 interface MagnetContext {
   readonly params: Promise<{ hash: string }>;

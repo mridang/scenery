@@ -36,6 +36,7 @@ async function fire(cron: string, env: Record<string, unknown>) {
       pending.push(promise);
     },
   };
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the scheduled handler needs a ScheduledController, the Worker env and an ExecutionContext, and the test supplies only the cron, the bindings it reads and waitUntil
   await Reflect.apply(extraHandlers.scheduled as never, undefined, [
     { cron },
     env,

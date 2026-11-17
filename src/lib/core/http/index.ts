@@ -6,7 +6,7 @@
  * security/cache response headers, the client address, and the per-app surface
  * these read.
  */
-export type { ServeEnv, ServeApp, ServeDeps } from './serve';
+export type { ServeContext, ServeEnv, ServeApp, ServeDeps } from './serve';
 export { serverTiming, serve } from './serve';
 export { EDGE_LIMITS } from './extras';
 export {

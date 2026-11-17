@@ -27,6 +27,7 @@ const { ScrapeWorkflow } = await import('@/workflows/scrape');
 
 describe('ScrapeWorkflow error context', () => {
   it('names the job and the instance before any work', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the ScrapeWorkflow constructor takes the Worker's ExecutionContext and env, which this test never reads, so empty objects stand in
     const workflow = new ScrapeWorkflow({} as never, {} as never);
     const failing = {
       do: async () => {
@@ -35,7 +36,13 @@ describe('ScrapeWorkflow error context', () => {
     };
     await Promise.resolve(
       workflow.run(
-        { payload: { imdbId: 'tt1' }, instanceId: 'run-7' } as never,
+        {
+          payload: {},
+          timestamp: new Date(),
+          instanceId: 'run-7',
+          workflowName: 'scrape',
+        },
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the step is a stand-in with a single `do` that always throws; the workflow is only run until its first step
         failing as never,
       ),
     ).catch(() => undefined);

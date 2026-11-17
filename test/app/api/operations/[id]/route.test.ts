@@ -11,10 +11,10 @@ import {
 
 const ID = '0b8a3f1e-5a53-4a5c-8a1c-0a6c8d8f6a11';
 
-let restore: () => void;
+let restore: () => void = () => undefined;
 
 const install = async (env: Record<string, unknown> = {}) => {
-  restore?.();
+  restore();
   const { d1 } = await sqliteD1(...APP_MIGRATIONS);
   // eslint-disable-next-line require-atomic-updates -- the test's setup runs one step at a time, so nothing else assigns it meanwhile
   restore = installCloudflareContext(d1, env);

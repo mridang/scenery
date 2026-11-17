@@ -7,19 +7,20 @@
  */
 
 /** Outcome of {@link safeJsonParse}. @public */
-export type JsonParseResult<T> =
-  | { readonly ok: true; readonly value: T }
+export type JsonParseResult =
+  | { readonly ok: true; readonly value: unknown }
   | { readonly ok: false; readonly error: string };
 
 /**
  * Parse `text` as JSON without throwing.
- * @returns `{ ok: true, value }` on success, `{ ok: false, error }` with
+ * @returns `{ ok: true, value }` on success (the value is `unknown`: narrow or
+ * validate it before use), `{ ok: false, error }` with
  * the parser's message otherwise.
  * @public
  */
-export function safeJsonParse<T>(text: string): JsonParseResult<T> {
+export function safeJsonParse(text: string): JsonParseResult {
   try {
-    return { ok: true, value: JSON.parse(text) as T };
+    return { ok: true, value: JSON.parse(text) };
   } catch (error) {
     return {
       ok: false,

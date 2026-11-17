@@ -61,9 +61,9 @@ describe('JsonClient.request', () => {
   });
 
   it('fails without a status when the fetch itself throws', async () => {
-    const fetcher = (async () => {
+    const fetcher: typeof fetch = async () => {
       throw new Error('offline');
-    }) as unknown as typeof fetch;
+    };
     const result = await new JsonClient('https://api.test', fetcher).request(
       { path: '/x' },
       Thing,

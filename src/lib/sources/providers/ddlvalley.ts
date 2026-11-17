@@ -156,7 +156,7 @@ export class DdlvalleySource implements Source {
   public extract(html: string): ExtractedRelease[] {
     const offsets = Array.from(html.matchAll(POST_RE), (match) => ({
       id: match[1],
-      idx: match.index ?? 0,
+      idx: match.index,
     })).filter(
       (offset): offset is { id: string; idx: number } =>
         offset.id !== undefined,

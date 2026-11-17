@@ -43,14 +43,15 @@ function fakeRepo(overrides: Partial<ScrapingRepository> = {}): FakeRepo {
       successful.push(opts);
     }),
     upsertRelease: jest.fn(
-      async (sourceId: number, release: ExtractedRelease) => {
-        upserts.push({ sourceId, release });
+      async (sourceId: number, extracted: ExtractedRelease) => {
+        upserts.push({ sourceId, release: extracted });
       },
     ),
     ...overrides,
   };
 
   return {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the repository is a class with a private database handle, so a partial in-memory stand-in with only the methods the orchestrator calls cannot be proven to be one
     repo: base as unknown as ScrapingRepository,
     upserts,
     failed,

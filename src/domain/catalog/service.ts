@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import { CatalogRepository } from './repository';
 import { labelsForPrestigeIds } from './prestige';
 import type { Database } from '@/domain/db/client';
@@ -18,7 +20,7 @@ function genreNames(raw: string | null, lookup: Map<number, string>): string[] {
     return [];
   }
   try {
-    const ids = JSON.parse(raw) as number[];
+    const ids = z.array(z.number()).parse(JSON.parse(raw));
     return ids.map((id) => lookup.get(id) ?? `#${id}`);
   } catch {
     return [];
@@ -31,7 +33,9 @@ function castNames(raw: string | null): string[] {
     return [];
   }
   try {
-    const items = JSON.parse(raw) as { name?: string }[];
+    const items = z
+      .array(z.object({ name: z.string().optional() }))
+      .parse(JSON.parse(raw));
     return items.map((castMember) => castMember.name ?? '').filter(Boolean);
   } catch {
     return [];
