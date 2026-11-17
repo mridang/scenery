@@ -7,14 +7,16 @@ import robots from '@/app/robots';
 /** Matches trailing dollar. */
 const TRAILING_DOLLAR = /\$$/u;
 
-const Group = z.object({
-  userAgent: z.string(),
-  allow: z.array(z.string()),
-  disallow: z.array(z.string()),
-});
+const GROUPS = z.array(
+  z.object({
+    userAgent: z.string(),
+    allow: z.array(z.string()),
+    disallow: z.array(z.string()),
+  }),
+);
 
 describe('robots.txt', () => {
-  const groups = z.array(Group).parse(robots().rules);
+  const groups = GROUPS.parse(robots().rules);
   const rule = groups[0]!;
 
   /**
