@@ -49,6 +49,15 @@ export default [
     },
   },
   {
+    // eslint-plugin-sonarjs 4.2.3 restricts no-empty-test-file to test-case
+    // files, but the preset enables it for every file. Keep it on for test
+    // files only, so helpers and sources are not reported.
+    ignores: ['**/*.test.*', '**/*.spec.*', '**/*.cy.*'],
+    rules: {
+      'sonarjs/no-empty-test-file': 'off',
+    },
+  },
+  {
     // Drizzle safety net: a bare .delete()/.update() on the db wipes or
     // rewrites the whole table. Require a .where() on every one. Our
     // drizzle instance is reached as `this.db` in the repositories.
